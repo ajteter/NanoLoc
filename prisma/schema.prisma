@@ -1,0 +1,69 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // Hashed
+  name          String?
+  createdAt     DateTime  @default(now())
+  
+  projects      Project[] // Many-to-many relation
+}
+
+model Project {
+  id               String   @id @default(cuid())
+  name             String
+  description      String?
+  
+  // Config
+  baseLanguage     String   @default("en-US")
+  targetLanguages  String   @default("[]") // JSON string of language codes: ["zh-CN", "ja"]
+  
+  // AI Config (Project specific)
+  aiBaseUrl        String?
+  aiApiKey         String?
+  aiModelId        String?
+  systemPrompt     String?
+
+  // Relations
+  users            User[]
+  keys             TranslationKey[]
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model TranslationKey {
+  id            String   @id @default(cuid())
+  stringName    String   // Key identifier (e.g., "app_name")
+  remarks       String?  // Store conflicts or context
+  
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  values        TranslationValue[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([projectId, stringName])
+  @@index([stringName])
+}
+
+model TranslationValue {
+  id               String         @id @default(cuid())
+  languageCode     String         // e.g., 'zh-CN'
+  content          String?
+  
+  translationKeyId String
+  translationKey   TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)
+
+  @@unique([translationKeyId, languageCode])
+}

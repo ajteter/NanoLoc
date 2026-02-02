@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="language_tag">en-US</string>
+    <string name="app_name">Vanso</string>
+    <string name="main_search_hint">Search local music</string>
+    <string name="main_label_more">More</string>
+    <string name="download">Download</string>
+    <string name="multi_select">Multiselect</string>
+    <string name="delete">Delete</string>
+    <string name="playall">Play All</string>
+</resources>
