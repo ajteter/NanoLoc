@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Project } from '@/types';
 import { TermRow } from './components/TermRow';
 import { CreateTermRow } from './components/CreateTermRow';
+import { BatchTranslateButton } from './components/BatchTranslateButton';
 import { Search, Upload, Plus, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,6 +139,8 @@ export default function ProjectDetailPage() {
                         ref={fileInputRef}
                         onChange={handleFileUpload}
                     />
+                    {/* ... */}
+
                     <Button
                         variant="secondary"
                         onClick={() => fileInputRef.current?.click()}
@@ -146,6 +149,7 @@ export default function ProjectDetailPage() {
                         <Upload className="h-4 w-4 mr-2" />
                         {importMutation.isPending ? 'Importing...' : 'Import XML'}
                     </Button>
+                    <BatchTranslateButton projectId={projectId} targetLanguages={targetLangs} />
                     <Button
                         onClick={() => setIsCreating(true)}
                         className="bg-indigo-600 hover:bg-indigo-500 text-white"
