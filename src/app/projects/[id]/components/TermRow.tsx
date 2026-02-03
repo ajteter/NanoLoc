@@ -13,6 +13,7 @@ interface TermRowProps {
         stringName: string;
         remarks: string | null;
         values: { languageCode: string; content: string }[];
+        updatedAt: string;
     };
     projectId: string;
     baseLanguage: string;
@@ -122,69 +123,21 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
 
         const newValues = { ...formData.values };
         targetLanguages.forEach(lang => {
-            if (!newValues[lang]) {
-                newValues[lang] = base;
-            }
+            // Overwrite all values
+            newValues[lang] = base;
         });
         setFormData(p => ({ ...p, values: newValues }));
     };
 
     const baseValue = term.values.find(v => v.languageCode === baseLanguage)?.content;
+    // Basic timestamp formatting
+    const lastUpdated = term.updatedAt ? new Date(term.updatedAt).toLocaleString() : '';
 
     if (isEditing) {
         return (
             <tr className="bg-gray-800/50 hover:bg-gray-800/70 transition-colors">
-                <td className="p-4 align-top">
-                    <Input
-                        value={formData.stringName}
-                        onChange={(e) => setFormData(p => ({ ...p, stringName: e.target.value }))}
-                        className="bg-gray-900 border-gray-700 text-white h-auto py-2"
-                    />
-                </td>
-                <td className="p-4 align-top relative group/base">
-                    <Textarea
-                        value={formData.values[baseLanguage] || ''}
-                        onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
-                        className="bg-gray-900 border-gray-700 text-white min-h-[4rem]"
-                    />
-                    <Button
-                        variant="ghost" size="icon"
-                        onClick={handleCopyToAll}
-                        className="absolute bottom-5 right-5 h-6 w-6 text-gray-400 hover:text-white opacity-0 group-hover/base:opacity-100 transition-opacity"
-                        title="Copy to all empty"
-                        type="button"
-                    >
-                        <Copy className="w-3 h-3" />
-                    </Button>
-                </td>
-                {targetLanguages.map(lang => (
-                    <td key={lang} className="p-4 align-top hidden xl:table-cell relative group/cell">
-                        <Textarea
-                            value={formData.values[lang] || ''}
-                            onChange={(e) => handleValueChange(lang, e.target.value)}
-                            className="bg-gray-900 border-gray-700 text-white min-h-[4rem]"
-                        />
-                        <Button
-                            variant="ghost" size="icon"
-                            onClick={() => handleTranslate(lang)}
-                            disabled={translating === lang}
-                            className="absolute bottom-5 right-5 h-6 w-6 text-indigo-400 hover:text-indigo-300 opacity-0 group-hover/cell:opacity-100 transition-opacity disabled:opacity-50"
-                            title="AI Translate"
-                            type="button"
-                        >
-                            <Wand2 className={`w-3 h-3 ${translating === lang ? 'animate-pulse' : ''}`} />
-                        </Button>
-                    </td>
-                ))}
-                <td className="p-4 align-top hidden md:table-cell">
-                    <Textarea
-                        value={formData.remarks}
-                        onChange={(e) => setFormData(p => ({ ...p, remarks: e.target.value }))}
-                        className="bg-gray-900 border-gray-700 text-gray-400 min-h-[4rem]"
-                    />
-                </td>
-                <td className="p-4 text-right align-top">
-                    <div className="flex justify-end gap-1">
+                <td className="p-4 align-top border-r border-gray-800 bg-gray-900 sticky left-0 z-10">
+                    <div className="flex gap-1">
                         <Button
                             variant="ghost" size="icon"
                             onClick={handleSave}
@@ -204,14 +157,104 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         </Button>
                     </div>
                 </td>
+                <td className="p-4 align-top">
+                    <Input
+                        value={formData.stringName}
+                        onChange={(e) => setFormData(p => ({ ...p, stringName: e.target.value }))}
+                        className="bg-gray-900 border-gray-700 text-white h-auto py-2"
+                    />
+                </td>
+                <td className="p-4 align-top">
+                    <Textarea
+                        value={formData.remarks}
+                        onChange={(e) => setFormData(p => ({ ...p, remarks: e.target.value }))}
+                        className="bg-gray-900 border-gray-700 text-gray-400 min-h-[4rem]"
+                    />
+                </td>
+                <td className="p-4 align-top relative group/base">
+                    <Textarea
+                        value={formData.values[baseLanguage] || ''}
+                        onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
+                        className="bg-gray-900 border-gray-700 text-white min-h-[4rem]"
+                    />
+                    <Button
+                        variant="ghost" size="icon"
+                        onClick={handleCopyToAll}
+                        className="absolute bottom-5 right-5 h-6 w-6 text-gray-400 hover:text-white opacity-0 group-hover/base:opacity-100 transition-opacity"
+                        title="Copy to all (Overwrite)"
+                        type="button"
+                    >
+                        <Copy className="w-3 h-3" />
+                    </Button>
+                </td>
+                {targetLanguages.map(lang => (
+                    <td key={lang} className="p-4 align-top relative group/cell">
+                        <Textarea
+                            value={formData.values[lang] || ''}
+                            onChange={(e) => handleValueChange(lang, e.target.value)}
+                            className="bg-gray-900 border-gray-700 text-white min-h-[4rem]"
+                        />
+                        <Button
+                            variant="ghost" size="icon"
+                            onClick={() => handleTranslate(lang)}
+                            disabled={translating === lang}
+                            className="absolute bottom-5 right-5 h-6 w-6 text-indigo-400 hover:text-indigo-300 opacity-0 group-hover/cell:opacity-100 transition-opacity disabled:opacity-50"
+                            title="AI Translate"
+                            type="button"
+                        >
+                            <Wand2 className={`w-3 h-3 ${translating === lang ? 'animate-pulse' : ''}`} />
+                        </Button>
+                    </td>
+                ))}
             </tr>
         );
     }
 
     return (
         <tr className="hover:bg-gray-800/50 transition-colors group border-b border-gray-800 last:border-0">
+            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 align-top border-r border-gray-800 bg-gray-900/50 sticky left-0 z-10">
+                <div className="flex gap-1 opacity-100 transition-opacity">
+                    <Button
+                        variant="ghost" size="icon"
+                        onClick={() => setIsEditing(true)}
+                        className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-400/10"
+                        title="Edit"
+                    >
+                        <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                        variant="ghost" size="icon"
+                        onClick={() => {
+                            if (confirm('Translate this row? This will translate all empty fields.')) {
+                                targetLanguages.forEach(lang => {
+                                    const val = term.values.find(v => v.languageCode === lang)?.content;
+                                    if (!val) handleTranslate(lang);
+                                });
+                            }
+                        }}
+                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                        title="Translate Row"
+                    >
+                        <Wand2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                        variant="ghost" size="icon"
+                        onClick={() => {
+                            if (confirm('Delete this term?')) deleteMutation.mutate();
+                        }}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                        title="Delete"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                </div>
+            </td>
             <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6 max-w-xs break-all truncate align-top">
                 <div className="truncate" title={term.stringName}>{term.stringName}</div>
+                <div className="text-xs text-gray-600 mt-1 font-mono">{lastUpdated}</div>
+            </td>
+            <td className="px-3 py-4 text-sm text-gray-400 max-w-xs truncate align-top">
+                {term.remarks}
             </td>
             <td className="whitespace-pre-wrap px-3 py-4 text-sm text-gray-300 max-w-xs align-top">
                 {baseValue || <span className="text-gray-600 italic">Empty</span>}
@@ -219,34 +262,11 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
             {targetLanguages.map((lang: string) => {
                 const val = term.values.find(v => v.languageCode === lang)?.content;
                 return (
-                    <td key={lang} className="whitespace-pre-wrap px-3 py-4 text-sm text-gray-300 max-w-xs hidden xl:table-cell align-top">
+                    <td key={lang} className="whitespace-pre-wrap px-3 py-4 text-sm text-gray-300 max-w-xs align-top">
                         {val || <span className="text-gray-600 italic">Empty</span>}
                     </td>
                 );
             })}
-            <td className="px-3 py-4 text-sm text-gray-400 hidden md:table-cell max-w-xs truncate align-top">
-                {term.remarks}
-            </td>
-            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 align-top opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                    variant="ghost" size="icon"
-                    onClick={() => setIsEditing(true)}
-                    className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-400/10 mr-1"
-                    title="Edit"
-                >
-                    <Edit2 className="w-4 h-4" />
-                </Button>
-                <Button
-                    variant="ghost" size="icon"
-                    onClick={() => {
-                        if (confirm('Delete this term?')) deleteMutation.mutate();
-                    }}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                    title="Delete"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </Button>
-            </td>
         </tr>
     );
 }

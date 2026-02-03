@@ -6,7 +6,7 @@ import { BRClient } from '@/lib/ai/br-client';
 
 const BATCH_SIZE = 20;
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user?.email) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,6 +52,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
                 where: { projectId: id },
                 include: { values: true }
             });
+
 
             const missingTranslationItems: { keyId: string, sourceText: string }[] = [];
 
@@ -124,6 +125,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     } catch (error: any) {
         console.error("Batch translate error:", error);
-        return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+        return NextResponse.json({ error: error.message || "Internal Server Error", details: error.toString(), stack: error.stack }, { status: 500 });
     }
 }

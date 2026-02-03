@@ -4,6 +4,10 @@ export interface Project {
     description: string | null;
     baseLanguage: string;
     targetLanguages: string; // JSON string in DB, need parsing usually, but let's keep it string for simple display or parse it
+    aiBaseUrl?: string;
+    aiApiKey?: string;
+    aiModelId?: string;
+    systemPrompt?: string;
     updatedAt: string;
     createdAt: string;
 }

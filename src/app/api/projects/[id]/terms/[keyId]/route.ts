@@ -3,22 +3,16 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
-const updateTermSchema = z.object({
-    stringName: z.string().min(1).optional(),
-    remarks: z.string().optional().nullable(),
-    values: z.record(z.string()).optional(), // languageCode -> content
-});
-
-export async function PUT(request: Request, { params }: { params: { id: string; keyId: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
     if (!session?.user?.email) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: projectId, keyId } = await params;
+    const { id, keyId } = await params;
 
     const project = await prisma.project.findUnique({
-        where: { id: projectId },
+        where: { id },
         include: { users: true }
     });
 
@@ -28,13 +22,11 @@ export async function PUT(request: Request, { params }: { params: { id: string; 
 
     try {
         const body = await request.json();
-        const result = updateTermSchema.safeParse(body);
 
-        if (!result.success) {
-            return NextResponse.json({ error: result.error.issues }, { status: 400 });
-        }
-
-        const { stringName, remarks, values } = result.data;
+        // Manual validation instead of Zod to avoid runtime issues
+        const stringName = typeof body.stringName === 'string' && body.stringName.length > 0 ? body.stringName : undefined;
+        const remarks = typeof body.remarks === 'string' ? body.remarks : (body.remarks === null ? null : undefined);
+        const values = body.values && typeof body.values === 'object' ? body.values : undefined;
 
         // Transaction to update key and values
         await prisma.$transaction(async (tx) => {
@@ -81,23 +73,23 @@ export async function PUT(request: Request, { params }: { params: { id: string; 
 
         return NextResponse.json({ term: updatedKey });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Update term error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json({ error: "Internal Server Error", details: error.message, stack: error.stack }, { status: 500 });
     }
 }
 
 
-export async function DELETE(request: Request, { params }: { params: { id: string; keyId: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
     if (!session?.user?.email) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: projectId, keyId } = await params;
+    const { id, keyId } = await params;
 
     const project = await prisma.project.findUnique({
-        where: { id: projectId },
+        where: { id },
         include: { users: true }
     });
 

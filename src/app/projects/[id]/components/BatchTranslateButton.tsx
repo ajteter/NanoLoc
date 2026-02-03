@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Wand2, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface BatchTranslateButtonProps {
     projectId: string;
@@ -30,16 +31,17 @@ export function BatchTranslateButton({ projectId, targetLanguages }: BatchTransl
         onSuccess: (data) => {
             setResult(data.translated);
             queryClient.invalidateQueries({ queryKey: ['terms', projectId] });
+            toast.success("Batch translation completed!");
         },
         onError: (err) => {
-            alert('Error: ' + err.message);
+            toast.error('Error: ' + err.message);
             setOpen(false);
         }
     });
 
     const handleStart = () => {
         if (!targetLanguages || targetLanguages.length === 0) {
-            alert("No target languages configured. Please configure them in project settings first.");
+            toast.error("No target languages configured. Please configure them in project settings first.");
             return;
         }
         setResult(null);

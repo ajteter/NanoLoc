@@ -6,6 +6,7 @@ import { Project } from '@/types';
 import { CreateProjectDialog } from '@/components/CreateProjectDialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { UserNav } from '@/components/UserNav';
 
 function ProjectList() {
   const { data, isLoading, error } = useQuery<{ projects: Project[] }>({
@@ -79,8 +80,9 @@ export default function DashboardPage() {
           </h1>
           <p className="text-gray-400 text-sm">Manage your translation projects</p>
         </div>
-        <div>
+        <div className="flex items-center gap-4">
           <CreateProjectDialog />
+          <UserNav />
         </div>
       </div>
       <ProjectList />

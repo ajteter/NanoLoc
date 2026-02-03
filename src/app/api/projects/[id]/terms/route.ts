@@ -5,11 +5,12 @@ import { z } from 'zod';
 
 const createTermSchema = z.object({
     stringName: z.string().min(1),
-    values: z.record(z.string()).optional(), // languageCode -> content
+    values: z.record(z.string(), z.string()).optional(), // languageCode -> content
     remarks: z.string().optional(),
 });
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+    // 1. Auth check
     const session = await auth();
     if (!session?.user?.email) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -69,7 +70,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user?.email) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

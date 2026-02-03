@@ -19,20 +19,12 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        include: {
-            projects: {
-                orderBy: { updatedAt: 'desc' }
-            }
-        }
+    // Global access: Fetch all projects
+    const projects = await prisma.project.findMany({
+        orderBy: { updatedAt: 'desc' }
     });
 
-    if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ projects: user.projects });
+    return NextResponse.json({ projects });
 }
 
 export async function POST(request: Request) {
