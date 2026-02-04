@@ -4,7 +4,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./prisma_data:/app/prisma/data
+      - ./data:/app/prisma/data
     environment:
       - DATABASE_URL=file:/app/prisma/data/dev.db
       - NEXTAUTH_SECRET=changeme

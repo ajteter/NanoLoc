@@ -1,10 +1,6 @@
 #!/bin/sh
 set -e
-
-# Run migrations to ensure DB is up to date
-echo "Deploying migrations..."
+echo "🚀 Running database migrations..."
 npx prisma migrate deploy
-
-# Start the application
-echo "Starting server..."
+echo "✅ Starting NanoLoc server..."
 exec node server.js
