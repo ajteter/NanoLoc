@@ -105,24 +105,29 @@ For a detailed breakdown of all features, please see [Feature Documentation](./F
 - **AI Assist**: Click the "Wand" icon in any target language cell.
 - **Batch Translate**: Click the purple **"Batch Translate"** button in the header. It will find all empty fields and translate them in the background.
 
-## 🐳 Docker Deployment
+## 🐳 Docker Deployment (Production Ready)
 
-A `Dockerfile` is included for containerized deployment.
+NanoLoc includes a production-ready Docker setup with SQLite persistence.
 
-1.  **Build Image**
-    ```bash
-    docker build -t nanoloc .
-    ```
+### Prerequisites
+- Docker & Docker Compose installed
 
-2.  **Run Container**
-    ```bash
-    docker run -p 3000:3000 \
-      -e AUTH_SECRET="your-secret" \
-      -e DATABASE_URL="file:/app/data/dev.db" \
-      -v $(pwd)/data:/app/data \
-      nanoloc
-    ```
-    *(Note: For production, setting up a persistent volume for SQLite or connecting to an external Postgres DB is recommended.)*
+### **One-Click Deployment**
+Simply run the included deploy script. It handles permissions, secrets generation, and database volume setup automatically.
+
+```bash
+./deploy.sh
+```
+
+**What this script does:**
+1. ✅ Checks/Creates `.env` from template.
+2. 🔑 Generates a secure `AUTH_SECRET` if missing.
+3. 📁 Creates `./data` directory with correct permissions.
+4. 🚀 Builds and starts the container on port `3000`.
+
+Your data will be persisted in `./data` on the host machine.
+
+
 
 ## 📄 License
 

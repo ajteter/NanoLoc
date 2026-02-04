@@ -1,14 +1,18 @@
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+# Install OpenSSL (required for Prisma)
+RUN apt-get update -y && apt-get install -y openssl
+
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci
+COPY prisma ./prisma
+# Delete lockfile to force resolution of Linux bindings (fix for lightningcss/Tailwind v4 on ARM64)
+RUN rm -f package-lock.json
+RUN npm install
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -23,16 +27,16 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production image, copy all the files and run next
-# Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED 1
 
-# Install openssl for Prisma and su-exec for user switching
-RUN apk add --no-cache openssl su-exec
+# Install openssl for Prisma and gosu for user switching
+RUN apt-get update -y && apt-get install -y openssl gosu && rm -rf /var/lib/apt/lists/*
+
+# Install Prisma globally (needed for migrations in production)
+RUN npm install -g prisma@6.19.2
 
 # Don't run as root
 RUN addgroup --system --gid 1001 nodejs
@@ -45,7 +49,6 @@ RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy prisma schema/migrations for deployment
@@ -56,13 +59,9 @@ COPY --from=builder /app/scripts/start.sh ./scripts/start.sh
 # Grant execute permission and fix CRLF (Windows) line endings
 RUN chmod +x ./scripts/start.sh && sed -i 's/\r$//' ./scripts/start.sh
 
-# Run as root initially to fix permissions, then switch to nextjs in entrypoint
-# USER nextjs
-
 EXPOSE 3000
 
 ENV PORT 3000
-# set hostname to localhost
 ENV HOSTNAME "0.0.0.0"
 
 CMD ["./scripts/start.sh"]

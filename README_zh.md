@@ -104,24 +104,29 @@ NanoLoc 是一个轻量级、格式无关的本地化 (i18n) 管理平台，旨�
 - **AI 辅助**：点击任何目标语言单元格中的 "Wand" (魔术棒) 图标。
 - **批量翻译**：点击顶部的紫色 **"Batch Translate"** 按钮。它将在后台找到所有空字段并进行翻译。
 
-## 🐳 Docker 部署
+## 🐳 Docker 部署 (生产可用)
 
-包含用于容器化部署的 `Dockerfile`。
+NanoLoc 内置了生产就绪的 Docker 配置，支持 SQLite 数据持久化。
 
-1.  **构建镜像**
-    ```bash
-    docker build -t nanoloc .
-    ```
+### 前置要求
+- 已安装 Docker 和 Docker Compose
 
-2.  **运行容器**
-    ```bash
-    docker run -p 3000:3000 \
-      -e AUTH_SECRET="your-secret" \
-      -e DATABASE_URL="file:/app/data/dev.db" \
-      -v $(pwd)/data:/app/data \
-      nanoloc
-    ```
-    *(注意：生产环境建议为 SQLite 设置持久化卷或连接到外部 Postgres 数据库。)*
+### **一键部署**
+直接运行内置的部署脚本，它会自动处理权限、密钥生成和数据目录挂载。
+
+```bash
+./deploy.sh
+```
+
+**脚本功能：**
+1. ✅ 检查/创建 `.env` 配置文件。
+2. 🔑 如果缺失，自动生成安全的 `AUTH_SECRET`。
+3. 📁 创建 `./data` 持久化目录并设置正确权限。
+4. 🚀 构建并启动容器，监听 `3000` 端口。
+
+您的所有数据将持久化保存在主机上的 `./data` 目录中。
+
+
 
 ## 📄 许可证
 

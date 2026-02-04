@@ -9,8 +9,16 @@ chown -R nextjs:nodejs /app/prisma/data
 
 # 2. Run Migrations (As nextjs user)
 echo "🚀 Running database migrations..."
-su-exec nextjs npx prisma migrate deploy
+if command -v gosu >/dev/null 2>&1; then
+    gosu nextjs prisma migrate deploy
+else
+    su nextjs -c "prisma migrate deploy"
+fi
 
 # 3. Start Server (As nextjs user)
 echo "✅ Starting NanoLoc server as nextjs user..."
-exec su-exec nextjs node server.js
+if command -v gosu >/dev/null 2>&1; then
+    exec gosu nextjs node server.js
+else
+    exec su nextjs -c "node server.js"
+fi
