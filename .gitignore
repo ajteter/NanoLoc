@@ -8,10 +8,10 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+# build/
 develop-eggs/
-dist/
-downloads/
+# dist/
+# downloads/
 eggs/
 .eggs/
 # lib/
@@ -73,7 +73,7 @@ docs/_build/
 
 # PyBuilder
 .pybuilder/
-target/
+# target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
