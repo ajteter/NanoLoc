@@ -27,34 +27,28 @@ function RegisterForm() {
 
         const result = await register(undefined, formData);
 
-        if (result && result.startsWith && result.startsWith('Error:')) {
-            // Basic error string handling based on current assumption of action return
+        if (result && typeof result === 'string') {
             toast.error(result);
-        } else if (result) {
-            // If it returns a string that is an error
-            toast.error(result);
-        } else {
-            // Success (undefined return usually means void/success in simple actions, but let's be careful)
-            // Wait, standard server actions return data. 
-            // Let's try to sign in.
-
-            toast.message('Account created', {
-                description: 'Logging you in...',
-            });
-
-            const res = await signIn('credentials', {
-                email,
-                password,
-                redirect: false,
-            });
-
-            if (res?.error) {
-                toast.error('Login failed after registration. Please sign in manually.');
-                router.push('/login');
-            } else {
-                router.push('/projects');
-            }
+            return;
         }
+
+        // 注册成功：提示并自动登录后跳转首页
+        toast.success('注册成功', {
+            description: '正在为您登录…',
+        });
+
+        const res = await signIn('credentials', {
+            email,
+            password,
+            redirect: false,
+        });
+
+        if (res?.error) {
+            toast.error('注册成功，但自动登录失败，请手动登录');
+            router.push('/login');
+            return;
+        }
+        router.push('/');
     };
 
     return (

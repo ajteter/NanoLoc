@@ -58,24 +58,7 @@ export async function register(prevState: string | undefined, formData: FormData
         return 'Failed to create user.';
     }
 
-    // Redirect happens via redirect() from 'next/navigation' usually in server actions,
-    // or we can sign them in directly. 
-    // For now let's try signing them in, or just returning logical success?
-    // The form expects a string error or undefined.
-    // If successful, we can redirect.
-
-    try {
-        await signIn('credentials', formData);
-    } catch (error) {
-        if (error instanceof AuthError) {
-            switch (error.type) {
-                case 'CredentialsSignin':
-                    return 'Something went wrong logging in after registration.';
-                default:
-                    // Redirects throw errors in next-auth v5 sometimes, so we rethrow
-                    throw error;
-            }
-        }
-        throw error;
-    }
+    // 不在 server action 内 signIn，否则 NextAuth 的 redirect 会抛错导致客户端收不到返回值。
+    // 由注册页在客户端完成登录并跳转。
+    return undefined;
 }
