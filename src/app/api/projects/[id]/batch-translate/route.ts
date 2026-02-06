@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { canEditProject, getSessionUserId } from '@/lib/project-access';
 import { getProjectAIConfig } from '@/lib/ai/config';
 import { BRClient } from '@/lib/ai/br-client';
 
@@ -14,15 +15,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const { id } = await params;
 
-    // 1. Verify Access
+    // 1. Verify edit access (public: anyone; private: only owner)
     const project = await prisma.project.findUnique({
         where: { id },
         include: { users: { select: { email: true, id: true } } }
     });
 
     if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const user = project.users.find(u => u.email === session.user?.email);
-    if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const currentUserId = await getSessionUserId(session);
+    if (!canEditProject(project, currentUserId)) return NextResponse.json({ error: "Forbidden: only owner can edit private project" }, { status: 403 });
+    if (!currentUserId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // 2. Parse Target Languages
     let targetLanguages: string[] = [];
@@ -110,13 +112,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                                 },
                                 update: {
                                     content: translatedText,
-                                    lastModifiedById: user.id
+                                    lastModifiedById: currentUserId
                                 },
                                 create: {
                                     translationKeyId: item.keyId,
                                     languageCode: lang,
                                     content: translatedText,
-                                    lastModifiedById: user.id
+                                    lastModifiedById: currentUserId
                                 }
                             });
                         }).filter((p): p is any => p !== null)

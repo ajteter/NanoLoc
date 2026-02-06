@@ -8,6 +8,7 @@ const createProjectSchema = z.object({
     description: z.string().optional(),
     baseLanguage: z.string().default('en-US'),
     targetLanguages: z.array(z.string()).default([]),
+    visibility: z.enum(['public', 'private']).default('public'),
     aiBaseUrl: z.string().optional(),
     aiApiKey: z.string().optional(),
     aiModelId: z.string().optional(),
@@ -42,7 +43,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: result.error.issues }, { status: 400 });
         }
 
-        const { name, description, baseLanguage, targetLanguages, aiBaseUrl, aiApiKey, aiModelId, systemPrompt } = result.data;
+        const { name, description, baseLanguage, targetLanguages, visibility, aiBaseUrl, aiApiKey, aiModelId, systemPrompt } = result.data;
+
+        const dbUser = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } });
+        if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 401 });
 
         const project = await prisma.project.create({
             data: {
@@ -50,6 +54,8 @@ export async function POST(request: Request) {
                 description,
                 baseLanguage,
                 targetLanguages: JSON.stringify(targetLanguages),
+                visibility: visibility ?? 'public',
+                ownerId: dbUser.id,
                 aiBaseUrl,
                 aiApiKey,
                 aiModelId,

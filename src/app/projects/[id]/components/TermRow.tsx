@@ -14,9 +14,11 @@ interface TermRowProps {
     projectId: string;
     baseLanguage: string;
     targetLanguages: string[];
+    /** When false, hide edit/delete and single-term translate (view-only) */
+    canEdit?: boolean;
 }
 
-export function TermRow({ term, projectId, baseLanguage, targetLanguages }: TermRowProps) {
+export function TermRow({ term, projectId, baseLanguage, targetLanguages, canEdit = true }: TermRowProps) {
     const [isEditing, setIsEditing] = useState(false);
     const queryClient = useQueryClient();
     const [formData, setFormData] = useState({
@@ -230,45 +232,45 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
     return (
         <tr className="hover:bg-gray-800/50 transition-colors group border-b border-gray-800 last:border-0 relative">
             <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 align-top border-r border-gray-800 bg-gray-900 group-hover:bg-gray-800 transition-colors sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[100px] min-w-[100px]">
-                <div className="flex gap-1 opacity-100 transition-opacity">
-                    <Button
-                        variant="ghost" size="icon"
-                        onClick={() => setIsEditing(true)}
-                        className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-400/10"
-                        title="Edit"
-                    >
-                        <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                        variant="ghost" size="icon"
-                        onClick={() => {
-                            if (confirm('Translate this row? This will translate all empty fields.')) {
-                                targetLanguages.forEach(lang => {
-                                    // Check formData (current state) or term values (persisted)
-                                    // Since we are in view mode, term.values should be up to date unless we just edited (but edit mode handles that)
-                                    // EXCEPT: If we rely on Optimistic UI, term might be stale? 
-                                    // Actually, if we are VIEWING, we should check term.values.
-                                    const val = term.values.find(v => v.languageCode === lang)?.content;
-                                    if (!val) handleTranslate(lang);
-                                });
-                            }
-                        }}
-                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
-                        title="Translate Row"
-                    >
-                        <Wand2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                        variant="ghost" size="icon"
-                        onClick={() => {
-                            if (confirm('Delete this term?')) deleteMutation.mutate();
-                        }}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                        title="Delete"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </Button>
-                </div>
+                {canEdit ? (
+                    <div className="flex gap-1 opacity-100 transition-opacity">
+                        <Button
+                            variant="ghost" size="icon"
+                            onClick={() => setIsEditing(true)}
+                            className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-400/10"
+                            title="Edit"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                            variant="ghost" size="icon"
+                            onClick={() => {
+                                if (confirm('Translate this row? This will translate all empty fields.')) {
+                                    targetLanguages.forEach(lang => {
+                                        const val = term.values.find(v => v.languageCode === lang)?.content;
+                                        if (!val) handleTranslate(lang);
+                                    });
+                                }
+                            }}
+                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                            title="Translate Row"
+                        >
+                            <Wand2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                            variant="ghost" size="icon"
+                            onClick={() => {
+                                if (confirm('Delete this term?')) deleteMutation.mutate();
+                            }}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                            title="Delete"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
+                    </div>
+                ) : (
+                    <span className="text-gray-500">—</span>
+                )}
             </td>
             <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6 max-w-xs break-all truncate align-top border-r border-gray-800 bg-gray-900 group-hover:bg-gray-800 transition-colors sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]">
                 <div className="truncate" title={term.stringName}>{term.stringName}</div>

@@ -17,7 +17,10 @@ export default function CreateProjectPage() {
             const res = await fetch('/api/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
+                body: JSON.stringify({
+                    ...data,
+                    visibility: data.visibility ?? 'public',
+                }),
             });
 
             if (!res.ok) {

@@ -10,7 +10,7 @@ import { CreateTermRow } from './components/CreateTermRow';
 import { BatchTranslateButton } from './components/BatchTranslateButton';
 // import { EditProjectDialog } from '@/components/EditProjectDialog'; // Deleted
 import { UserNav } from '@/components/UserNav';
-import { Search, Upload, Plus, ChevronLeft, ChevronRight, Home, X, ChevronsLeft, ChevronsRight, Wand2, Settings, Loader2 } from 'lucide-react';
+import { Search, Upload, Plus, ChevronLeft, ChevronRight, Home, X, ChevronsLeft, ChevronsRight, Wand2, Settings, Loader2, Globe, Lock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -51,7 +51,7 @@ export default function ProjectDetailPage() {
     const isTranslating = mutationCount > 0;
 
     // Fetch Project Info
-    const { data: projectData, isLoading: isLoadingProject, isError: isProjectError, error: projectError } = useQuery<{ project: Project }>({
+    const { data: projectData, isLoading: isLoadingProject, isError: isProjectError, error: projectError } = useQuery<{ project: Project; canEdit: boolean }>({
         queryKey: ['project', projectId],
         queryFn: async () => {
             const res = await fetch(`/api/projects/${projectId}`);
@@ -77,6 +77,7 @@ export default function ProjectDetailPage() {
     });
 
     const project = projectData?.project;
+    const canEdit = projectData?.canEdit ?? false;
     // Assuming targetLanguages is a JSON string of array
     const targetLangs = project?.targetLanguages ? JSON.parse(project.targetLanguages) : [];
 
@@ -184,6 +185,12 @@ export default function ProjectDetailPage() {
                         <Badge variant="outline" className="text-gray-400 border-gray-600">
                             {project?.baseLanguage || 'en-US'}
                         </Badge>
+                        {project && (
+                            <Badge variant="outline" className={project.visibility === 'private' ? 'text-amber-400 border-amber-500/50' : 'text-indigo-400 border-indigo-500/50'}>
+                                {project.visibility === 'private' ? <Lock className="h-3 w-3 mr-1" /> : <Globe className="h-3 w-3 mr-1" />}
+                                {project.visibility === 'private' ? 'Private' : 'Public'}
+                            </Badge>
+                        )}
                         <Button variant="outline" size="sm" asChild className="text-gray-300 border-gray-600 hover:bg-gray-800 hover:text-white gap-2">
                             <Link href={`/projects/${projectId}/settings`}>
                                 <Settings className="h-4 w-4" />
@@ -202,31 +209,35 @@ export default function ProjectDetailPage() {
                         onChange={handleFileUpload}
                     />
 
-                    <Button
-                        variant="secondary"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={importMutation.isPending}
-                    >
-                        <Upload className="h-4 w-4 mr-2" />
-                        {importMutation.isPending ? 'Importing...' : 'Import XML'}
-                    </Button>
+                    {canEdit && (
+                        <Button
+                            variant="secondary"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={importMutation.isPending}
+                        >
+                            <Upload className="h-4 w-4 mr-2" />
+                            {importMutation.isPending ? 'Importing...' : 'Import XML'}
+                        </Button>
+                    )}
                     <Button
                         variant="secondary"
                         asChild
                     >
                         <Link href={`/api/projects/${projectId}/export`} target="_blank">
-                            <Upload className="h-4 w-4 mr-2 rotate-180" /> {/* Reuse upload icon but rotated for download logic visual */}
+                            <Upload className="h-4 w-4 mr-2 rotate-180" />
                             Export CSV
                         </Link>
                     </Button>
-                    <BatchTranslateButton projectId={projectId} targetLanguages={targetLangs} />
-                    <Button
-                        onClick={() => setIsCreating(true)}
-                        className="bg-indigo-600 hover:bg-indigo-500 text-white"
-                    >
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Term
-                    </Button>
+                    {canEdit && <BatchTranslateButton projectId={projectId} targetLanguages={targetLangs} />}
+                    {canEdit && (
+                        <Button
+                            onClick={() => setIsCreating(true)}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            New Term
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -332,22 +343,24 @@ export default function ProjectDetailPage() {
                                             <span className="truncate" title={getLangDisplay(lang)}>
                                                 {getLangDisplay(lang)}
                                             </span>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-6 w-6 text-indigo-400 hover:text-indigo-300 shrink-0"
-                                                onClick={() => handleColumnTranslate(lang)}
-                                                title={`Translate all missing ${lang}`}
-                                            >
-                                                <Wand2 className="h-3 w-3" />
-                                            </Button>
+                                            {canEdit && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 text-indigo-400 hover:text-indigo-300 shrink-0"
+                                                    onClick={() => handleColumnTranslate(lang)}
+                                                    title={`Translate all missing ${lang}`}
+                                                >
+                                                    <Wand2 className="h-3 w-3" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </TableHead>
                                 ))}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isCreating && (
+                            {isCreating && canEdit && (
                                 <CreateTermRow
                                     projectId={projectId}
                                     baseLanguage={project?.baseLanguage || 'en-US'}
@@ -376,6 +389,7 @@ export default function ProjectDetailPage() {
                                         projectId={projectId}
                                         baseLanguage={project?.baseLanguage || 'en-US'}
                                         targetLanguages={targetLangs}
+                                        canEdit={canEdit}
                                     />
                                 ))
                             )}

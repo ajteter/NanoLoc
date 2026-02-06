@@ -15,8 +15,8 @@ export default function ProjectSettingsPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    // Fetch Project
-    const { data: projectData, isLoading, isError } = useQuery<{ project: Project }>({
+    // Fetch Project (includes canEdit for visibility/edit permission)
+    const { data: projectData, isLoading, isError } = useQuery<{ project: Project; canEdit: boolean }>({
         queryKey: ['project', projectId],
         queryFn: async () => {
             const res = await fetch(`/api/projects/${projectId}`);
@@ -26,6 +26,7 @@ export default function ProjectSettingsPage() {
     });
 
     const project = projectData?.project;
+    const canEdit = projectData?.canEdit ?? false;
 
     // Update Mutation
     const updateMutation = useMutation({
@@ -89,8 +90,9 @@ export default function ProjectSettingsPage() {
         description: project.description || '',
         baseLanguage: project.baseLanguage,
         targetLanguages: JSON.parse(project.targetLanguages || '[]'),
+        visibility: (project.visibility === 'private' ? 'private' : 'public') as 'public' | 'private',
         aiBaseUrl: project.aiBaseUrl || '',
-        aiApiKey: project.aiApiKey || '', // Display masked key if exists
+        aiApiKey: project.aiApiKey || '',
         aiModelId: project.aiModelId || '',
         systemPrompt: project.systemPrompt || '',
     };
@@ -110,6 +112,12 @@ export default function ProjectSettingsPage() {
                 </div>
             </div>
 
+            {!canEdit && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-200 text-sm mb-6">
+                    This project is private. Only the owner can change settings or delete it.
+                </div>
+            )}
+
             <div className="grid gap-8">
                 <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 sm:p-8">
                     <ProjectForm
@@ -117,21 +125,25 @@ export default function ProjectSettingsPage() {
                         onSubmit={(data) => updateMutation.mutate(data)}
                         isSubmitting={updateMutation.isPending}
                         submitLabel="Save Changes"
+                        visibilityReadOnly={!canEdit}
+                        formReadOnly={!canEdit}
                     />
                 </div>
 
-                <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-6 sm:p-8">
-                    <h3 className="text-lg font-medium text-red-400 mb-2">Danger Zone</h3>
-                    <p className="text-gray-400 text-sm mb-4">Deleting this project will permanently remove all terms and translations.</p>
-                    <Button
-                        variant="destructive"
-                        onClick={handleDelete}
-                        disabled={deleteMutation.isPending}
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        {deleteMutation.isPending ? 'Deleting...' : 'Delete Project'}
-                    </Button>
-                </div>
+                {canEdit && (
+                    <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-6 sm:p-8">
+                        <h3 className="text-lg font-medium text-red-400 mb-2">Danger Zone</h3>
+                        <p className="text-gray-400 text-sm mb-4">Deleting this project will permanently remove all terms and translations.</p>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDelete}
+                            disabled={deleteMutation.isPending}
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {deleteMutation.isPending ? 'Deleting...' : 'Delete Project'}
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );

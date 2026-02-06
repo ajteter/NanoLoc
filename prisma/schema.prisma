@@ -15,17 +15,23 @@ model User {
   name          String?
   createdAt     DateTime  @default(now())
   
-  projects      Project[] 
+  projects      Project[]
+  ownedProjects Project[] @relation("ProjectOwner")
   
   // Audit relations
   modifiedKeys    TranslationKey[]   @relation("KeyModifiers")
-  modifiedValues  TranslationValue[] @relation("ValueModifiers")
+  modifiedValues  TranslationValue[]  @relation("ValueModifiers")
 }
 
 model Project {
   id               String   @id @default(cuid())
   name             String
   description      String?
+  
+  // Visibility: public = anyone can view & edit; private = all can view, only owner can edit
+  visibility       String   @default("public") // "public" | "private"
+  ownerId          String?
+  owner            User?    @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   
   // Config
   baseLanguage     String   @default("en-US")

@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/UserNav';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Globe, Lock } from 'lucide-react';
 
 function ProjectList() {
   const { data, isLoading, error } = useQuery<{ projects: Project[] }>({
@@ -56,11 +56,17 @@ function ProjectList() {
         <Link key={project.id} href={`/projects/${project.id}`} className="block transition-transform hover:scale-[1.02]">
           <Card className="bg-gray-800 border-gray-700 hover:border-indigo-500 hover:shadow-lg transition-all h-full">
             <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-white text-lg">{project.name}</CardTitle>
-                <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
-                  {project.baseLanguage}
-                </Badge>
+              <div className="flex justify-between items-start gap-2">
+                <CardTitle className="text-white text-lg truncate flex-1 min-w-0">{project.name}</CardTitle>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
+                    {project.visibility === 'private' ? <Lock className="h-3 w-3 mr-0.5" /> : <Globe className="h-3 w-3 mr-0.5" />}
+                    {project.visibility === 'private' ? 'Private' : 'Public'}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
+                    {project.baseLanguage}
+                  </Badge>
+                </div>
               </div>
               <CardDescription className="text-gray-400 line-clamp-2 min-h-[2.5rem]">
                 {project.description || "No description"}

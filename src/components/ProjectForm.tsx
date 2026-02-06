@@ -8,13 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LANGUAGES } from '@/lib/constants/languages';
-import { Search, Eye, EyeOff } from 'lucide-react';
+import { Search, Eye, EyeOff, Globe, Lock } from 'lucide-react';
+import type { ProjectVisibility } from '@/types';
 
 interface ProjectFormData {
     name: string;
     description: string;
     baseLanguage: string;
     targetLanguages: string[];
+    visibility: ProjectVisibility;
     aiBaseUrl: string;
     aiApiKey: string;
     aiModelId: string;
@@ -26,14 +28,19 @@ interface ProjectFormProps {
     onSubmit: (data: ProjectFormData) => void;
     isSubmitting: boolean;
     submitLabel: string;
+    /** When true, visibility field is read-only (e.g. non-owner on private project) */
+    visibilityReadOnly?: boolean;
+    /** When true, entire form is read-only (no submit, disabled inputs) */
+    formReadOnly?: boolean;
 }
 
-export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }: ProjectFormProps) {
+export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel, visibilityReadOnly, formReadOnly }: ProjectFormProps) {
     const [formData, setFormData] = useState<ProjectFormData>({
         name: '',
         description: '',
         baseLanguage: 'en-US',
         targetLanguages: [],
+        visibility: 'public',
         aiBaseUrl: 'https://d106f995v5mndm.cloudfront.net', // Default
         aiApiKey: '',
         aiModelId: 'claude-4-5-sonnet', // Default
@@ -46,6 +53,7 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (formReadOnly) return;
         onSubmit(formData);
     };
 
@@ -76,12 +84,48 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
 
                 <div className="grid gap-2">
                     <Label htmlFor="name">Project Name</Label>
-                    <Input id="name" name="name" value={formData.name} onChange={handleChange} required className="bg-gray-800 border-gray-700" placeholder="e.g. My Website" />
+                    <Input id="name" name="name" value={formData.name} onChange={handleChange} required disabled={formReadOnly} className="bg-gray-800 border-gray-700" placeholder="e.g. My Website" />
                 </div>
 
                 <div className="grid gap-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea id="description" name="description" value={formData.description} onChange={handleChange} className="bg-gray-800 border-gray-700" placeholder="Briefly describe your project..." />
+                    <Textarea id="description" name="description" value={formData.description} onChange={handleChange} disabled={formReadOnly} className="bg-gray-800 border-gray-700" placeholder="Briefly describe your project..." />
+                </div>
+
+                <div className="grid gap-2">
+                    <Label>Visibility</Label>
+                    <div className="flex flex-wrap gap-4">
+                        <label className={`flex flex-col gap-1 cursor-pointer rounded-lg border px-4 py-3 min-w-[140px] transition-colors ${formData.visibility === 'public' ? 'border-indigo-500 bg-indigo-500/10' : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'} ${visibilityReadOnly ? 'opacity-80 cursor-not-allowed' : ''}`}>
+                            <input
+                                type="radio"
+                                name="visibility"
+                                value="public"
+                                checked={formData.visibility === 'public'}
+                                onChange={() => !visibilityReadOnly && !formReadOnly && setFormData(prev => ({ ...prev, visibility: 'public' }))}
+                                disabled={visibilityReadOnly || formReadOnly}
+                                className="sr-only"
+                            />
+                            <span className="flex items-center gap-2 text-sm font-medium">
+                                <Globe className="h-4 w-4 text-indigo-400" /> Public
+                            </span>
+                            <span className="text-xs text-gray-400">所有人可见、可修改</span>
+                        </label>
+                        <label className={`flex flex-col gap-1 cursor-pointer rounded-lg border px-4 py-3 min-w-[140px] transition-colors ${formData.visibility === 'private' ? 'border-amber-500/60 bg-amber-500/10' : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'} ${visibilityReadOnly ? 'opacity-80 cursor-not-allowed' : ''}`}>
+                            <input
+                                type="radio"
+                                name="visibility"
+                                value="private"
+                                checked={formData.visibility === 'private'}
+                                onChange={() => !visibilityReadOnly && !formReadOnly && setFormData(prev => ({ ...prev, visibility: 'private' }))}
+                                disabled={visibilityReadOnly || formReadOnly}
+                                className="sr-only"
+                            />
+                            <span className="flex items-center gap-2 text-sm font-medium">
+                                <Lock className="h-4 w-4 text-amber-400" /> Private
+                            </span>
+                            <span className="text-xs text-gray-400">所有人可见，仅自己可修改</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -90,7 +134,7 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
 
                 <div className="grid gap-2 max-w-sm">
                     <Label htmlFor="baseLanguage">Base Language</Label>
-                    <Input id="baseLanguage" name="baseLanguage" value={formData.baseLanguage} onChange={handleChange} className="bg-gray-800 border-gray-700" />
+                    <Input id="baseLanguage" name="baseLanguage" value={formData.baseLanguage} onChange={handleChange} disabled={formReadOnly} className="bg-gray-800 border-gray-700" />
                     <p className="text-xs text-gray-400">The primary language of your application (usually en-US).</p>
                 </div>
 
@@ -104,6 +148,7 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                                     placeholder="Search languages..."
                                     value={languageSearch}
                                     onChange={(e) => setLanguageSearch(e.target.value)}
+                                    disabled={formReadOnly}
                                     className="pl-9 bg-gray-900 border-gray-600"
                                 />
                             </div>
@@ -112,6 +157,7 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                                     type="button"
                                     variant="secondary"
                                     size="sm"
+                                    disabled={formReadOnly}
                                     onClick={() => {
                                         const common = LANGUAGES
                                             .filter(l => l.isCommon && l.code !== formData.baseLanguage)
@@ -131,6 +177,7 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                                     type="button"
                                     variant="outline"
                                     size="sm"
+                                    disabled={formReadOnly}
                                     onClick={() => setFormData(prev => ({ ...prev, targetLanguages: [] }))}
                                     className="whitespace-nowrap border-gray-600 text-gray-300 hover:text-white hover:bg-gray-800"
                                 >
@@ -148,7 +195,7 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                                             id={`lang-${lang.code}`}
                                             checked={isBase || formData.targetLanguages.includes(lang.code)}
                                             onCheckedChange={() => !isBase && toggleLanguage(lang.code)}
-                                            disabled={isBase}
+                                            disabled={isBase || formReadOnly}
                                             className="mt-1"
                                         />
                                         <div className="grid gap-0.5 leading-none">
@@ -178,11 +225,13 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                             {formData.targetLanguages.map(code => (
                                 <Badge key={code} variant="secondary" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20">
                                     {LANGUAGES.find(l => l.code === code)?.name || code}
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleLanguage(code)}
-                                        className="ml-1 hover:text-white"
-                                    >×</button>
+                                    {!formReadOnly && (
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleLanguage(code)}
+                                            className="ml-1 hover:text-white"
+                                        >×</button>
+                                    )}
                                 </Badge>
                             ))}
                         </div>
@@ -196,11 +245,11 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="grid gap-2">
                         <Label htmlFor="aiBaseUrl">Base URL</Label>
-                        <Input id="aiBaseUrl" name="aiBaseUrl" value={formData.aiBaseUrl} onChange={handleChange} className="bg-gray-800 border-gray-700" placeholder="https://api.openai.com/v1" />
+                        <Input id="aiBaseUrl" name="aiBaseUrl" value={formData.aiBaseUrl} onChange={handleChange} disabled={formReadOnly} className="bg-gray-800 border-gray-700" placeholder="https://api.openai.com/v1" />
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="aiModelId">Model ID</Label>
-                        <Input id="aiModelId" name="aiModelId" value={formData.aiModelId} onChange={handleChange} className="bg-gray-800 border-gray-700" placeholder="gpt-4" />
+                        <Input id="aiModelId" name="aiModelId" value={formData.aiModelId} onChange={handleChange} disabled={formReadOnly} className="bg-gray-800 border-gray-700" placeholder="gpt-4" />
                     </div>
                 </div>
 
@@ -213,6 +262,7 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                             type={showApiKey ? "text" : "password"}
                             value={formData.aiApiKey}
                             onChange={handleChange}
+                            disabled={formReadOnly}
                             className="bg-gray-800 border-gray-700 pr-10"
                             placeholder="sk-..."
                         />
@@ -234,17 +284,20 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                         name="systemPrompt"
                         value={formData.systemPrompt}
                         onChange={handleChange}
+                        disabled={formReadOnly}
                         placeholder="Customize the system prompt for AI translation..."
                         className="bg-gray-800 border-gray-700 min-h-[100px]"
                     />
                 </div>
             </div>
 
-            <div className="pt-4 pb-12">
-                <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white min-w-[150px]">
-                    {isSubmitting ? 'Saving...' : submitLabel}
-                </Button>
-            </div>
+            {!formReadOnly && (
+                <div className="pt-4 pb-12">
+                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white min-w-[150px]">
+                        {isSubmitting ? 'Saving...' : submitLabel}
+                    </Button>
+                </div>
+            )}
         </form>
     );
 }

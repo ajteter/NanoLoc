@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { canEditProject, getSessionUserId } from '@/lib/project-access';
 import { z } from 'zod';
 
 const updateProjectSchema = z.object({
@@ -8,6 +9,7 @@ const updateProjectSchema = z.object({
     description: z.string().optional(),
     baseLanguage: z.string().optional(),
     targetLanguages: z.array(z.string()).optional(),
+    visibility: z.enum(['public', 'private']).optional(),
     aiBaseUrl: z.string().optional(),
     aiApiKey: z.string().optional(),
     aiModelId: z.string().optional(),
@@ -24,20 +26,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const project = await prisma.project.findUnique({
         where: { id },
-        include: { users: { select: { email: true } } }
+        include: { users: { select: { email: true } }, owner: { select: { id: true, email: true } } }
     });
 
     if (!project) {
         return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    // Global access allowed for reading
-    // const hasAccess = project.users.some(u => u.email === session.user?.email);
-    // if (!hasAccess) {
-    //    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // }
+    const currentUserId = await getSessionUserId(session);
+    const canEdit = canEditProject(project, currentUserId);
 
-    return NextResponse.json({ project });
+    return NextResponse.json({ project, canEdit });
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -54,8 +53,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         });
 
         if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
-        const hasAccess = project.users.some(u => u.email === session.user?.email);
-        if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        const currentUserId = await getSessionUserId(session);
+        if (!canEditProject(project, currentUserId)) return NextResponse.json({ error: "Forbidden: only owner can edit private project" }, { status: 403 });
 
         const body = await request.json();
         const result = updateProjectSchema.safeParse(body);
@@ -95,8 +94,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     });
 
     if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const hasAccess = project.users.some(u => u.email === session.user?.email);
-    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const currentUserId = await getSessionUserId(session);
+    if (!canEditProject(project, currentUserId)) return NextResponse.json({ error: "Forbidden: only owner can delete this project" }, { status: 403 });
 
     await prisma.project.delete({ where: { id } });
 

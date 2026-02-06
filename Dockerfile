@@ -30,7 +30,7 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Install openssl for Prisma and gosu for user switching
 RUN apt-get update -y && apt-get install -y openssl gosu && rm -rf /var/lib/apt/lists/*
@@ -61,7 +61,7 @@ RUN chmod +x ./scripts/start.sh && sed -i 's/\r$//' ./scripts/start.sh
 
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 CMD ["./scripts/start.sh"]

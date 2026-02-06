@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { canEditProject, getSessionUserId } from '@/lib/project-access';
 import { z } from 'zod';
 
 const createTermSchema = z.object({
@@ -18,15 +19,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const { id } = await params;
 
-    // Verify access
+    // Verify edit access (public: anyone; private: only owner)
     const project = await prisma.project.findUnique({
         where: { id },
         include: { users: { select: { email: true, id: true } } }
     });
 
     if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const user = project.users.find(u => u.email === session.user?.email);
-    if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const currentUserId = await getSessionUserId(session);
+    if (!canEditProject(project, currentUserId)) return NextResponse.json({ error: "Forbidden: only owner can edit private project" }, { status: 403 });
+    if (!currentUserId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
         const body = await request.json();
@@ -52,12 +54,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 projectId: id,
                 stringName,
                 remarks,
-                lastModifiedById: user.id, // Audit
+                lastModifiedById: currentUserId, // Audit
                 values: {
                     create: values ? Object.entries(values as Record<string, string>).map(([code, content]) => ({
                         languageCode: code,
                         content,
-                        lastModifiedById: user.id // Audit
+                        lastModifiedById: currentUserId // Audit
                     })) : []
                 }
             },
@@ -85,16 +87,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search') || '';
 
-    // Verify access
     const project = await prisma.project.findUnique({
         where: { id },
         include: { users: { select: { email: true } } }
     });
 
     if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const hasAccess = project.users.some(u => u.email === session.user?.email);
-    // Global access allowed
-    // if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // All authenticated users can view terms (public and private projects visible to all)
 
     // Build Filter
     const whereClause: any = {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { canEditProject, getSessionUserId } from '@/lib/project-access';
 import { AndroidXmlParser } from '@/lib/parsers/android-xml';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -11,17 +12,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const { id: projectId } = await params;
 
-    // Verify access
+    // Verify edit access (public: anyone; private: only owner)
     const project = await prisma.project.findUnique({
         where: { id: projectId },
         include: { users: { select: { email: true, id: true } } }
     });
 
     if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const user = project.users.find(u => u.email.toLowerCase() === session.user?.email?.toLowerCase());
-    if (!user) {
-        return NextResponse.json({ error: "Forbidden: User not found in project" }, { status: 403 });
-    }
+    const currentUserId = await getSessionUserId(session);
+    if (!canEditProject(project, currentUserId)) return NextResponse.json({ error: "Forbidden: only owner can edit private project" }, { status: 403 });
+    if (!currentUserId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
         const formData = await request.formData();
@@ -81,7 +81,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                             where: { id: baseValue.id },
                             data: {
                                 content,
-                                lastModifiedById: user.id
+                                lastModifiedById: currentUserId
                             }
                         }));
 
@@ -90,7 +90,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                             where: { id: existingKey.id },
                             data: {
                                 remarks: existingKey.remarks ? existingKey.remarks + "\n" + newRemark : newRemark,
-                                lastModifiedById: user.id
+                                lastModifiedById: currentUserId
                             }
                         }));
                         updated++;
@@ -105,7 +105,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                             translationKeyId: existingKey.id,
                             languageCode: project.baseLanguage,
                             content,
-                            lastModifiedById: user.id
+                            lastModifiedById: currentUserId
                         }
                     }));
                     updated++; // Count as update/add content
@@ -117,12 +117,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                     data: {
                         projectId,
                         stringName,
-                        lastModifiedById: user.id,
+                        lastModifiedById: currentUserId,
                         values: {
                             create: {
                                 languageCode: project.baseLanguage,
                                 content,
-                                lastModifiedById: user.id
+                                lastModifiedById: currentUserId
                             }
                         }
                     }

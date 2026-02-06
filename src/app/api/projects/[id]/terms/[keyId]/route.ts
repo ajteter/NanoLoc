@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { canEditProject, getSessionUserId } from '@/lib/project-access';
 import { z } from 'zod';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
@@ -17,8 +18,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     });
 
     if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    const user = project.users.find(u => u.email === session.user?.email);
-    if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const currentUserId = await getSessionUserId(session);
+    if (!canEditProject(project, currentUserId)) return NextResponse.json({ error: "Forbidden: only owner can edit private project" }, { status: 403 });
+    if (!currentUserId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
         const body = await request.json();
@@ -37,7 +39,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
                     data: {
                         stringName,
                         remarks,
-                        lastModifiedById: user.id // Audit
+                        lastModifiedById: currentUserId // Audit
                     }
                 });
             }
@@ -46,9 +48,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             if (values) {
                 const valuesTyped = values as Record<string, string>;
                 for (const [lang, content] of Object.entries(valuesTyped)) {
-                    // ... (rest is same, using content)
-                    /* ... */
-
                     await tx.translationValue.upsert({
                         where: {
                             translationKeyId_languageCode: {
@@ -58,13 +57,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
                         },
                         update: {
                             content,
-                            lastModifiedById: user.id // Audit 
+                            lastModifiedById: currentUserId // Audit
                         },
                         create: {
                             translationKeyId: keyId,
                             languageCode: lang,
                             content,
-                            lastModifiedById: user.id // Audit
+                            lastModifiedById: currentUserId // Audit
                         }
                     });
                 }
@@ -99,8 +98,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     });
 
     if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    const hasAccess = project.users.some(u => u.email === session.user?.email);
-    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const currentUserId = await getSessionUserId(session);
+    if (!canEditProject(project, currentUserId)) return NextResponse.json({ error: "Forbidden: only owner can edit private project" }, { status: 403 });
 
     try {
         await prisma.translationKey.delete({

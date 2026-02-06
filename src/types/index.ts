@@ -1,9 +1,14 @@
+export type ProjectVisibility = 'public' | 'private';
+
 export interface Project {
     id: string;
     name: string;
     description: string | null;
     baseLanguage: string;
-    targetLanguages: string; // JSON string in DB, need parsing usually, but let's keep it string for simple display or parse it
+    targetLanguages: string;
+    visibility: ProjectVisibility;
+    ownerId: string | null;
+    owner?: { id: string; email: string } | null;
     aiBaseUrl?: string;
     aiApiKey?: string;
     aiModelId?: string;
@@ -16,7 +21,8 @@ export interface ProjectFormData {
     name: string;
     description?: string;
     baseLanguage: string;
-    targetLanguages: string[]; // Array for form
+    targetLanguages: string[];
+    visibility: ProjectVisibility;
     aiBaseUrl?: string;
     aiApiKey?: string;
     aiModelId?: string;
