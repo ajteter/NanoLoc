@@ -1,19 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import Providers from "./providers";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "NanoLoc",
@@ -27,9 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-950 text-white selection:bg-indigo-500/30`}
-      >
+      <body className="antialiased bg-gray-950 text-white selection:bg-indigo-500/30 font-sans">
         <Providers>
           <SiteHeader />
           {children}

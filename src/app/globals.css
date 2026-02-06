@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* 使用 CSS 引入字体，避免 Docker 构建时 next/font 请求 Google Fonts 导致失败 */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap");
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -46,6 +50,8 @@
 }
 
 :root {
+  --font-geist-sans: "Geist", ui-sans-serif, sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
