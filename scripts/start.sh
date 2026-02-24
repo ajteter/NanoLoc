@@ -1,24 +1,21 @@
 #!/bin/sh
 set -e
 
-# 1. Fix Volume Permissions (Runs as root)
-# Ensure the mounted data directory is writable by the nextjs user (uid 1001)
+# ──────────────────────────────────────────────────────────────────────────────
+# NanoLoc Auto-Healing Startup Script
+# Runs as root to fix volume permissions, then drops to nextjs user via gosu.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# 1. Fix Volume Permissions (runs as root)
 echo "🔧 Fixing permissions for /app/prisma/data..."
 mkdir -p /app/prisma/data
 chown -R nextjs:nodejs /app/prisma/data
+chmod -R 775 /app/prisma/data
 
-# 2. Run Migrations (As nextjs user)
+# 2. Run Migrations (as nextjs user)
 echo "🚀 Running database migrations..."
-if command -v gosu >/dev/null 2>&1; then
-    gosu nextjs prisma migrate deploy
-else
-    su nextjs -c "prisma migrate deploy"
-fi
+gosu nextjs npx prisma migrate deploy
 
-# 3. Start Server (As nextjs user)
+# 3. Start Server (as nextjs user, exec replaces shell PID)
 echo "✅ Starting NanoLoc server as nextjs user..."
-if command -v gosu >/dev/null 2>&1; then
-    exec gosu nextjs node server.js
-else
-    exec su nextjs -c "node server.js"
-fi
+exec gosu nextjs node server.js

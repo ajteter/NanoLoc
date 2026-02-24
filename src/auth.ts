@@ -20,7 +20,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     if (!user) return null;
 
                     const passwordsMatch = await bcrypt.compare(password, user.password);
-                    if (passwordsMatch) return user;
+                    if (passwordsMatch) return { id: user.id, email: user.email, name: user.name };
                 }
 
                 console.log("Invalid credentials");
@@ -28,4 +28,20 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             },
         }),
     ],
+    callbacks: {
+        async jwt({ token, user }) {
+            // On initial sign-in, persist the user's DB id into the JWT
+            if (user) {
+                token.id = user.id;
+            }
+            return token;
+        },
+        async session({ session, token }) {
+            // Expose user.id in the session object for audit tracking
+            if (token?.id && session.user) {
+                session.user.id = token.id as string;
+            }
+            return session;
+        },
+    },
 });

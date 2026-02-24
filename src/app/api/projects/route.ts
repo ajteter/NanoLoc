@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { prisma } from '@/lib/prisma';
+import { listProjects, createProject } from '@/lib/services/project.service';
 import { z } from 'zod';
 
 const createProjectSchema = z.object({
@@ -14,23 +14,19 @@ const createProjectSchema = z.object({
     systemPrompt: z.string().optional(),
 });
 
-export async function GET(request: Request) {
+export async function GET() {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Global access: Fetch all projects
-    const projects = await prisma.project.findMany({
-        orderBy: { updatedAt: 'desc' }
-    });
-
+    const projects = await listProjects();
     return NextResponse.json({ projects });
 }
 
 export async function POST(request: Request) {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -42,24 +38,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: result.error.issues }, { status: 400 });
         }
 
-        const { name, description, baseLanguage, targetLanguages, aiBaseUrl, aiApiKey, aiModelId, systemPrompt } = result.data;
-
-        const project = await prisma.project.create({
-            data: {
-                name,
-                description,
-                baseLanguage,
-                targetLanguages: JSON.stringify(targetLanguages),
-                aiBaseUrl,
-                aiApiKey,
-                aiModelId,
-                systemPrompt,
-                users: {
-                    connect: { email: session.user.email }
-                }
-            }
-        });
-
+        const project = await createProject(result.data);
         return NextResponse.json({ project }, { status: 201 });
     } catch (error) {
         console.error("Create project error:", error);

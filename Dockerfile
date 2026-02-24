@@ -32,13 +32,13 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
-# Install openssl for Prisma and gosu for user switching
+# Install openssl for Prisma and gosu for privilege de-escalation
 RUN apt-get update -y && apt-get install -y openssl gosu && rm -rf /var/lib/apt/lists/*
 
 # Install Prisma globally (needed for migrations in production)
 RUN npm install -g prisma@6.19.2
 
-# Don't run as root
+# Create non-root user (container starts as root for permission fixing)
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
@@ -64,4 +64,5 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
+# Container starts as root — start.sh handles permission fixing then drops to nextjs
 CMD ["./scripts/start.sh"]

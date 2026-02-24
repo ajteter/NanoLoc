@@ -1,111 +1,52 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
+import { getProject, updateTerm, deleteTerm } from '@/lib/services/project.service';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id, keyId } = await params;
 
-    const project = await prisma.project.findUnique({
-        where: { id },
-        include: { users: true }
-    });
-
+    const project = await getProject(id);
     if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    const user = project.users.find(u => u.email === session.user?.email);
-    if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const userId = session.user.id;
+    if (!userId) {
+        return NextResponse.json({ error: "Session missing user ID" }, { status: 401 });
+    }
 
     try {
         const body = await request.json();
 
-        // Manual validation instead of Zod to avoid runtime issues
         const stringName = typeof body.stringName === 'string' && body.stringName.length > 0 ? body.stringName : undefined;
         const remarks = typeof body.remarks === 'string' ? body.remarks : (body.remarks === null ? null : undefined);
         const values = body.values && typeof body.values === 'object' ? body.values : undefined;
 
-        // Transaction to update key and values
-        await prisma.$transaction(async (tx) => {
-            // 1. Update Key fields if provided
-            if (stringName || remarks !== undefined) {
-                await tx.translationKey.update({
-                    where: { id: keyId },
-                    data: {
-                        stringName,
-                        remarks,
-                        lastModifiedById: user.id // Audit
-                    }
-                });
-            }
-
-            // 2. Upsert values
-            if (values) {
-                const valuesTyped = values as Record<string, string>;
-                for (const [lang, content] of Object.entries(valuesTyped)) {
-                    // ... (rest is same, using content)
-                    /* ... */
-
-                    await tx.translationValue.upsert({
-                        where: {
-                            translationKeyId_languageCode: {
-                                translationKeyId: keyId,
-                                languageCode: lang
-                            }
-                        },
-                        update: {
-                            content,
-                            lastModifiedById: user.id // Audit 
-                        },
-                        create: {
-                            translationKeyId: keyId,
-                            languageCode: lang,
-                            content,
-                            lastModifiedById: user.id // Audit
-                        }
-                    });
-                }
-            }
-        });
-
-        const updatedKey = await prisma.translationKey.findUnique({
-            where: { id: keyId },
-            include: { values: true }
-        });
-
+        const updatedKey = await updateTerm(keyId, { stringName, remarks, values }, userId);
         return NextResponse.json({ term: updatedKey });
-
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
         console.error("Update term error:", error);
-        return NextResponse.json({ error: "Internal Server Error", details: error.message, stack: error.stack }, { status: 500 });
+        return NextResponse.json({ error: "Internal Server Error", details: message }, { status: 500 });
     }
 }
 
-
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id, keyId } = await params;
 
-    const project = await prisma.project.findUnique({
-        where: { id },
-        include: { users: true }
-    });
-
+    const project = await getProject(id);
     if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    const hasAccess = project.users.some(u => u.email === session.user?.email);
-    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     try {
-        await prisma.translationKey.delete({
-            where: { id: keyId }
-        });
+        await deleteTerm(keyId);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Delete term error:", error);

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { BRClient } from "@/lib/ai/br-client";
-import { getProjectAIConfig } from "@/lib/ai/config";
+import { translateTexts } from "@/lib/services/translate.service";
 
 export async function POST(request: Request) {
     try {
@@ -21,16 +20,13 @@ export async function POST(request: Request) {
             );
         }
 
-        const config = await getProjectAIConfig(projectId);
-        const client = new BRClient(config);
-
-        const translations = await client.translateBatch(texts, targetLang);
-
+        const translations = await translateTexts(projectId, texts, targetLang);
         return NextResponse.json({ translations });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
         console.error("Translation API Error:", error);
         return NextResponse.json(
-            { error: error.message || "Internal Server Error" },
+            { error: message || "Internal Server Error" },
             { status: 500 }
         );
     }

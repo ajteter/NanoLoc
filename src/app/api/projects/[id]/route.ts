@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { prisma } from '@/lib/prisma';
+import { getProject, updateProject, deleteProject } from '@/lib/services/project.service';
 import { z } from 'zod';
 
 const updateProjectSchema = z.object({
@@ -16,46 +16,30 @@ const updateProjectSchema = z.object({
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params; // Next.js 15 params are async
-
-    const project = await prisma.project.findUnique({
-        where: { id },
-        include: { users: { select: { email: true } } }
-    });
+    const { id } = await params;
+    const project = await getProject(id);
 
     if (!project) {
         return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
-
-    // Global access allowed for reading
-    // const hasAccess = project.users.some(u => u.email === session.user?.email);
-    // if (!hasAccess) {
-    //    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // }
 
     return NextResponse.json({ project });
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params; // Next.js 15 params are async
+    const { id } = await params;
     try {
-        const project = await prisma.project.findUnique({
-            where: { id },
-            include: { users: true }
-        });
-
-        if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
-        const hasAccess = project.users.some(u => u.email === session.user?.email);
-        if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        const existing = await getProject(id);
+        if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
         const body = await request.json();
         const result = updateProjectSchema.safeParse(body);
@@ -64,16 +48,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             return NextResponse.json({ error: result.error.issues }, { status: 400 });
         }
 
-        const data: any = { ...result.data };
-        if (data.targetLanguages) {
-            data.targetLanguages = JSON.stringify(data.targetLanguages);
-        }
-
-        const updated = await prisma.project.update({
-            where: { id },
-            data
-        });
-
+        const updated = await updateProject(id, result.data);
         return NextResponse.json({ project: updated });
     } catch (error) {
         console.error("Update project error:", error);
@@ -83,22 +58,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params; // Next.js 15 params are async
+    const { id } = await params;
+    const existing = await getProject(id);
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const project = await prisma.project.findUnique({
-        where: { id },
-        include: { users: true }
-    });
-
-    if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const hasAccess = project.users.some(u => u.email === session.user?.email);
-    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    await prisma.project.delete({ where: { id } });
-
+    await deleteProject(id);
     return NextResponse.json({ success: true });
 }
