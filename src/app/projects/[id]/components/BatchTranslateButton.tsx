@@ -79,8 +79,8 @@ export function BatchTranslateButton({ projectId, targetLanguages }: BatchTransl
                         )}
 
                         {result && (
-                            <div className="space-y-2">
-                                <p className="text-sm font-medium text-white mb-2">Results:</p>
+                            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2">
+                                <p className="text-sm font-medium text-white mb-2 sticky top-0 bg-gray-900 pb-1">Results:</p>
                                 {Object.entries(result).map(([lang, count]) => (
                                     <div key={lang} className="flex justify-between text-sm border-b border-gray-800 pb-1 last:border-0">
                                         <span className="text-gray-300">{lang}</span>

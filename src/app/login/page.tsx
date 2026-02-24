@@ -22,17 +22,17 @@ function LoginForm() {
                 <form action={formAction} className="space-y-6">
                     <div>
                         <label
-                            htmlFor="email"
+                            htmlFor="username"
                             className="block text-sm font-medium leading-6 text-white/90"
                         >
-                            Email address
+                            Username
                         </label>
                         <div className="mt-2">
                             <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
+                                id="username"
+                                name="username"
+                                type="text"
+                                autoComplete="username"
                                 required
                                 className="block w-full rounded-md border-0 bg-white/5 py-1.5 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
                             />
@@ -82,7 +82,7 @@ function LoginForm() {
                 </form>
 
                 <p className="mt-10 text-center text-sm text-gray-400">
-                    Don't have an account?{' '}
+                    Don&apos;t have an account?{' '}
                     <a href="/register" className="font-semibold leading-6 text-indigo-400 hover:text-indigo-300">
                         Sign up
                     </a>

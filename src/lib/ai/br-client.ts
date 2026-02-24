@@ -18,14 +18,65 @@ export class BRClient {
 2. 占位符（如 {name}, %s, %1$s 等）和换行符(\\n)保持原样不翻译
 3. 标点符号要符合目标语言的使用习惯和位置
 4. 保持简洁准确，不要添加任何额外的解释或标记
-5. 使用 ### 分隔每个翻译结果`;
+5. 使用 ### 分隔每个翻译结果
+6. 只输出翻译后的文本，不要添加 markdown 格式、代码块、反引号、前言、解释、对话或任何额外内容
+7. 不要重复源文本或语言名称`;
+    }
+
+    /**
+     * Clean raw AI response content before splitting.
+     * Strips markdown code fences, conversational preamble, and other formatting artifacts.
+     */
+    private cleanResponse(raw: string): string {
+        let cleaned = raw;
+
+        // 1. Remove markdown code fences: ```...``` or ```lang\n...\n```
+        cleaned = cleaned.replace(/^```[\w]*\n?/gm, '').replace(/\n?```$/gm, '');
+
+        // 2. Remove leading conversational preamble before the first actual translation
+        //    Heuristic: if the first ### appears, everything before it is likely preamble
+        const firstSep = cleaned.indexOf('###');
+        if (firstSep > 0) {
+            const before = cleaned.substring(0, firstSep).trim();
+            // If the preamble contains sentence-like text (> 20 chars, no ###), discard it
+            if (before.length > 20) {
+                cleaned = cleaned.substring(firstSep);
+            }
+        }
+
+        // 3. If no ### separators exist (single item), try to extract just the translation
+        //    by stripping common preamble patterns
+        if (!cleaned.includes('###')) {
+            // Remove lines that look like AI preamble (contains ：or : followed by newline, then the actual translation)
+            const lines = cleaned.split('\n').filter(l => l.trim().length > 0);
+            if (lines.length > 1) {
+                // Check if first line looks like preamble (contains language descriptors or role statements)
+                const preamblePatterns = [
+                    /ローカライゼーション/,  // Japanese localization talk
+                    /翻訳を提供/,              // Japanese "providing translation"
+                    /यहाँ.*अनुवाद/,            // Hindi "here is the translation"
+                    /बिल्कुल/,                 // Hindi "absolutely"
+                    /here (?:is|are) the/i,    // English preamble
+                    /voici la traduction/i,    // French preamble
+                    /aquí está la traducción/i, // Spanish preamble
+                    /翻译如下/,                // Chinese preamble
+                    /以下是.*翻译/,            // Chinese "below is translation"
+                ];
+                // Keep removing leading preamble lines
+                while (lines.length > 1 && preamblePatterns.some(p => p.test(lines[0]))) {
+                    lines.shift();
+                }
+            }
+            cleaned = lines.join('\n');
+        }
+
+        return cleaned.trim();
     }
 
     async translateBatch(texts: string[], targetLang: string): Promise<string[]> {
         if (texts.length === 0) return [];
 
         // Filter non-empty texts for the prompt logic to match python script behavior
-        // The python script creates prompt entries only for non-empty text.
         const nonEmptyItems = texts
             .map((text, index) => ({ text, index }))
             .filter((item) => item.text && item.text.trim().length > 0);
@@ -40,6 +91,7 @@ export class BRClient {
 3. 不要在翻译结果中包含序号
 4. 不要遗漏任何文本
 5. 不要合并或拆分文本
+6. 只输出翻译结果，不要添加任何 markdown 格式、代码块(\`\`\`)、反引号、前言或解释
 
 需要翻译的文本：
 
@@ -71,7 +123,10 @@ export class BRClient {
             }
 
             const data = await response.json();
-            const content = data.choices[0]?.message?.content?.trim() || '';
+            const rawContent = data.choices[0]?.message?.content?.trim() || '';
+
+            // Run cleaning pipeline before splitting
+            const content = this.cleanResponse(rawContent);
 
             // Post-processing
             // 1. Split by ###
@@ -82,10 +137,12 @@ export class BRClient {
                 return t.replace(/^\[?\d+\]?\.?\s*/, '').trim();
             });
 
-            // 3. Map back to original array
-            // We expect parts.length to match nonEmptyItems.length
-            // If mismatch, we might have issues.
+            // 3. Remove any remaining backtick wrapping on individual parts
+            parts = parts.map((t: string) => {
+                return t.replace(/^`+/, '').replace(/`+$/, '').trim();
+            });
 
+            // 4. Map back to original array
             const results: string[] = new Array(texts.length).fill("");
 
             let partIndex = 0;
@@ -94,7 +151,6 @@ export class BRClient {
                     results[item.index] = parts[partIndex];
                     partIndex++;
                 } else {
-                    // Missing translation from AI
                     console.warn(`Missing translation for item ${item.index} ("${item.text}")`);
                     results[item.index] = "[Translation Error]";
                 }

@@ -25,7 +25,7 @@ export interface ProjectFormData {
 
 export interface User {
     id: string;
-    email: string;
+    username: string;
     name?: string | null;
 }
 
@@ -35,7 +35,6 @@ export interface TranslationValue {
     content: string | null;
     lastModifiedBy?: {
         name: string | null;
-        email: string;
     } | null;
 }
 
@@ -46,7 +45,6 @@ export interface TranslationKey {
     values: TranslationValue[];
     lastModifiedBy?: {
         name: string | null;
-        email: string;
     } | null;
     createdAt: string;
     updatedAt: string;

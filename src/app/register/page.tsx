@@ -1,59 +1,79 @@
 'use client';
 
-// @ts-ignore
-import { useActionState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { register } from '@/lib/actions';
 import { toast } from 'sonner';
 
 function RegisterForm() {
-    const [errorMessage, formAction, isPending] = useActionState(register, undefined);
     const router = useRouter();
+    const [isPending, setIsPending] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // Ideally, the server action would return a status we can track, but for now we rely on the fact 
-    // that if it returns undefined, it might mean nothing happened yet, or it was successful if we handle it differently.
-    // However, typical useActionState returns the result. If result is null/undefined on success, we can't distinguish initial state.
-    // Let's modify the action to return { success: true } or { error: string }. 
-    // BUT since we can't easily see the action code right now without viewing it, let's assume standard behavior:
-    // If we want auto-login, we might need to handle the submit client-side or check the state change.
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setErrorMessage(null);
 
-    // Better approach: Client-side submit handler that calls server action, then calls signIn.
-
-    const handleSubmit = async (formData: FormData) => {
-        const email = formData.get('email') as string;
+        const formData = new FormData(e.currentTarget);
+        const username = formData.get('username') as string;
         const password = formData.get('password') as string;
+        const confirmPassword = formData.get('confirmPassword') as string;
 
-        const result = await register(undefined, formData);
+        // Client-side password confirmation
+        if (password !== confirmPassword) {
+            setErrorMessage('Passwords do not match.');
+            return;
+        }
 
-        if (result && result.startsWith && result.startsWith('Error:')) {
-            // Basic error string handling based on current assumption of action return
-            toast.error(result);
-        } else if (result) {
-            // If it returns a string that is an error
-            toast.error(result);
-        } else {
-            // Success (undefined return usually means void/success in simple actions, but let's be careful)
-            // Wait, standard server actions return data. 
-            // Let's try to sign in.
+        if (password.length < 6) {
+            setErrorMessage('Password must be at least 6 characters.');
+            return;
+        }
+
+        setIsPending(true);
+
+        try {
+            // Call register API
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setErrorMessage(
+                    typeof data.error === 'string'
+                        ? data.error
+                        : 'Registration failed.'
+                );
+                setIsPending(false);
+                return;
+            }
 
             toast.message('Account created', {
                 description: 'Logging you in...',
             });
 
-            const res = await signIn('credentials', {
-                email,
+            // Auto sign-in after registration
+            const signInRes = await signIn('credentials', {
+                username,
                 password,
                 redirect: false,
             });
 
-            if (res?.error) {
+            if (signInRes?.error) {
                 toast.error('Login failed after registration. Please sign in manually.');
                 router.push('/login');
             } else {
                 router.push('/projects');
             }
+        } catch {
+            setErrorMessage('An unexpected error occurred.');
+        } finally {
+            setIsPending(false);
         }
     };
 
@@ -69,17 +89,17 @@ function RegisterForm() {
             </div>
 
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-                <form action={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium leading-6 text-white/90">
-                            Email address
+                        <label htmlFor="username" className="block text-sm font-medium leading-6 text-white/90">
+                            Username
                         </label>
                         <div className="mt-2">
                             <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
+                                id="username"
+                                name="username"
+                                type="text"
+                                autoComplete="username"
                                 required
                                 className="block w-full rounded-md border-0 bg-white/5 py-1.5 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
                             />
@@ -104,12 +124,35 @@ function RegisterForm() {
                     </div>
 
                     <div>
+                        <label htmlFor="confirmPassword" className="block text-sm font-medium leading-6 text-white/90">
+                            Confirm Password
+                        </label>
+                        <div className="mt-2">
+                            <input
+                                id="confirmPassword"
+                                name="confirmPassword"
+                                type="password"
+                                autoComplete="new-password"
+                                required
+                                minLength={6}
+                                className="block w-full rounded-md border-0 bg-white/5 py-1.5 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6"
+                            />
+                        </div>
+                    </div>
+
+                    {errorMessage && (
+                        <div aria-live="polite" aria-atomic="true">
+                            <p className="text-sm text-red-500">{errorMessage}</p>
+                        </div>
+                    )}
+
+                    <div>
                         <button
                             type="submit"
-                            // disabled={isPending} // isPending is for useActionState
+                            disabled={isPending}
                             className="flex w-full justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:opacity-50"
                         >
-                            Sign up
+                            {isPending ? 'Creating account...' : 'Sign up'}
                         </button>
                     </div>
                 </form>

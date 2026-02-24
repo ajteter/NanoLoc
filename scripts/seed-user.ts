@@ -7,13 +7,13 @@ dotenv.config();
 const prisma = new PrismaClient();
 
 async function main() {
-    const email = process.env.INITIAL_USER_EMAIL || "admin@example.com";
-    const password = process.env.INITIAL_USER_PASSWORD || "password123";
+    const username = process.env.INITIAL_USER_USERNAME || "admin";
+    const password = process.env.INITIAL_USER_PASSWORD || "admin";
     const name = "Admin User";
 
-    console.log(`Seeding user: ${email}`);
+    console.log(`Seeding user: ${username}`);
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({ where: { username } });
     if (existing) {
         console.log("User already exists.");
         return;
@@ -22,7 +22,7 @@ async function main() {
     const hashedPassword = await bcrypt.hash(password, 10);
     await prisma.user.create({
         data: {
-            email,
+            username,
             password: hashedPassword,
             name,
         },

@@ -26,30 +26,30 @@ export async function authenticate(
 }
 
 const RegisterSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
+    username: z.string().min(1, 'Username is required'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 export async function register(prevState: string | undefined, formData: FormData) {
     const validatedFields = RegisterSchema.safeParse({
-        email: formData.get('email'),
+        username: formData.get('username'),
         password: formData.get('password'),
     });
 
     if (!validatedFields.success) {
-        return 'Invalid fields. Failed to register.';
+        return 'Invalid fields. Username is required and password must be at least 6 characters.';
     }
 
-    const { email, password } = validatedFields.data;
+    const { username, password } = validatedFields.data;
 
     try {
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        const existingUser = await prisma.user.findUnique({ where: { username } });
         if (existingUser) return 'User already exists.';
 
         const hashedPassword = await bcrypt.hash(password, 10);
         await prisma.user.create({
             data: {
-                email,
+                username,
                 password: hashedPassword,
             },
         });
@@ -57,12 +57,6 @@ export async function register(prevState: string | undefined, formData: FormData
         console.error(error);
         return 'Failed to create user.';
     }
-
-    // Redirect happens via redirect() from 'next/navigation' usually in server actions,
-    // or we can sign them in directly. 
-    // For now let's try signing them in, or just returning logical success?
-    // The form expects a string error or undefined.
-    // If successful, we can redirect.
 
     try {
         await signIn('credentials', formData);
@@ -72,7 +66,6 @@ export async function register(prevState: string | undefined, formData: FormData
                 case 'CredentialsSignin':
                     return 'Something went wrong logging in after registration.';
                 default:
-                    // Redirects throw errors in next-auth v5 sometimes, so we rethrow
                     throw error;
             }
         }

@@ -21,7 +21,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     try {
         let targetLanguages: string[] = [];
-        const body = await request.json();
+
+        // The client may send an empty POST body, so guard against JSON parse failure
+        let body: Record<string, unknown> = {};
+        try {
+            body = await request.json();
+        } catch {
+            // No body sent — that's fine, we'll use the project's configured languages
+        }
 
         if (body.targetLanguages && Array.isArray(body.targetLanguages)) {
             targetLanguages = body.targetLanguages;

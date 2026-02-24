@@ -85,9 +85,9 @@ export async function listTerms(
             where: whereClause,
             include: {
                 values: {
-                    include: { lastModifiedBy: { select: { name: true, email: true } } },
+                    include: { lastModifiedBy: { select: { name: true } } },
                 },
-                lastModifiedBy: { select: { name: true, email: true } },
+                lastModifiedBy: { select: { name: true } },
             },
             skip: (page - 1) * limit,
             take: limit,
@@ -188,8 +188,8 @@ export async function deleteTerm(keyId: string) {
 
 // ─── User helpers ────────────────────────────────────────────────────────────
 
-export async function getUserByEmail(email: string) {
-    return prisma.user.findUnique({ where: { email } });
+export async function getUserByUsername(username: string) {
+    return prisma.user.findUnique({ where: { username } });
 }
 
 // ─── Custom Errors ───────────────────────────────────────────────────────────

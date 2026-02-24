@@ -25,7 +25,7 @@ export function UserNav({ showName }: UserNavProps) {
 
     const initials = session.user.name
         ? session.user.name.split(" ").map((n) => n[0]).join("").toUpperCase()
-        : session.user.email?.substring(0, 2).toUpperCase() || "U";
+        : "U";
 
     return (
         <div className="flex items-center gap-3">
@@ -37,7 +37,7 @@ export function UserNav({ showName }: UserNavProps) {
                 {showName && (
                     <div className="hidden md:flex flex-col">
                         <span className="text-sm font-medium text-white leading-none">{session.user.name}</span>
-                        <span className="text-xs text-gray-400 leading-none mt-0.5">{session.user.email}</span>
+                        <span className="text-xs text-gray-400 leading-none mt-0.5">{session.user.name}</span>
                     </div>
                 )}
             </div>

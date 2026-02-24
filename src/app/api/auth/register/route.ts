@@ -4,8 +4,8 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 const registerSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
+    username: z.string().min(1, 'Username is required'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
     name: z.string().optional(),
 });
 
@@ -18,11 +18,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: result.error.issues }, { status: 400 });
         }
 
-        const { email, password, name } = result.data;
+        const { username, password, name } = result.data;
 
         // Check if user exists
         const existingUser = await prisma.user.findUnique({
-            where: { email },
+            where: { username },
         });
 
         if (existingUser) {
@@ -35,13 +35,13 @@ export async function POST(request: Request) {
         // Create user
         const user = await prisma.user.create({
             data: {
-                email,
+                username,
                 password: hashedPassword,
                 name,
             },
             select: {
                 id: true,
-                email: true,
+                username: true,
                 name: true,
             }
         });

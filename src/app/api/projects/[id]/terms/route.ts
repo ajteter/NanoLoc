@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { listTerms, createTerm, getProject, getUserByEmail, ConflictError } from '@/lib/services/project.service';
+import { listTerms, createTerm, getProject, ConflictError } from '@/lib/services/project.service';
 import { z } from 'zod';
 
 const createTermSchema = z.object({

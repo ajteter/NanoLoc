@@ -10,7 +10,7 @@ generator client {
 // ... (User)
 model User {
   id            String    @id @default(cuid())
-  email         String    @unique
+  username      String    @unique
   password      String    // Hashed
   name          String?
   createdAt     DateTime  @default(now())

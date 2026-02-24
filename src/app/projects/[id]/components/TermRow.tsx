@@ -298,7 +298,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         </TooltipTrigger>
                         <TooltipContent>
                             {term.values.find(v => v.languageCode === baseLanguage)?.lastModifiedBy ? (
-                                <p>Updated by {term.values.find(v => v.languageCode === baseLanguage)?.lastModifiedBy?.name || term.values.find(v => v.languageCode === baseLanguage)?.lastModifiedBy?.email}</p>
+                                <p>Updated by {term.values.find(v => v.languageCode === baseLanguage)?.lastModifiedBy?.name || 'Unknown'}</p>
                             ) : (
                                 <p>No audit info</p>
                             )}
@@ -320,7 +320,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                                 </TooltipTrigger>
                                 {valObj?.lastModifiedBy && (
                                     <TooltipContent>
-                                        <p>Updated by {valObj.lastModifiedBy.name || valObj.lastModifiedBy.email}</p>
+                                        <p>Updated by {valObj.lastModifiedBy.name || 'Unknown'}</p>
                                     </TooltipContent>
                                 )}
                             </Tooltip>

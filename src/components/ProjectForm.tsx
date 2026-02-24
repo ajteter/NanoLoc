@@ -110,22 +110,42 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                             <div className="flex gap-2">
                                 <Button
                                     type="button"
-                                    variant="secondary"
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => {
-                                        const common = LANGUAGES
+                                        const commonCodes = LANGUAGES
                                             .filter(l => l.isCommon && l.code !== formData.baseLanguage)
                                             .map(l => l.code);
 
-                                        setFormData(prev => ({
-                                            ...prev,
-                                            targetLanguages: Array.from(new Set([...prev.targetLanguages, ...common]))
-                                                .filter(code => code !== prev.baseLanguage)
-                                        }));
+                                        const allCommonSelected = commonCodes.every(code =>
+                                            formData.targetLanguages.includes(code)
+                                        );
+
+                                        if (allCommonSelected) {
+                                            // Deselect all common languages
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                targetLanguages: prev.targetLanguages.filter(
+                                                    code => !commonCodes.includes(code)
+                                                )
+                                            }));
+                                        } else {
+                                            // Select all common languages
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                targetLanguages: Array.from(new Set([...prev.targetLanguages, ...commonCodes]))
+                                                    .filter(code => code !== prev.baseLanguage)
+                                            }));
+                                        }
                                     }}
-                                    className="whitespace-nowrap"
+                                    className="whitespace-nowrap border-indigo-500/50 text-indigo-300 hover:bg-indigo-500/20 hover:text-indigo-200"
                                 >
-                                    Select Common
+                                    {LANGUAGES
+                                        .filter(l => l.isCommon && l.code !== formData.baseLanguage)
+                                        .every(l => formData.targetLanguages.includes(l.code))
+                                        ? 'Deselect Common'
+                                        : 'Select Common'
+                                    }
                                 </Button>
                                 <Button
                                     type="button"
