@@ -11,6 +11,12 @@ export async function importXml(
     baseLanguage: string,
     userId: string
 ): Promise<{ added: number; updated: number; skipped: number }> {
+    // Verify the user exists to prevent FK constraint violations
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+        throw new Error(`Import failed: user ID "${userId}" not found. Please log out and log back in.`);
+    }
+
     const parser = new AndroidXmlParser();
     const parsedStrings = parser.parse(xmlContent);
 

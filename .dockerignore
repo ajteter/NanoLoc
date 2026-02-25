@@ -2,6 +2,11 @@ Dockerfile
 .dockerignore
 node_modules
 npm-debug.log
-README.md
 .next
 .git
+.env
+*.db
+data/
+.DS_Store
+.vscode/
+.benchmarks/

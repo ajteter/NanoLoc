@@ -16,10 +16,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const userId = session.user.id;
     if (!userId) {
-        console.error("[Import] Session user ID is missing!", JSON.stringify(session.user));
         return NextResponse.json({ error: "Session missing user ID" }, { status: 401 });
     }
-    console.log(`[Import] userId=${userId} projectId=${projectId}`);
 
     try {
         const formData = await request.formData();
