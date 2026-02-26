@@ -37,7 +37,7 @@ export async function POST(request: Request) {
             data: {
                 username,
                 password: hashedPassword,
-                name,
+                name: name || username,
             },
             select: {
                 id: true,

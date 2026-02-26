@@ -37,7 +37,6 @@ export function UserNav({ showName }: UserNavProps) {
                 {showName && (
                     <div className="hidden md:flex flex-col">
                         <span className="text-sm font-medium text-white leading-none">{session.user.name}</span>
-                        <span className="text-xs text-gray-400 leading-none mt-0.5">{session.user.name}</span>
                     </div>
                 )}
             </div>

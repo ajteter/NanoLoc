@@ -51,6 +51,7 @@ export async function register(prevState: string | undefined, formData: FormData
             data: {
                 username,
                 password: hashedPassword,
+                name: username,
             },
         });
     } catch (error) {
