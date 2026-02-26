@@ -35,6 +35,7 @@ export interface TranslationValue {
     content: string | null;
     lastModifiedBy?: {
         name: string | null;
+        username?: string;
     } | null;
 }
 
@@ -45,6 +46,7 @@ export interface TranslationKey {
     values: TranslationValue[];
     lastModifiedBy?: {
         name: string | null;
+        username?: string;
     } | null;
     createdAt: string;
     updatedAt: string;

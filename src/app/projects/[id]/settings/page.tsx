@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ProjectForm } from '@/components/ProjectForm';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,12 +9,15 @@ import { ChevronLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Project } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function ProjectSettingsPage() {
     const params = useParams();
     const projectId = params.id as string;
     const router = useRouter();
     const queryClient = useQueryClient();
+    const [deleteConfirm, setDeleteConfirm] = useState(false);
+    const [deleteInput, setDeleteInput] = useState('');
 
     // Fetch Project
     const { data: projectData, isLoading, isError } = useQuery<{ project: Project }>({
@@ -35,7 +39,6 @@ export default function ProjectSettingsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...data,
-                    // If apikey is empty, don't send it to avoid clearing it
                     aiApiKey: data.aiApiKey || undefined
                 }),
             });
@@ -75,12 +78,6 @@ export default function ProjectSettingsPage() {
         }
     });
 
-    const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-            deleteMutation.mutate();
-        }
-    };
-
     if (isLoading) return <div className="container mx-auto py-12 text-center text-gray-400">Loading settings...</div>;
     if (isError || !project) return <div className="container mx-auto py-12 text-center text-red-500">Failed to load project</div>;
 
@@ -90,7 +87,7 @@ export default function ProjectSettingsPage() {
         baseLanguage: project.baseLanguage,
         targetLanguages: JSON.parse(project.targetLanguages || '[]'),
         aiBaseUrl: project.aiBaseUrl || '',
-        aiApiKey: project.aiApiKey || '', // Display masked key if exists
+        aiApiKey: project.aiApiKey || '',
         aiModelId: project.aiModelId || '',
         systemPrompt: project.systemPrompt || '',
     };
@@ -123,14 +120,46 @@ export default function ProjectSettingsPage() {
                 <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-6 sm:p-8">
                     <h3 className="text-lg font-medium text-red-400 mb-2">Danger Zone</h3>
                     <p className="text-gray-400 text-sm mb-4">Deleting this project will permanently remove all terms and translations.</p>
-                    <Button
-                        variant="destructive"
-                        onClick={handleDelete}
-                        disabled={deleteMutation.isPending}
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        {deleteMutation.isPending ? 'Deleting...' : 'Delete Project'}
-                    </Button>
+
+                    {deleteConfirm ? (
+                        <div className="space-y-3 max-w-md">
+                            <p className="text-sm text-red-300">
+                                Type <span className="font-mono font-bold text-white">{project.name}</span> to confirm deletion:
+                            </p>
+                            <Input
+                                value={deleteInput}
+                                onChange={(e) => setDeleteInput(e.target.value)}
+                                className="bg-gray-900 border-red-700 text-white"
+                                autoFocus
+                                placeholder="Type project name..."
+                            />
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => deleteMutation.mutate()}
+                                    disabled={deleteInput !== project.name || deleteMutation.isPending}
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    {deleteMutation.isPending ? 'Deleting...' : 'Confirm Delete'}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
+                                    className="text-gray-400"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <Button
+                            variant="destructive"
+                            onClick={() => setDeleteConfirm(true)}
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Project
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>

@@ -29,13 +29,21 @@ export async function importXml(
 
     const existingMap = new Map(existingKeys.map((k) => [k.stringName, k]));
 
+    // Get current max sortOrder so new terms are added after existing ones
+    const maxSortOrderResult = await prisma.translationKey.aggregate({
+        where: { projectId },
+        _max: { sortOrder: true },
+    });
+    const currentMaxOrder = maxSortOrderResult._max.sortOrder ?? -1;
+
     let added = 0;
     let updated = 0;
     let skipped = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const operations: any[] = [];
 
-    for (const item of parsedStrings) {
+    for (let xmlIndex = 0; xmlIndex < parsedStrings.length; xmlIndex++) {
+        const item = parsedStrings[xmlIndex];
         const { name: stringName, value: content } = item;
         const existingKey = existingMap.get(stringName);
 
@@ -85,11 +93,13 @@ export async function importXml(
                 updated++;
             }
         } else {
+            // sortOrder = currentMax + 1 + xmlIndex, preserving XML order
             operations.push(
                 prisma.translationKey.create({
                     data: {
                         projectId,
                         stringName,
+                        sortOrder: currentMaxOrder + 1 + xmlIndex,
                         lastModifiedById: userId,
                         values: {
                             create: {
@@ -120,7 +130,12 @@ export async function exportCsv(
 ): Promise<{ csvContent: string; fileName: string }> {
     const project = await prisma.project.findUnique({
         where: { id: projectId },
-        include: { keys: { include: { values: true } } },
+        include: {
+            keys: {
+                include: { values: true },
+                orderBy: { sortOrder: 'asc' },
+            },
+        },
     });
 
     if (!project) throw new Error('Project not found');

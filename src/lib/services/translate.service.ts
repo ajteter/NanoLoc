@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { getProjectAIConfig } from '@/lib/ai/config';
 import { BRClient } from '@/lib/ai/br-client';
 
-const BATCH_SIZE = 20;
+const BATCH_SIZE = 10;
 
 /**
  * Translate an array of texts for a single target language using the project's AI config.

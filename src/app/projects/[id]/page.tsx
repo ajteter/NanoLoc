@@ -137,8 +137,7 @@ export default function ProjectDetailPage() {
     });
 
     const handleColumnTranslate = async (lang: string) => {
-        if (!confirm(`Are you sure you want to translate all missing '${lang}' values? This will consume AI tokens.`)) return;
-
+        // No confirmation dialog — the global blocking banner handles UX
         const promise = columnTranslateMutation.mutateAsync(lang);
 
         toast.promise(promise, {

@@ -85,13 +85,13 @@ export async function listTerms(
             where: whereClause,
             include: {
                 values: {
-                    include: { lastModifiedBy: { select: { name: true } } },
+                    include: { lastModifiedBy: { select: { name: true, username: true } } },
                 },
-                lastModifiedBy: { select: { name: true } },
+                lastModifiedBy: { select: { name: true, username: true } },
             },
             skip: (page - 1) * limit,
             take: limit,
-            orderBy: { updatedAt: 'desc' },
+            orderBy: { sortOrder: 'desc' },
         }),
     ]);
 
@@ -116,11 +116,19 @@ export async function createTerm(
         throw new ConflictError('Term with this key already exists');
     }
 
+    // Assign sortOrder = max + 1 so new terms appear at top (DESC display)
+    const maxResult = await prisma.translationKey.aggregate({
+        where: { projectId },
+        _max: { sortOrder: true },
+    });
+    const nextOrder = (maxResult._max.sortOrder ?? -1) + 1;
+
     return prisma.translationKey.create({
         data: {
             projectId,
             stringName,
             remarks,
+            sortOrder: nextOrder,
             lastModifiedById: userId,
             values: {
                 create: values
