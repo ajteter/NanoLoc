@@ -2,34 +2,39 @@
 
 **English** | [简体中文](./README_zh.md)
 
-
-NanoLoc is a lightweight, format-agnostic localization (i18n) management platform designed to streamline the translation process for developers and product managers. It currently supports Android `strings.xml` and integrates with AI for automated batch translation.
+NanoLoc is a lightweight localization (i18n) management platform with AI-powered batch translation. It helps developers and translators manage multilingual string resources efficiently.
 
 ## ✨ Features
 
-For a detailed breakdown of all features, please see [Feature Documentation](./FEATURES.md).
-
-- **Project Management**: Multi-project support with flexible language and AI configurations.
-- **Data Integration**:
-  - **Import**: Android `strings.xml` support with smart conflict resolution.
-  - **Export**: CSV export with Excel compatibility (BOM) and robust error handling.
-- **Advanced Localization**:
-  - **AI Translation**: Batch, Row, Column, and Single-cell modes powered by LLMs.
-  - **Audit**: Track "Last Modified By" for every translation.
-  - **Context**: Remarks field with tooltip support for better translator context.
-- **Modern UI**:
-  - **Real-time Status**: Global "Translating..." indicator prevents conflicts.
-  - **Efficiency**: Sticky columns, server-side pagination (50 items/page), and instant search.
-- **Security**: Secure authentication via NextAuth.js.
+- **Project Management**: Multi-project support with per-project language and AI configurations
+- **Import/Export**: Android `strings.xml` import with smart merge; CSV export (Excel-compatible BOM)
+- **AI Translation**: Batch, Row, Column, and Single-cell modes powered by LLMs
+- **Audit Trail**: Tracks "Last Modified By" for every translation entry
+- **Modern UI**: Sticky columns, server-side pagination, instant search, real-time translation status
+- **Security**: NextAuth.js authentication
+- **Translation Scripts**: Offline CSV-to-Android-res conversion scripts for OPPO and Vanso apps
 
 ## 🛠 Tech Stack
 
 - **Framework**: [Next.js 15 (App Router)](https://nextjs.org/)
-- **Database**: [Prisma](https://www.prisma.io/) + SQLite (Dev) / PostgreSQL (Prod ready)
+- **Database**: [Prisma](https://www.prisma.io/) + SQLite (Dev) / PostgreSQL (Prod)
 - **UI**: [Tailwind CSS](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/), [Lucide Icons](https://lucide.dev/)
-- **State Management**: [TanStack Query](https://tanstack.com/query/latest)
 - **Authentication**: [NextAuth.js (v5 Beta)](https://authjs.dev/)
-- **XML Parsing**: `fast-xml-parser`
+
+## 📁 Project Structure
+
+```
+NanoLoc/
+├── src/                        # NanoLoc platform source code
+├── prisma/                     # Database schema and migrations
+├── tranlateOppo Script/        # OPPO app: CSV → Android res conversion script
+│   └── csv_to_res.py
+├── tranlateVanso Script/       # Vanso app: CSV → Android res conversion script
+│   └── csv_to_res.py
+├── deploy.sh                   # One-click Docker deployment
+├── docker-compose.yml
+└── Dockerfile
+```
 
 ## 🚀 Getting Started
 
@@ -40,94 +45,53 @@ For a detailed breakdown of all features, please see [Feature Documentation](./F
 
 ### Installation
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/your-username/nanoloc.git
-    cd nanoloc
-    ```
+```bash
+git clone https://github.com/your-username/nanoloc.git
+cd nanoloc
+npm install
+```
 
-2.  **Install dependencies**
-    ```bash
-    npm install
-    # or
-    yarn install
-    ```
+### Environment Setup
 
-3.  **Environment Setup**
-    Create a `.env` file in the root directory:
-    ```env
-    # Database (SQLite by default)
-    DATABASE_URL="file:./dev.db"
+Create a `.env` file in the root directory:
 
-    # Authentication
-    AUTH_SECRET="your-super-secret-key-at-least-32-chars" # Generate with: openssl rand -base64 32
+```env
+DATABASE_URL="file:./dev.db"
+AUTH_SECRET="your-secret-key"       # Generate: openssl rand -base64 32
+AI_BASE_URL="https://your-ai-api-endpoint.com"
+AI_API_KEY="your-api-key"
+AI_MODEL_ID="your-model-id"
+```
 
-    # Initial User (Auto-created on first run if enabled in auth logic, or register manually)
-    # The current auth setup allows public registration.
+### Run
 
-    # AI Configuration (Default credentials, can be overridden per project)
-    # Supported: Compatible OpenAI API (e.g. Bedrock proxy)
-    AI_BASE_URL="https://your-ai-api-endpoint.com"
-    AI_API_KEY="your-api-key"
-    AI_MODEL_ID="your-model-id" # e.g. "anthropic.claude-3-sonnet"
-    ```
+```bash
+npx prisma generate
+npx prisma db push
+npm run dev
+```
 
-4.  **Database Setup**
-    ```bash
-    npx prisma generate
-    npx prisma db push
-    ```
+Open [http://localhost:3000](http://localhost:3000).
 
-5.  **Run Development Server**
-    ```bash
-    npm run dev
-    ```
-    Open [http://localhost:3000](http://localhost:3000) to view the app.
+## 📖 Platform Guide
 
-## 📖 Usage Guide
+For a complete guide on using the NanoLoc platform — including project setup, XML import, AI translation, CSV export, and more:
 
-### 1. Create a Project
-- Navigate to the dashboard.
-- Click **"New Project"**.
-- Enter details:
-  - **Base Language**: e.g., `en-US`
-  - **Target Languages**: Comma-separated (e.g., `zh-CN, ja, es`)
-  - **AI Config**: Optional. Overrides global `.env` settings.
+👉 **[NanoLoc Platform Operation Guide](./NANOLOC_PLATFORM_GUIDE.md)**
 
-### 2. Import Strings
-- Go to the **Project Detail** page.
-- Click **"Import XML"**.
-- Upload your `strings.xml`.
-- The system will parse keys and merge them. Old values are saved in the "Remarks" column.
-
-### 3. Translate
-- **Manual**: Click the "Edit" (pencil) icon on a row.
-- **AI Assist**: Click the "Wand" icon in any target language cell.
-- **Batch Translate**: Click the purple **"Batch Translate"** button in the header. It will find all empty fields and translate them in the background.
-
-## 🐳 Docker Deployment (Production Ready)
-
-NanoLoc includes a production-ready Docker setup with SQLite persistence.
-
-### Prerequisites
-- Docker & Docker Compose installed
-
-### **One-Click Deployment**
-Simply run the included deploy script. It handles permissions, secrets generation, and database volume setup automatically.
+## 🐳 Docker Deployment
 
 ```bash
 ./deploy.sh
 ```
 
-**What this script does:**
-1. ✅ Checks/Creates `.env` from template.
-2. 🔑 Generates a secure `AUTH_SECRET` if missing.
-3. 📁 Creates `./data` directory with correct permissions.
-4. 🚀 Builds and starts the container on port `3000`.
+The script auto-generates secrets, creates data directories, and starts the container on port `3000`. Data is persisted in `./data`.
 
-Your data will be persisted in `./data` on the host machine.
+## 📋 Translation Scripts Guide
 
+The `tranlateOppo Script/` and `tranlateVanso Script/` directories contain standalone Python scripts that convert NanoLoc-exported CSV files into Android resource files (`res/values-xx/strings.xml`).
 
+👉 **See [Translation Scripts Operation Guide](./TRANSLATION_SCRIPTS_GUIDE.md) for detailed usage instructions.**
 
 ## 📄 License
 
