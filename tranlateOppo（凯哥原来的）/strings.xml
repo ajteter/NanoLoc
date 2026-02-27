@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="qbs_player_tag_sample" translatable="false">SAMPLE</string>
-    <string name="welfare_get_it_now" translatable="false">立即领取</string>
-    <string name="android_base_tab_welfare" translatable="false">福利中心</string>
-    <string name="playlist_tab_now">Now</string>
-    <string name="playlist_tab_previous">Previous</string>
-</resources>
