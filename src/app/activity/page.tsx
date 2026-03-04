@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { UserNav } from '@/components/UserNav';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowLeft, FileUp, Globe, Plus, Pencil, Trash2, FolderPlus, FolderCog, FolderX, Wand2 } from 'lucide-react';
 
 const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -95,7 +94,6 @@ export default function ActivityPage() {
                         Activity Log
                     </h1>
                 </div>
-                <UserNav showName />
             </div>
 
             {isLoading && (
