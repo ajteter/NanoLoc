@@ -37,6 +37,22 @@ else
     echo "✅ AUTH_SECRET already configured."
 fi
 
+# 2b. API Access Token Generation (Developer API - currently disabled)
+# if grep -q 'API_ACCESS_TOKEN="change-me-to-a-secure-random-string"' .env || ! grep -q "API_ACCESS_TOKEN" .env; then
+#     echo "🔑 Generating new API_ACCESS_TOKEN..."
+#     API_TOKEN=$(openssl rand -base64 32)
+#     if grep -q "API_ACCESS_TOKEN" .env; then
+#         sed -i.bak "s|API_ACCESS_TOKEN=\"change-me-to-a-secure-random-string\"|API_ACCESS_TOKEN=\"$API_TOKEN\"|g" .env
+#         rm .env.bak
+#     else
+#         echo "" >> .env
+#         echo "API_ACCESS_TOKEN=\"$API_TOKEN\"" >> .env
+#     fi
+#     echo "✅ API_ACCESS_TOKEN updated."
+# else
+#     echo "✅ API_ACCESS_TOKEN already configured."
+# fi
+
 # 3. Create Data Directory
 if [ ! -d "./data" ]; then
     echo "Cc Creating ./data directory for SQLite persistence..."

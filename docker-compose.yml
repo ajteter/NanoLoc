@@ -6,7 +6,7 @@ services:
     volumes:
       - ./data:/app/prisma/data
     environment:
-      - DATABASE_URL=file:/app/prisma/data/dev.db
+      - DATABASE_URL=file:/app/prisma/data/dev.db?journal_mode=WAL&busy_timeout=5000
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_TRUST_HOST=true
       - NEXTAUTH_URL=http://localhost:3000

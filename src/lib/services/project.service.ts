@@ -202,6 +202,37 @@ export async function getUserByUsername(username: string) {
 
 // ─── Custom Errors ───────────────────────────────────────────────────────────
 
+// ─── Activity Log ────────────────────────────────────────────────────────────
+
+export async function listRecentActivity(options: { page: number; limit: number }) {
+    const { page, limit } = options;
+
+    const [total, values] = await prisma.$transaction([
+        prisma.translationValue.count(),
+        prisma.translationValue.findMany({
+            orderBy: { updatedAt: 'desc' },
+            skip: (page - 1) * limit,
+            take: limit,
+            include: {
+                lastModifiedBy: { select: { name: true, username: true } },
+                translationKey: {
+                    select: {
+                        stringName: true,
+                        project: { select: { id: true, name: true } },
+                    },
+                },
+            },
+        }),
+    ]);
+
+    return {
+        data: values,
+        meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+}
+
+// ─── Errors ──────────────────────────────────────────────────────────────────
+
 export class ConflictError extends Error {
     constructor(message: string) {
         super(message);

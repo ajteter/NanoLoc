@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { listTerms, createTerm, getProject, ConflictError } from '@/lib/services/project.service';
+import { logAudit } from '@/lib/services/audit.service';
 import { z } from 'zod';
 
 const createTermSchema = z.object({
@@ -60,6 +61,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         }
 
         const term = await createTerm(id, result.data, userId);
+        logAudit({ action: 'CREATE_TERM', userId, projectId: id, projectName: project.name, keyName: result.data.stringName });
         return NextResponse.json({ term }, { status: 201 });
     } catch (error) {
         if (error instanceof ConflictError) {

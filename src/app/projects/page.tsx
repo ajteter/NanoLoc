@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Project } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, History } from 'lucide-react';
 
 function ProjectList() {
     const [search, setSearch] = useState('');
@@ -119,12 +119,20 @@ export default function ProjectsPage() {
                 <h1 className="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">
                     Projects
                 </h1>
-                <Link
-                    href="/projects/create"
-                    className="rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-                >
-                    New Project
-                </Link>
+                <div className="flex items-center gap-3">
+                    <Link href="/activity">
+                        <Button variant="secondary" className="gap-2">
+                            <History className="h-4 w-4" />
+                            Activity Log
+                        </Button>
+                    </Link>
+                    <Link
+                        href="/projects/create"
+                        className="rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                    >
+                        New Project
+                    </Link>
+                </div>
             </div>
             <ProjectList />
         </main>

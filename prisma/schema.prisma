@@ -20,6 +20,7 @@ model User {
   // Audit relations
   modifiedKeys    TranslationKey[]   @relation("KeyModifiers")
   modifiedValues  TranslationValue[] @relation("ValueModifiers")
+  auditLogs       AuditLog[]         @relation("AuditUser")
 }
 
 model Project {
@@ -79,6 +80,25 @@ model TranslationValue {
   // Audit
   lastModifiedById String?
   lastModifiedBy   User?   @relation("ValueModifiers", fields: [lastModifiedById], references: [id])
+  updatedAt        DateTime @default(now()) @updatedAt
 
   @@unique([translationKeyId, languageCode])
+  @@index([updatedAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // CREATE_TERM, UPDATE_TERM, DELETE_TERM, UPDATE_TRANSLATION, IMPORT_XML, BATCH_TRANSLATE, CREATE_PROJECT, UPDATE_PROJECT, DELETE_PROJECT
+  projectId   String?
+  projectName String?  // Denormalized for display after project deletion
+  keyName     String?  // stringName, for context
+  details     String?  // JSON string with extra info
+  
+  userId      String?
+  user        User?    @relation("AuditUser", fields: [userId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([projectId])
 }

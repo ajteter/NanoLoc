@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { UserNav } from '@/components/UserNav';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, History } from 'lucide-react';
 
 function ProjectList() {
   const { data, isLoading, error } = useQuery<{ projects: Project[] }>({
@@ -87,6 +87,12 @@ export default function DashboardPage() {
           <p className="text-gray-400 text-sm">Manage your translation projects</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/activity">
+            <Button variant="secondary" className="gap-2">
+              <History className="h-4 w-4" />
+              Activity Log
+            </Button>
+          </Link>
           <Link href="/projects/create">
             <Button>
               <Plus className="h-4 w-4 mr-2" />

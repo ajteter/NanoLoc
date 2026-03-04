@@ -116,7 +116,12 @@ export async function importXml(
     }
 
     if (operations.length > 0) {
-        await prisma.$transaction(operations);
+        // Split into smaller transactions to reduce SQLite write-lock duration
+        const CHUNK_SIZE = 100;
+        for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
+            const chunk = operations.slice(i, i + CHUNK_SIZE);
+            await prisma.$transaction(chunk);
+        }
     }
 
     return { added, updated, skipped };
@@ -181,4 +186,83 @@ export async function exportCsv(
     const safeName = project.name.replace(/[^a-z0-9 \-_.]/gi, '_').trim();
 
     return { csvContent, fileName: `${safeName}_export.csv` };
+}
+
+/**
+ * Pull project translations for developer API.
+ * Mode A: format=json, no lang → full dump { key: { lang: val, ... }, ... }
+ * Mode B: format=json, lang given → { key: val, ... } with base fallback
+ * Mode C: format=xml, lang given → Android XML string
+ */
+export async function pullProjectTranslations(
+    projectId: string,
+    format: 'json' | 'xml',
+    lang?: string
+): Promise<{ data: string; contentType: string }> {
+    const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+            keys: {
+                include: { values: true },
+                orderBy: { sortOrder: 'asc' },
+            },
+        },
+    });
+
+    if (!project) throw new Error('Project not found');
+
+    const allLangs: string[] = [project.baseLanguage];
+    try {
+        const targets = JSON.parse(project.targetLanguages || '[]');
+        allLangs.push(...targets);
+    } catch { }
+
+    if (format === 'json' && !lang) {
+        // Mode A: Full dump
+        const result: Record<string, Record<string, string>> = {};
+        for (const key of project.keys) {
+            const entry: Record<string, string> = {};
+            for (const l of allLangs) {
+                const val = key.values.find(v => v.languageCode === l)?.content;
+                if (val) entry[l] = val;
+            }
+            result[key.stringName] = entry;
+        }
+        return { data: JSON.stringify(result, null, 2), contentType: 'application/json' };
+    }
+
+    if (format === 'json' && lang) {
+        // Mode B: Single language JSON with base fallback
+        const result: Record<string, string> = {};
+        for (const key of project.keys) {
+            const val = key.values.find(v => v.languageCode === lang)?.content
+                || key.values.find(v => v.languageCode === project.baseLanguage)?.content
+                || '';
+            if (val) result[key.stringName] = val;
+        }
+        return { data: JSON.stringify(result, null, 2), contentType: 'application/json' };
+    }
+
+    if (format === 'xml') {
+        // Mode C: Android XML
+        const targetLang = lang || project.baseLanguage;
+        const escapeXml = (s: string) =>
+            s.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, "\\'");
+
+        let xml = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n';
+        for (const key of project.keys) {
+            const val = key.values.find(v => v.languageCode === targetLang)?.content
+                || key.values.find(v => v.languageCode === project.baseLanguage)?.content
+                || '';
+            xml += `    <string name="${escapeXml(key.stringName)}">${escapeXml(val)}</string>\n`;
+        }
+        xml += '</resources>\n';
+        return { data: xml, contentType: 'application/xml' };
+    }
+
+    throw new Error('Invalid format');
 }

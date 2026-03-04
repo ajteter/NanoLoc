@@ -9,9 +9,12 @@ NanoLoc is a lightweight localization (i18n) management platform with AI-powered
 - **Project Management**: Multi-project support with per-project language and AI configurations
 - **Import/Export**: Android `strings.xml` import with smart merge; CSV export (Excel-compatible BOM)
 - **AI Translation**: Batch, Row, Column, and Single-cell modes powered by LLMs
+- **Activity Log**: Global audit log tracking all changes (project/term CRUD, translations, imports, batch translates) with user attribution
+- **User Profile**: Change display name and password from the UI
 - **Audit Trail**: Tracks "Last Modified By" for every translation entry
 - **Modern UI**: Sticky columns, server-side pagination, instant search, real-time translation status
-- **Security**: NextAuth.js authentication
+- **Security**: NextAuth.js username-based authentication
+- **Concurrency Safe**: SQLite WAL mode, busy timeout, process-level batch translation locks, chunked import transactions
 - **Translation Scripts**: Offline CSV-to-Android-res conversion scripts for OPPO and Vanso apps
 
 ## 🛠 Tech Stack
@@ -56,12 +59,11 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./dev.db?journal_mode=WAL&busy_timeout=5000"
 AUTH_SECRET="your-secret-key"       # Generate: openssl rand -base64 32
-AI_BASE_URL="https://your-ai-api-endpoint.com"
-AI_API_KEY="your-api-key"
-AI_MODEL_ID="your-model-id"
 ```
+
+> AI configuration (Base URL, API Key, Model ID) is set per-project in the UI.
 
 ### Run
 
@@ -86,6 +88,7 @@ For a complete guide on using the NanoLoc platform — including project setup, 
 ```
 
 The script auto-generates secrets, creates data directories, and starts the container on port `3000`. Data is persisted in `./data`.
+
 
 ## 📋 Translation Scripts Guide
 

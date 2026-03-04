@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getProject, updateProject, deleteProject } from '@/lib/services/project.service';
+import { logAudit } from '@/lib/services/audit.service';
 import { z } from 'zod';
 
 const updateProjectSchema = z.object({
@@ -49,6 +50,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         }
 
         const updated = await updateProject(id, result.data);
+        logAudit({ action: 'UPDATE_PROJECT', userId: session.user.id, projectId: id, projectName: updated.name, details: result.data });
         return NextResponse.json({ project: updated });
     } catch (error) {
         console.error("Update project error:", error);
@@ -67,5 +69,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     await deleteProject(id);
+    logAudit({ action: 'DELETE_PROJECT', userId: session.user.id, projectId: id, projectName: existing.name });
     return NextResponse.json({ success: true });
 }

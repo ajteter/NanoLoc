@@ -8,6 +8,7 @@ import { Project, TranslationKey } from '@/types';
 import { TermRow } from './components/TermRow';
 import { CreateTermRow } from './components/CreateTermRow';
 import { BatchTranslateButton } from './components/BatchTranslateButton';
+// import { IntegrationDialog } from './components/IntegrationDialog'; // Developer API - disabled
 // import { EditProjectDialog } from '@/components/EditProjectDialog'; // Deleted
 import { UserNav } from '@/components/UserNav';
 import { Search, Upload, Plus, ChevronLeft, ChevronRight, Home, X, ChevronsLeft, ChevronsRight, Wand2, Settings, Loader2 } from 'lucide-react';
@@ -214,10 +215,11 @@ export default function ProjectDetailPage() {
                         asChild
                     >
                         <Link href={`/api/projects/${projectId}/export`} target="_blank">
-                            <Upload className="h-4 w-4 mr-2 rotate-180" /> {/* Reuse upload icon but rotated for download logic visual */}
+                            <Upload className="h-4 w-4 mr-2 rotate-180" />
                             Export CSV
                         </Link>
                     </Button>
+                    {/* <IntegrationDialog projectId={projectId} projectName={project?.name || ''} baseLanguage={project?.baseLanguage || 'en-US'} targetLanguages={targetLangs} /> */}
                     <BatchTranslateButton projectId={projectId} targetLanguages={targetLangs} />
                     <Button
                         onClick={() => setIsCreating(true)}

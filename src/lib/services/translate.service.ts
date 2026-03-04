@@ -4,6 +4,9 @@ import { BRClient } from '@/lib/ai/br-client';
 
 const BATCH_SIZE = 10;
 
+// Process-level lock: prevents concurrent batch translates on the same project
+const activeTranslations = new Set<string>();
+
 /**
  * Translate an array of texts for a single target language using the project's AI config.
  */
@@ -26,79 +29,89 @@ export async function batchTranslateProject(
     targetLanguages: string[],
     userId: string
 ): Promise<Record<string, number>> {
-    const project = await prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new Error('Project not found');
+    // Prevent concurrent batch translates on the same project
+    if (activeTranslations.has(projectId)) {
+        throw new Error('This project already has a batch translation in progress. Please wait for it to finish.');
+    }
+    activeTranslations.add(projectId);
 
-    const aiConfig = await getProjectAIConfig(projectId);
-    const aiClient = new BRClient(aiConfig);
-    const resultsSummary: Record<string, number> = {};
+    try {
+        const project = await prisma.project.findUnique({ where: { id: projectId } });
+        if (!project) throw new Error('Project not found');
 
-    for (const lang of targetLanguages) {
-        const allKeys = await prisma.translationKey.findMany({
-            where: { projectId },
-            include: { values: true },
-        });
+        const aiConfig = await getProjectAIConfig(projectId);
+        const aiClient = new BRClient(aiConfig);
+        const resultsSummary: Record<string, number> = {};
 
-        const missingItems: { keyId: string; sourceText: string }[] = [];
+        for (const lang of targetLanguages) {
+            const allKeys = await prisma.translationKey.findMany({
+                where: { projectId },
+                include: { values: true },
+            });
 
-        for (const key of allKeys) {
-            const baseVal = key.values.find(
-                (v) => v.languageCode === project.baseLanguage
-            )?.content;
-            if (!baseVal || !baseVal.trim()) continue;
+            const missingItems: { keyId: string; sourceText: string }[] = [];
 
-            const targetVal = key.values.find((v) => v.languageCode === lang)?.content;
-            if (!targetVal || !targetVal.trim()) {
-                missingItems.push({ keyId: key.id, sourceText: baseVal });
+            for (const key of allKeys) {
+                const baseVal = key.values.find(
+                    (v) => v.languageCode === project.baseLanguage
+                )?.content;
+                if (!baseVal || !baseVal.trim()) continue;
+
+                const targetVal = key.values.find((v) => v.languageCode === lang)?.content;
+                if (!targetVal || !targetVal.trim()) {
+                    missingItems.push({ keyId: key.id, sourceText: baseVal });
+                }
             }
-        }
 
-        if (missingItems.length === 0) {
-            resultsSummary[lang] = 0;
-            continue;
-        }
+            if (missingItems.length === 0) {
+                resultsSummary[lang] = 0;
+                continue;
+            }
 
-        let processedCount = 0;
+            let processedCount = 0;
 
-        for (let i = 0; i < missingItems.length; i += BATCH_SIZE) {
-            const batch = missingItems.slice(i, i + BATCH_SIZE);
-            const sourceTexts = batch.map((item) => item.sourceText);
+            for (let i = 0; i < missingItems.length; i += BATCH_SIZE) {
+                const batch = missingItems.slice(i, i + BATCH_SIZE);
+                const sourceTexts = batch.map((item) => item.sourceText);
 
-            try {
-                const translatedTexts = await aiClient.translateBatch(sourceTexts, lang);
+                try {
+                    const translatedTexts = await aiClient.translateBatch(sourceTexts, lang);
 
-                await prisma.$transaction(
-                    batch
-                        .map((item, index) => {
-                            const translatedText = translatedTexts[index];
-                            if (!translatedText) return null;
+                    await prisma.$transaction(
+                        batch
+                            .map((item, index) => {
+                                const translatedText = translatedTexts[index];
+                                if (!translatedText) return null;
 
-                            return prisma.translationValue.upsert({
-                                where: {
-                                    translationKeyId_languageCode: {
+                                return prisma.translationValue.upsert({
+                                    where: {
+                                        translationKeyId_languageCode: {
+                                            translationKeyId: item.keyId,
+                                            languageCode: lang,
+                                        },
+                                    },
+                                    update: { content: translatedText, lastModifiedById: userId },
+                                    create: {
                                         translationKeyId: item.keyId,
                                         languageCode: lang,
+                                        content: translatedText,
+                                        lastModifiedById: userId,
                                     },
-                                },
-                                update: { content: translatedText, lastModifiedById: userId },
-                                create: {
-                                    translationKeyId: item.keyId,
-                                    languageCode: lang,
-                                    content: translatedText,
-                                    lastModifiedById: userId,
-                                },
-                            });
-                        })
-                        .filter((p): p is NonNullable<typeof p> => p !== null)
-                );
-                processedCount += batch.length;
-            } catch (err) {
-                console.error(`Batch translation failed for ${lang} batch ${i}:`, err);
+                                });
+                            })
+                            .filter((p): p is NonNullable<typeof p> => p !== null)
+                    );
+                    processedCount += batch.length;
+                } catch (err) {
+                    console.error(`Batch translation failed for ${lang} batch ${i}:`, err);
+                }
             }
+
+            resultsSummary[lang] = processedCount;
         }
 
-        resultsSummary[lang] = processedCount;
+        return resultsSummary;
+    } finally {
+        activeTranslations.delete(projectId);
     }
-
-    return resultsSummary;
 }

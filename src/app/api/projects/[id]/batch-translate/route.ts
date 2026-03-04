@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getProject } from '@/lib/services/project.service';
 import { batchTranslateProject } from '@/lib/services/translate.service';
+import { logAudit } from '@/lib/services/audit.service';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
@@ -41,6 +42,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         }
 
         const translated = await batchTranslateProject(id, targetLanguages, userId);
+        logAudit({ action: 'BATCH_TRANSLATE', userId, projectId: id, projectName: project.name, details: { languages: targetLanguages, results: translated } });
         return NextResponse.json({ success: true, translated });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error';

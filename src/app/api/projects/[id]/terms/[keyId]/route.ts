@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getProject, updateTerm, deleteTerm } from '@/lib/services/project.service';
+import { logAudit } from '@/lib/services/audit.service';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
@@ -26,6 +27,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         const values = body.values && typeof body.values === 'object' ? body.values : undefined;
 
         const updatedKey = await updateTerm(keyId, { stringName, remarks, values }, userId);
+        const action = values ? 'UPDATE_TRANSLATION' : 'UPDATE_TERM';
+        logAudit({ action, userId, projectId: id, projectName: project.name, keyName: updatedKey?.stringName, details: values ? { languages: Object.keys(values) } : undefined });
         return NextResponse.json({ term: updatedKey });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error';
@@ -47,6 +50,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     try {
         await deleteTerm(keyId);
+        logAudit({ action: 'DELETE_TERM', userId: session.user.id, projectId: id, projectName: project.name, keyName: keyId });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Delete term error:", error);

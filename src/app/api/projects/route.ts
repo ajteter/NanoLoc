@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { listProjects, createProject } from '@/lib/services/project.service';
+import { logAudit } from '@/lib/services/audit.service';
 import { z } from 'zod';
 
 const createProjectSchema = z.object({
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
         }
 
         const project = await createProject(result.data);
+        logAudit({ action: 'CREATE_PROJECT', userId: session.user.id, projectId: project.id, projectName: project.name });
         return NextResponse.json({ project }, { status: 201 });
     } catch (error) {
         console.error("Create project error:", error);

@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, User as UserIcon } from "lucide-react";
+import { UserProfileDialog } from "@/components/UserProfileDialog";
 
 interface UserNavProps {
     showName?: boolean;
@@ -28,7 +29,7 @@ export function UserNav({ showName }: UserNavProps) {
         : "U";
 
     return (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8 border border-gray-700">
                     {session.user.image && <AvatarImage src={session.user.image} alt={session.user.name || ""} />}
@@ -40,6 +41,7 @@ export function UserNav({ showName }: UserNavProps) {
                     </div>
                 )}
             </div>
+            <UserProfileDialog />
             <Button
                 variant="ghost"
                 size="sm"

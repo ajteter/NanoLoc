@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TranslationKey } from '@/types';
+import { toast } from 'sonner';
 
 interface TermRowProps {
     term: TranslationKey;
@@ -28,6 +29,10 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
         values: term.values.reduce((acc, v) => ({ ...acc, [v.languageCode]: v.content || '' }), {} as Record<string, string>),
     });
     const [translating, setTranslating] = useState<string[]>([]);
+
+    // Track pending row translations for batch save
+    const pendingRowTranslations = useRef<Record<string, string>>({});
+    const expectedRowLangs = useRef<string[]>([]);
 
     // Reset form data when term changes (e.g. after save/refetch)
     useEffect(() => {
@@ -56,7 +61,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
             queryClient.invalidateQueries({ queryKey: ['terms', projectId] });
         },
         onError: (err) => {
-            alert('Update failed: ' + err.message);
+            toast.error('Update failed: ' + err.message);
         }
     });
 
@@ -72,7 +77,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
             queryClient.invalidateQueries({ queryKey: ['terms', projectId] });
         },
         onError: (err) => {
-            alert('Delete failed: ' + err.message);
+            toast.error('Delete failed: ' + err.message);
         }
     });
 
@@ -92,17 +97,51 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
         },
         onSuccess: (data, variables) => {
             if (data.translations && data.translations[0]) {
-                handleValueChange(variables.lang, data.translations[0]);
+                const translated = data.translations[0];
+                handleValueChange(variables.lang, translated);
 
-                if (!isEditing) {
+                if (isEditing) {
+                    // In edit mode — just update state, user saves manually
+                } else if (expectedRowLangs.current.length > 0) {
+                    // Row translate mode — collect results, batch save when all done
+                    pendingRowTranslations.current[variables.lang] = translated;
+                    const allDone = expectedRowLangs.current.every(
+                        l => l in pendingRowTranslations.current
+                    );
+                    if (allDone) {
+                        const allValues = { ...formData.values, ...pendingRowTranslations.current };
+                        updateMutation.mutate({ values: allValues });
+                        toast.success(`Row translated: ${Object.keys(pendingRowTranslations.current).length} languages`);
+                        pendingRowTranslations.current = {};
+                        expectedRowLangs.current = [];
+                    }
+                } else {
+                    // Single cell translate — save immediately
                     updateMutation.mutate({
-                        values: { ...formData.values, [variables.lang]: data.translations[0] }
+                        values: { ...formData.values, [variables.lang]: translated }
                     });
                 }
             }
         },
-        onError: (err) => {
-            alert('Translate error: ' + err.message);
+        onError: (err, variables) => {
+            // In row translate mode, still mark as "done" with error to unblock batch
+            if (expectedRowLangs.current.length > 0) {
+                pendingRowTranslations.current[variables.lang] = formData.values[variables.lang] || '';
+                const allDone = expectedRowLangs.current.every(
+                    l => l in pendingRowTranslations.current
+                );
+                if (allDone) {
+                    const populated = Object.entries(pendingRowTranslations.current).filter(([, v]) => v);
+                    if (populated.length > 0) {
+                        updateMutation.mutate({ values: Object.fromEntries(populated) });
+                    }
+                    toast.warning(`Row translate completed with errors for ${variables.lang}`);
+                    pendingRowTranslations.current = {};
+                    expectedRowLangs.current = [];
+                }
+            } else {
+                toast.error('Translate error: ' + err.message);
+            }
         },
         onSettled: (data, error, variables) => {
             setTranslating(prev => prev.filter(l => l !== variables.lang));
@@ -129,7 +168,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
         const currentStringName = isEditing ? formData.stringName : term.stringName;
 
         if (!currentStringName && !currentBaseValue) {
-            alert("Please enter a key name or base value request translation.");
+            toast.error("Please enter a key name or base value before translating.");
             return;
         }
 
@@ -139,11 +178,21 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
     };
 
     const handleTranslateRow = () => {
-        // No confirmation — global blocking banner handles the UX
-        targetLanguages.forEach(lang => {
+        const langsToTranslate = targetLanguages.filter(lang => {
             const val = term.values.find(v => v.languageCode === lang)?.content;
-            if (!val) handleTranslate(lang);
+            return !val;
         });
+
+        if (langsToTranslate.length === 0) {
+            toast.info('All languages already have translations.');
+            return;
+        }
+
+        // Setup batch tracking
+        pendingRowTranslations.current = {};
+        expectedRowLangs.current = [...langsToTranslate];
+
+        langsToTranslate.forEach(lang => handleTranslate(lang));
     };
 
     const handleCopyToAll = () => {
