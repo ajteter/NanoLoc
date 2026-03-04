@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
+import { LogoIcon } from '@/components/LogoIcon';
 
 export function Header() {
     return (
@@ -9,7 +10,8 @@ export function Header() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     <div className="flex items-center">
-                        <Link href="/projects" className="flex-shrink-0">
+                        <Link href="/projects" className="flex items-center space-x-2 flex-shrink-0">
+                            <LogoIcon className="w-7 h-7" />
                             <span className="text-xl font-bold text-white bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">
                                 NanoLoc
                             </span>

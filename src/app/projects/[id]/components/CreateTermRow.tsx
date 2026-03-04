@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useTransition } from 'react';
 import { Save, X, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { createTermAction } from '@/lib/actions/term.actions';
+import { toast } from 'sonner';
 
 interface CreateTermRowProps {
     projectId: string;
@@ -16,44 +17,30 @@ interface CreateTermRowProps {
 }
 
 export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCancel, onSuccess }: CreateTermRowProps) {
-    const queryClient = useQueryClient();
+    const [isPending, startTransition] = useTransition();
     const [formData, setFormData] = useState({
         stringName: '',
         remarks: '',
         values: {} as Record<string, string>,
     });
 
-    const createMutation = useMutation({
-        mutationFn: async (data: any) => {
-            const res = await fetch(`/api/projects/${projectId}/terms`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) {
-                const json = await res.json();
-                throw new Error(JSON.stringify(json.error) || 'Failed to create term');
-            }
-            return res.json();
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['terms', projectId] });
-            onSuccess();
-        },
-        onError: (err) => {
-            alert('Create failed: ' + err.message);
-        }
-    });
-
     const handleSave = () => {
         if (!formData.stringName) {
-            alert("Key name is required");
+            toast.error("Key name is required");
             return;
         }
-        createMutation.mutate({
-            stringName: formData.stringName,
-            remarks: formData.remarks,
-            values: formData.values
+        startTransition(async () => {
+            const res = await createTermAction(projectId, {
+                stringName: formData.stringName,
+                remarks: formData.remarks,
+                values: formData.values
+            });
+            if (res.success) {
+                toast.success('Term created');
+                onSuccess();
+            } else {
+                toast.error(res.error || 'Create failed');
+            }
         });
     };
 
@@ -71,7 +58,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                     <Button
                         variant="ghost" size="icon"
                         onClick={handleSave}
-                        disabled={createMutation.isPending}
+                        disabled={isPending}
                         className="text-green-400 hover:text-green-300 hover:bg-green-400/10"
                         title="Create"
                     >

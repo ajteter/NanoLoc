@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useTransition } from 'react';
 import { Button } from "@/components/ui/button";
 import { Wand2, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { batchTranslateAction } from '@/lib/actions/term.actions';
 
 interface BatchTranslateButtonProps {
     projectId: string;
@@ -13,32 +13,9 @@ interface BatchTranslateButtonProps {
 }
 
 export function BatchTranslateButton({ projectId, targetLanguages }: BatchTranslateButtonProps) {
-    const queryClient = useQueryClient();
     const [open, setOpen] = useState(false);
     const [result, setResult] = useState<Record<string, number> | null>(null);
-
-    const mutation = useMutation({
-        mutationKey: ['batch-translate', projectId],
-        mutationFn: async () => {
-            const res = await fetch(`/api/projects/${projectId}/batch-translate`, {
-                method: 'POST',
-            });
-            if (!res.ok) {
-                const json = await res.json();
-                throw new Error(JSON.stringify(json.error) || 'Batch translation failed');
-            }
-            return res.json();
-        },
-        onSuccess: (data) => {
-            setResult(data.translated);
-            queryClient.invalidateQueries({ queryKey: ['terms', projectId] });
-            toast.success("Batch translation completed!");
-        },
-        onError: (err) => {
-            toast.error('Error: ' + err.message);
-            setOpen(false);
-        }
-    });
+    const [isPending, startTransition] = useTransition();
 
     const handleStart = () => {
         if (!targetLanguages || targetLanguages.length === 0) {
@@ -47,7 +24,18 @@ export function BatchTranslateButton({ projectId, targetLanguages }: BatchTransl
         }
         setResult(null);
         setOpen(true);
-        mutation.mutate();
+        startTransition(async () => {
+            const res = await batchTranslateAction(projectId, targetLanguages);
+            if (res.success) {
+                if (res.translated) {
+                    setResult(res.translated);
+                }
+                toast.success("Batch translation completed!");
+            } else {
+                toast.error(res.error || 'Batch translation failed');
+                setOpen(false);
+            }
+        });
     };
 
     return (
@@ -55,23 +43,23 @@ export function BatchTranslateButton({ projectId, targetLanguages }: BatchTransl
             <Button
                 onClick={handleStart}
                 className="bg-purple-600 hover:bg-purple-500 text-white"
-                disabled={mutation.isPending}
+                disabled={isPending}
             >
-                {mutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
+                {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
                 Batch Translate
             </Button>
 
-            <Dialog open={open} onOpenChange={(val) => { if (!mutation.isPending) setOpen(val); }}>
+            <Dialog open={open} onOpenChange={(val) => { if (!isPending) setOpen(val); }}>
                 <DialogContent className="bg-gray-900 border-gray-800 text-white">
                     <DialogHeader>
                         <DialogTitle>Batch Translation</DialogTitle>
                         <DialogDescription className="text-gray-400">
-                            {mutation.isPending ? 'Translating missing items... This may take a while.' : 'Translation Complete!'}
+                            {isPending ? 'Translating missing items... This may take a while.' : 'Translation Complete!'}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="py-4">
-                        {mutation.isPending && (
+                        {isPending && (
                             <div className="flex flex-col items-center justify-center py-8">
                                 <Loader2 className="h-8 w-8 animate-spin text-purple-500 mb-4" />
                                 <p className="text-sm text-gray-400">Processing...</p>
@@ -95,7 +83,7 @@ export function BatchTranslateButton({ projectId, targetLanguages }: BatchTransl
                     </div>
 
                     <DialogFooter>
-                        {!mutation.isPending && (
+                        {!isPending && (
                             <Button onClick={() => setOpen(false)} variant="secondary">
                                 Close
                             </Button>

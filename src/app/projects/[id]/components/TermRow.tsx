@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { Edit2, Trash2, Save, X, Check, Wand2, Copy, Info } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TranslationKey } from '@/types';
 import { toast } from 'sonner';
+import { updateTermAction, deleteTermAction } from '@/lib/actions/term.actions';
 
 interface TermRowProps {
     term: TranslationKey;
@@ -22,7 +22,10 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
     const [focusLang, setFocusLang] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [deleteInput, setDeleteInput] = useState('');
-    const queryClient = useQueryClient();
+
+    const [isPendingUpdate, startUpdate] = useTransition();
+    const [isPendingDelete, startDelete] = useTransition();
+
     const [formData, setFormData] = useState({
         stringName: term.stringName,
         remarks: term.remarks || '',
@@ -45,114 +48,37 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
         }
     }, [term, isEditing]);
 
-    const updateMutation = useMutation({
-        mutationFn: async (data: any) => {
-            const res = await fetch(`/api/projects/${projectId}/terms/${term.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) throw new Error('Failed to update term');
-            return res.json();
-        },
-        onSuccess: () => {
-            setIsEditing(false);
-            setFocusLang(null);
-            queryClient.invalidateQueries({ queryKey: ['terms', projectId] });
-        },
-        onError: (err) => {
-            toast.error('Update failed: ' + err.message);
-        }
-    });
-
-    const deleteMutation = useMutation({
-        mutationFn: async () => {
-            const res = await fetch(`/api/projects/${projectId}/terms/${term.id}`, {
-                method: 'DELETE',
-            });
-            if (!res.ok) throw new Error('Failed to delete term');
-            return res.json();
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['terms', projectId] });
-        },
-        onError: (err) => {
-            toast.error('Delete failed: ' + err.message);
-        }
-    });
-
-    const translateMutation = useMutation({
-        mutationFn: async ({ lang, text }: { lang: string; text: string }) => {
-            const res = await fetch('/api/translate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    projectId,
-                    texts: [text],
-                    targetLang: lang
-                })
-            });
-            if (!res.ok) throw new Error('Translation failed');
-            return res.json();
-        },
-        onSuccess: (data, variables) => {
-            if (data.translations && data.translations[0]) {
-                const translated = data.translations[0];
-                handleValueChange(variables.lang, translated);
-
-                if (isEditing) {
-                    // In edit mode — just update state, user saves manually
-                } else if (expectedRowLangs.current.length > 0) {
-                    // Row translate mode — collect results, batch save when all done
-                    pendingRowTranslations.current[variables.lang] = translated;
-                    const allDone = expectedRowLangs.current.every(
-                        l => l in pendingRowTranslations.current
-                    );
-                    if (allDone) {
-                        const allValues = { ...formData.values, ...pendingRowTranslations.current };
-                        updateMutation.mutate({ values: allValues });
-                        toast.success(`Row translated: ${Object.keys(pendingRowTranslations.current).length} languages`);
-                        pendingRowTranslations.current = {};
-                        expectedRowLangs.current = [];
-                    }
-                } else {
-                    // Single cell translate — save immediately
-                    updateMutation.mutate({
-                        values: { ...formData.values, [variables.lang]: translated }
-                    });
-                }
-            }
-        },
-        onError: (err, variables) => {
-            // In row translate mode, still mark as "done" with error to unblock batch
-            if (expectedRowLangs.current.length > 0) {
-                pendingRowTranslations.current[variables.lang] = formData.values[variables.lang] || '';
-                const allDone = expectedRowLangs.current.every(
-                    l => l in pendingRowTranslations.current
-                );
-                if (allDone) {
-                    const populated = Object.entries(pendingRowTranslations.current).filter(([, v]) => v);
-                    if (populated.length > 0) {
-                        updateMutation.mutate({ values: Object.fromEntries(populated) });
-                    }
-                    toast.warning(`Row translate completed with errors for ${variables.lang}`);
-                    pendingRowTranslations.current = {};
-                    expectedRowLangs.current = [];
-                }
+    const doUpdate = (data: any, onSuccessCb?: () => void) => {
+        startUpdate(async () => {
+            const res = await updateTermAction(projectId, term.id, data);
+            if (res.success) {
+                if (onSuccessCb) onSuccessCb();
             } else {
-                toast.error('Translate error: ' + err.message);
+                toast.error(res.error || 'Update failed');
             }
-        },
-        onSettled: (data, error, variables) => {
-            setTranslating(prev => prev.filter(l => l !== variables.lang));
-        }
-    });
+        });
+    };
+
+    const doDelete = () => {
+        startDelete(async () => {
+            const res = await deleteTermAction(projectId, term.id);
+            if (res.success) {
+                toast.success('Term deleted');
+            } else {
+                toast.error(res.error || 'Delete failed');
+            }
+        });
+    };
 
     const handleSave = () => {
-        updateMutation.mutate({
+        doUpdate({
             stringName: formData.stringName,
             remarks: formData.remarks,
             values: formData.values
+        }, () => {
+            setIsEditing(false);
+            setFocusLang(null);
+            toast.success('Term saved');
         });
     };
 
@@ -163,7 +89,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
         }));
     };
 
-    const handleTranslate = (lang: string) => {
+    const handleTranslate = async (lang: string) => {
         const currentBaseValue = isEditing ? formData.values[baseLanguage] : term.values.find(v => v.languageCode === baseLanguage)?.content;
         const currentStringName = isEditing ? formData.stringName : term.stringName;
 
@@ -174,7 +100,55 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
 
         setTranslating(prev => [...prev, lang]);
         const sourceText = currentBaseValue || currentStringName;
-        translateMutation.mutate({ lang, text: sourceText });
+
+        try {
+            const res = await fetch('/api/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId, texts: [sourceText], targetLang: lang })
+            });
+            if (!res.ok) throw new Error('Translation failed');
+            const data = await res.json();
+
+            if (data.translations && data.translations[0]) {
+                const translated = data.translations[0];
+                handleValueChange(lang, translated);
+
+                if (isEditing) {
+                    // user saves manually
+                } else if (expectedRowLangs.current.length > 0) {
+                    pendingRowTranslations.current[lang] = translated;
+                    const allDone = expectedRowLangs.current.every(l => l in pendingRowTranslations.current);
+                    if (allDone) {
+                        const allValues = { ...formData.values, ...pendingRowTranslations.current };
+                        doUpdate({ values: allValues });
+                        toast.success(`Row translated: ${Object.keys(pendingRowTranslations.current).length} languages`);
+                        pendingRowTranslations.current = {};
+                        expectedRowLangs.current = [];
+                    }
+                } else {
+                    doUpdate({ values: { ...formData.values, [lang]: translated } });
+                }
+            }
+        } catch (err: any) {
+            if (expectedRowLangs.current.length > 0) {
+                pendingRowTranslations.current[lang] = formData.values[lang] || '';
+                const allDone = expectedRowLangs.current.every(l => l in pendingRowTranslations.current);
+                if (allDone) {
+                    const populated = Object.entries(pendingRowTranslations.current).filter(([, v]) => v);
+                    if (populated.length > 0) {
+                        doUpdate({ values: Object.fromEntries(populated) });
+                    }
+                    toast.warning(`Row translate completed with errors for ${lang}`);
+                    pendingRowTranslations.current = {};
+                    expectedRowLangs.current = [];
+                }
+            } else {
+                toast.error('Translate error: ' + err.message);
+            }
+        } finally {
+            setTranslating(prev => prev.filter(l => l !== lang));
+        }
     };
 
     const handleTranslateRow = () => {
@@ -227,7 +201,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         <Button
                             variant="ghost" size="icon"
                             onClick={handleSave}
-                            disabled={updateMutation.isPending}
+                            disabled={isPendingUpdate}
                             className="text-green-400 hover:text-green-300 hover:bg-green-400/10"
                             title="Save"
                         >
@@ -314,11 +288,11 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         <div className="flex gap-1">
                             <Button
                                 variant="destructive" size="sm"
-                                onClick={() => deleteMutation.mutate()}
-                                disabled={deleteInput !== term.stringName || deleteMutation.isPending}
+                                onClick={doDelete}
+                                disabled={deleteInput !== term.stringName || isPendingDelete}
                                 className="h-6 text-xs flex-1"
                             >
-                                {deleteMutation.isPending ? '...' : 'Delete'}
+                                {isPendingDelete ? '...' : 'Delete'}
                             </Button>
                             <Button
                                 variant="ghost" size="sm"
