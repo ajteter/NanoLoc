@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NanoLoc Design System Preview</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style>
+        /* Fallback for inter font, though tailwind default is sans */
+        body { font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-50 min-h-screen p-8 sm:p-12 antialiased selection:bg-zinc-400/30">
+    <div class="max-w-5xl mx-auto space-y-16">
+        
+        <!-- Header -->
+        <div>
+            <h1 class="text-4xl font-semibold tracking-tight text-white mb-2">NanoLoc UI/UX Design System</h1>
+            <p class="text-zinc-400">A minimal, high-contrast, dark mode-only aesthetic.</p>
+        </div>
+
+        <!-- 1. Color Palette -->
+        <section class="space-y-6">
+            <h2 class="text-2xl font-semibold tracking-tight text-white border-b border-zinc-800 pb-2">1. Colors & Surfaces</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- App Background -->
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-lg bg-zinc-950 border border-zinc-800 shadow-sm flex items-center justify-center">
+                        <span class="text-xs text-zinc-500">950</span>
+                    </div>
+                    <div>
+                        <div class="font-medium text-sm">App Background</div>
+                        <code class="text-xs text-zinc-500 block">bg-zinc-950</code>
+                    </div>
+                </div>
+                <!-- Card Surface -->
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-lg bg-zinc-900 border border-zinc-800 shadow-sm flex items-center justify-center">
+                        <span class="text-xs text-zinc-500">900</span>
+                    </div>
+                    <div>
+                        <div class="font-medium text-sm">Card / Surface</div>
+                        <code class="text-xs text-zinc-500 block">bg-zinc-900 border-zinc-800</code>
+                    </div>
+                </div>
+                <!-- Interactive Surface -->
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-lg bg-zinc-800 border border-zinc-700 shadow-sm flex items-center justify-center">
+                        <span class="text-xs text-zinc-500">800</span>
+                    </div>
+                    <div>
+                        <div class="font-medium text-sm">Interactive / Hover</div>
+                        <code class="text-xs text-zinc-500 block">bg-zinc-800</code>
+                    </div>
+                </div>
+                <!-- Primary Text -->
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-lg bg-zinc-50 flex items-center justify-center">
+                        <span class="text-xs text-zinc-900">50</span>
+                    </div>
+                    <div>
+                        <div class="font-medium text-sm">Primary Text</div>
+                        <code class="text-xs text-zinc-500 block">text-zinc-50</code>
+                    </div>
+                </div>
+                <!-- Secondary Text -->
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-lg bg-zinc-400 flex items-center justify-center">
+                        <span class="text-xs text-zinc-900">400</span>
+                    </div>
+                    <div>
+                        <div class="font-medium text-sm">Secondary Text</div>
+                        <code class="text-xs text-zinc-500 block">text-zinc-400</code>
+                    </div>
+                </div>
+                <!-- Accent / Success -->
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <div>
+                        <div class="font-medium text-sm text-emerald-400">Accent (Success)</div>
+                        <code class="text-xs text-zinc-500 block">emerald-400 / 500/10</code>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Typography -->
+        <section class="space-y-6">
+            <h2 class="text-2xl font-semibold tracking-tight text-white border-b border-zinc-800 pb-2">2. Typography</h2>
+            <div class="space-y-4">
+                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-6 space-y-4">
+                    <div>
+                        <code class="text-xs text-zinc-500 block mb-1">text-3xl font-semibold tracking-tight text-white</code>
+                        <h1 class="text-3xl font-semibold tracking-tight text-white">Project Settings</h1>
+                    </div>
+                    <div>
+                        <code class="text-xs text-zinc-500 block mb-1">text-xl font-semibold text-white</code>
+                        <h2 class="text-xl font-semibold text-white">General Information</h2>
+                    </div>
+                    <div>
+                        <code class="text-xs text-zinc-500 block mb-1">text-sm text-zinc-300</code>
+                        <p class="text-sm text-zinc-300">This is the base text used throughout the application, specifically optimized for data density in SaaS tables and forms. It remains highly legible on the dark canvas.</p>
+                    </div>
+                    <div>
+                        <code class="text-xs text-zinc-500 block mb-1">text-xs text-zinc-500</code>
+                        <p class="text-xs text-zinc-500">Microcopy used for hints, timestamps, and secondary labels.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Buttons & Interactions -->
+        <section class="space-y-6">
+            <h2 class="text-2xl font-semibold tracking-tight text-white border-b border-zinc-800 pb-2">3. Buttons & Interactions</h2>
+            <div class="flex flex-wrap gap-6 items-end">
+                <!-- Primary -->
+                <div class="flex flex-col gap-2">
+                    <code class="text-xs text-zinc-500">Primary Action</code>
+                    <button class="px-4 py-2 rounded-md text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white active:bg-zinc-200 transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 cursor-pointer">
+                        Save Changes
+                    </button>
+                </div>
+                
+                <!-- Secondary -->
+                <div class="flex flex-col gap-2">
+                    <code class="text-xs text-zinc-500">Secondary Action</code>
+                    <button class="px-4 py-2 rounded-md text-sm font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 cursor-pointer">
+                        Cancel
+                    </button>
+                </div>
+
+                <!-- Destructive -->
+                <div class="flex flex-col gap-2">
+                    <code class="text-xs text-zinc-500">Destructive</code>
+                    <button class="px-4 py-2 rounded-md text-sm font-medium bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 cursor-pointer inline-flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Delete Project
+                    </button>
+                </div>
+
+                <!-- Ghost -->
+                <div class="flex flex-col gap-2">
+                    <code class="text-xs text-zinc-500">Ghost / Icon</code>
+                    <button class="p-2 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-zinc-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Components (Inputs, Forms, Cards) -->
+        <section class="space-y-6">
+            <h2 class="text-2xl font-semibold tracking-tight text-white border-b border-zinc-800 pb-2">4. Inputs & Composed Cards</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <!-- Standard Form Card -->
+                <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-6 shadow-sm">
+                    <h3 class="text-lg font-medium text-white mb-1">Create Term</h3>
+                    <p class="text-sm text-zinc-400 mb-6">Add a new translation key to the project.</p>
+                    
+                    <form class="space-y-4" onsubmit="event.preventDefault()">
+                        <div class="space-y-1.5">
+                            <label class="text-sm font-medium text-zinc-200">String Key</label>
+                            <input type="text" placeholder="e.g. common.buttons.submit" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 transition-colors">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-sm font-medium text-zinc-200">English (Base)</label>
+                            <textarea rows="2" placeholder="Submit" class="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 transition-colors resize-none"></textarea>
+                        </div>
+                        <div class="pt-2 flex justify-end gap-3">
+                            <button type="button" class="px-4 py-2 rounded-md text-sm font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 transition-colors cursor-pointer">Cancel</button>
+                            <button type="submit" class="px-4 py-2 rounded-md text-sm font-medium bg-zinc-100 text-zinc-900 hover:bg-white transition-colors cursor-pointer">Create Term</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Danger / Warning Card -->
+                <div class="bg-red-950/20 border border-red-900/50 rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-red-400 mb-2">Danger Zone</h3>
+                    <p class="text-sm text-zinc-400 mb-6">Deleting this project will permanently remove all terms and translations.</p>
+                    
+                    <div class="space-y-3">
+                        <label class="text-sm text-red-300 block">Type <span class="font-mono font-bold text-white">NanoLoc</span> to confirm:</label>
+                        <input type="text" placeholder="Type project name..." class="w-full px-3 py-2 bg-zinc-950 border border-red-900/50 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-colors">
+                        <button type="button" class="px-4 py-2 rounded-md text-sm font-medium bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 transition-colors cursor-pointer flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            Confirm Delete
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 5. Table Component -->
+        <section class="space-y-6">
+            <h2 class="text-2xl font-semibold tracking-tight text-white border-b border-zinc-800 pb-2">5. Data Table</h2>
+            
+            <div class="rounded-md border border-zinc-800 bg-zinc-900/50 overflow-hidden shadow-sm">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-zinc-900 border-b border-zinc-800">
+                        <tr>
+                            <th class="px-4 py-3 font-medium text-zinc-300">Key Name</th>
+                            <th class="px-4 py-3 font-medium text-zinc-300">English (Base)</th>
+                            <th class="px-4 py-3 font-medium text-zinc-300">Spanish</th>
+                            <th class="px-4 py-3 font-medium text-zinc-300 w-24">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-800/50">
+                        <tr class="hover:bg-zinc-800/50 transition-colors group">
+                            <td class="px-4 py-3 font-mono text-zinc-300 border-r border-zinc-800/50">common.login</td>
+                            <td class="px-4 py-3 text-zinc-100 border-r border-zinc-800/50 text-wrap min-w-[200px]">Log in to your account</td>
+                            <td class="px-4 py-3 text-emerald-400 border-r border-zinc-800/50 text-wrap min-w-[200px]">Inicia sesión en tu cuenta</td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    <button class="p-1.5 rounded bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors cursor-pointer"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-zinc-800/50 transition-colors group">
+                            <td class="px-4 py-3 font-mono text-zinc-300 border-r border-zinc-800/50">common.signup</td>
+                            <td class="px-4 py-3 text-zinc-100 border-r border-zinc-800/50 text-wrap min-w-[200px]">Create an account</td>
+                            <td class="px-4 py-3 text-zinc-500 italic border-r border-zinc-800/50 text-wrap min-w-[200px]">Missing translation</td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    <button class="p-1.5 rounded bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 transition-colors cursor-pointer"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-zinc-500 text-right mt-2">Row hovers use <code class="bg-zinc-800 px-1 rounded">hover:bg-zinc-800/50</code></p>
+        </section>
+        
+        <!-- Bottom spacing -->
+        <div class="h-12"></div>
+    </div>
+</body>
+</html>

@@ -4,10 +4,11 @@ import { useRef, useTransition } from 'react';
 import { Button } from "@/components/ui/button";
 import { Upload, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { importXmlAction } from '@/lib/actions/term.actions';
+import { importFileAction } from '@/lib/actions/term.actions';
 import { BatchTranslateButton } from './BatchTranslateButton';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProjectToolbarProps {
     projectId: string;
@@ -27,8 +28,8 @@ export function ProjectToolbar({ projectId, targetLanguages }: ProjectToolbarPro
             formData.append('file', file);
 
             startTransition(async () => {
-                const toastId = toast.loading('Importing XML...');
-                const res = await importXmlAction(projectId, formData);
+                const toastId = toast.loading('Importing...');
+                const res = await importFileAction(projectId, formData);
 
                 if (res.success) {
                     const data = res as any;
@@ -51,20 +52,29 @@ export function ProjectToolbar({ projectId, targetLanguages }: ProjectToolbarPro
         <div className="flex gap-3 items-center">
             <input
                 type="file"
-                accept=".xml"
+                accept=".xml,.json"
                 hidden
                 ref={fileInputRef}
                 onChange={handleFileUpload}
             />
 
-            <Button
-                variant="secondary"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isPending}
-            >
-                <Upload className="h-4 w-4 mr-2" />
-                {isPending ? 'Importing...' : 'Import XML'}
-            </Button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="secondary"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isPending}
+                        >
+                            <Upload className="h-4 w-4 mr-2" />
+                            {isPending ? 'Importing...' : 'Import'}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>.xml (Android) / .json (H5)</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
             <Button
                 variant="secondary"
                 asChild
@@ -79,7 +89,7 @@ export function ProjectToolbar({ projectId, targetLanguages }: ProjectToolbarPro
 
             <Button
                 onClick={handleNewTerm}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white"
+                className="bg-zinc-100 hover:bg-white text-zinc-900"
             >
                 <Plus className="h-4 w-4 mr-2" />
                 New Term

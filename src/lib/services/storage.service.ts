@@ -1,13 +1,13 @@
 import { prisma } from '@/lib/prisma';
 import { AndroidXmlParser } from '@/lib/parsers/android-xml';
+import { H5JsonParser } from '@/lib/parsers/h5-json';
 
 /**
- * Import an Android XML strings file into a project.
- * Returns counts of added, updated, and skipped terms.
+ * Shared upsert logic for importing parsed strings into a project.
  */
-export async function importXml(
+async function importParsedStrings(
     projectId: string,
-    xmlContent: string,
+    parsedStrings: { name: string; value: string }[],
     baseLanguage: string,
     userId: string
 ): Promise<{ added: number; updated: number; skipped: number }> {
@@ -17,13 +17,10 @@ export async function importXml(
         throw new Error(`Import failed: user ID "${userId}" not found. Please log out and log back in.`);
     }
 
-    const parser = new AndroidXmlParser();
-    const parsedStrings = parser.parse(xmlContent);
-
-    const xmlStringNames = parsedStrings.map((s) => s.name);
+    const stringNames = parsedStrings.map((s) => s.name);
 
     const existingKeys = await prisma.translationKey.findMany({
-        where: { projectId, stringName: { in: xmlStringNames } },
+        where: { projectId, stringName: { in: stringNames } },
         include: { values: true },
     });
 
@@ -42,8 +39,8 @@ export async function importXml(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const operations: any[] = [];
 
-    for (let xmlIndex = 0; xmlIndex < parsedStrings.length; xmlIndex++) {
-        const item = parsedStrings[xmlIndex];
+    for (let idx = 0; idx < parsedStrings.length; idx++) {
+        const item = parsedStrings[idx];
         const { name: stringName, value: content } = item;
         const existingKey = existingMap.get(stringName);
 
@@ -93,13 +90,13 @@ export async function importXml(
                 updated++;
             }
         } else {
-            // sortOrder = currentMax + 1 + xmlIndex, preserving XML order
+            // sortOrder = currentMax + 1 + idx, preserving file order
             operations.push(
                 prisma.translationKey.create({
                     data: {
                         projectId,
                         stringName,
-                        sortOrder: currentMaxOrder + 1 + xmlIndex,
+                        sortOrder: currentMaxOrder + 1 + idx,
                         lastModifiedById: userId,
                         values: {
                             create: {
@@ -125,6 +122,60 @@ export async function importXml(
     }
 
     return { added, updated, skipped };
+}
+
+/**
+ * Import an Android XML strings file into a project.
+ */
+export async function importXml(
+    projectId: string,
+    xmlContent: string,
+    baseLanguage: string,
+    userId: string
+): Promise<{ added: number; updated: number; skipped: number }> {
+    const parser = new AndroidXmlParser();
+    const parsedStrings = parser.parse(xmlContent);
+    return importParsedStrings(projectId, parsedStrings, baseLanguage, userId);
+}
+
+/**
+ * Import an H5 flat JSON localization file into a project.
+ */
+export async function importJson(
+    projectId: string,
+    jsonContent: string,
+    baseLanguage: string,
+    userId: string
+): Promise<{ added: number; updated: number; skipped: number }> {
+    const parser = new H5JsonParser();
+    const parsedStrings = parser.parse(jsonContent);
+    return importParsedStrings(projectId, parsedStrings, baseLanguage, userId);
+}
+
+/**
+ * Auto-detect file format and import accordingly.
+ * Supports: .xml (Android), .json (H5 flat JSON)
+ */
+export async function importFile(
+    projectId: string,
+    fileContent: string,
+    fileName: string,
+    baseLanguage: string,
+    userId: string
+): Promise<{ added: number; updated: number; skipped: number; format: string }> {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+
+    if (ext === 'xml') {
+        const result = await importXml(projectId, fileContent, baseLanguage, userId);
+        return { ...result, format: 'xml' };
+    }
+
+    if (ext === 'json') {
+        const result = await importJson(projectId, fileContent, baseLanguage, userId);
+        return { ...result, format: 'json' };
+    }
+
+    throw new Error(`Unsupported file format: .${ext}. Supported formats: .xml (Android), .json (H5)`);
 }
 
 /**

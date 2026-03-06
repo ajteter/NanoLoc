@@ -49,3 +49,8 @@ next-env.d.ts
 # Misc
 *.pem
 .vercel
+
+# Others
+Prompt.md/
+Import Samples/
+.agent/

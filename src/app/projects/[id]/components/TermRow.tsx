@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2 } from "lucide-react";
 import { TranslationKey } from '@/types';
 import { toast } from 'sonner';
 import { updateTermAction, deleteTermAction } from '@/lib/actions/term.actions';
+import { cn } from '@/lib/utils';
 
 interface TermRowProps {
     term: TranslationKey;
@@ -195,14 +198,14 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
 
     if (isEditing) {
         return (
-            <tr className="bg-gray-800/50 hover:bg-gray-800/70 transition-colors">
-                <td className="p-4 align-top border-r border-gray-800 bg-gray-900 sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+            <tr className="bg-zinc-800/50 hover:bg-zinc-800/70 transition-colors">
+                <td className="p-4 align-top border-r border-zinc-800 bg-zinc-900 sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
                     <div className="flex gap-1">
                         <Button
                             variant="ghost" size="icon"
                             onClick={handleSave}
                             disabled={isPendingUpdate}
-                            className="text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                            className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10"
                             title="Save"
                         >
                             <Check className="w-4 h-4" />
@@ -210,38 +213,38 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         <Button
                             variant="ghost" size="icon"
                             onClick={() => { setIsEditing(false); setFocusLang(null); }}
-                            className="text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+                            className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700"
                             title="Cancel"
                         >
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
                 </td>
-                <td className="p-4 align-top border-r border-gray-800 bg-gray-900 sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                <td className="p-4 align-top border-r border-zinc-800 bg-zinc-900 sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
                     <Input
                         value={formData.stringName}
                         onChange={(e) => setFormData(p => ({ ...p, stringName: e.target.value }))}
-                        className="bg-gray-900 border-gray-700 text-white h-auto py-2 w-full"
+                        className="bg-zinc-900 border-zinc-700 text-white h-auto py-2 w-full"
                     />
                 </td>
-                <td className="p-4 align-top border-r border-gray-800 bg-gray-900 sticky left-[300px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                <td className="p-4 align-top border-r border-zinc-800 bg-zinc-900 sticky left-[300px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
                     <Textarea
                         value={formData.remarks}
                         onChange={(e) => setFormData(p => ({ ...p, remarks: e.target.value }))}
-                        className="bg-gray-900 border-gray-700 text-gray-400 min-h-[4rem] w-full"
+                        className="bg-zinc-900 border-zinc-700 text-zinc-400 min-h-[4rem] w-full"
                     />
                 </td>
                 <td className="p-4 align-top relative group/base">
                     <Textarea
                         value={formData.values[baseLanguage] || ''}
                         onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
-                        className="bg-gray-900 border-gray-700 text-white min-h-[4rem]"
+                        className="bg-zinc-900 border-zinc-700 text-white min-h-[4rem]"
                         autoFocus={focusLang === baseLanguage}
                     />
                     <Button
                         variant="ghost" size="icon"
                         onClick={handleCopyToAll}
-                        className="absolute bottom-5 right-5 h-6 w-6 text-gray-400 hover:text-white opacity-0 group-hover/base:opacity-100 transition-opacity"
+                        className="absolute bottom-5 right-5 h-6 w-6 text-zinc-400 hover:text-white opacity-0 group-hover/base:opacity-100 transition-opacity"
                         title="Copy to all (Overwrite)"
                         type="button"
                     >
@@ -253,18 +256,18 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         <Textarea
                             value={formData.values[lang] || ''}
                             onChange={(e) => handleValueChange(lang, e.target.value)}
-                            className="bg-gray-900 border-gray-700 text-white min-h-[4rem]"
+                            className="bg-zinc-900 border-zinc-700 text-white min-h-[4rem]"
                             autoFocus={focusLang === lang}
                         />
                         <Button
                             variant="ghost" size="icon"
                             onClick={() => handleTranslate(lang)}
                             disabled={translating.includes(lang)}
-                            className="absolute bottom-5 right-5 h-6 w-6 text-indigo-400 hover:text-indigo-300 opacity-0 group-hover/cell:opacity-100 transition-opacity disabled:opacity-50"
+                            className="absolute bottom-5 right-5 h-6 w-6 text-zinc-300 hover:text-zinc-200 opacity-0 group-hover/cell:opacity-100 transition-opacity disabled:opacity-50"
                             title="AI Translate"
                             type="button"
                         >
-                            <Wand2 className={`w-3 h-3 ${translating.includes(lang) ? 'animate-pulse' : ''}`} />
+                            <Wand2 className={cn("w-3 h-3 text-emerald-400", translating.includes(lang) && "animate-pulse")} />
                         </Button>
                     </td>
                 ))}
@@ -273,15 +276,15 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
     }
 
     return (
-        <tr className="hover:bg-gray-800/50 transition-colors group border-b border-gray-800 last:border-0 relative">
-            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 align-top border-r border-gray-800 bg-gray-900 group-hover:bg-gray-800 transition-colors sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[100px] min-w-[100px]">
+        <tr className="hover:bg-zinc-800/50 transition-colors group border-b border-zinc-800 last:border-0 relative">
+            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[100px] min-w-[100px]">
                 {deleteConfirm ? (
                     <div className="flex flex-col gap-1 min-w-[180px]">
                         <p className="text-xs text-red-400">Type <span className="font-mono font-bold">{term.stringName}</span> to confirm:</p>
                         <Input
                             value={deleteInput}
                             onChange={(e) => setDeleteInput(e.target.value)}
-                            className="bg-gray-900 border-red-700 text-white h-7 text-xs"
+                            className="bg-zinc-900 border-red-700 text-white h-7 text-xs"
                             autoFocus
                             placeholder="Type key name..."
                         />
@@ -297,7 +300,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                             <Button
                                 variant="ghost" size="sm"
                                 onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
-                                className="h-6 text-xs text-gray-400"
+                                className="h-6 text-xs text-zinc-400"
                             >
                                 Cancel
                             </Button>
@@ -308,7 +311,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         <Button
                             variant="ghost" size="icon"
                             onClick={() => enterEditMode()}
-                            className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-400/10"
+                            className="text-zinc-300 hover:text-zinc-200 hover:bg-white/10"
                             title="Edit"
                         >
                             <Edit2 className="w-4 h-4" />
@@ -316,10 +319,10 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         <Button
                             variant="ghost" size="icon"
                             onClick={handleTranslateRow}
-                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                            className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
                             title="Translate Row"
                         >
-                            <Wand2 className="w-4 h-4" />
+                            <Wand2 className="w-4 h-4 text-emerald-400" />
                         </Button>
                         <Button
                             variant="ghost" size="icon"
@@ -332,16 +335,16 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                     </div>
                 )}
             </td>
-            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6 max-w-xs break-all truncate align-top border-r border-gray-800 bg-gray-900 group-hover:bg-gray-800 transition-colors sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]">
+            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6 max-w-xs break-all truncate align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]">
                 <div className="truncate" title={term.stringName}>{term.stringName}</div>
-                <div className="text-xs text-gray-600 mt-1 font-mono">{lastUpdated}</div>
+                <div className="text-xs text-zinc-600 mt-1 font-mono">{lastUpdated}</div>
             </td>
-            <td className="px-3 py-4 text-sm text-gray-400 max-w-xs truncate align-top border-r border-gray-800 bg-gray-900 group-hover:bg-gray-800 transition-colors sticky left-[300px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]">
+            <td className="px-3 py-4 text-sm text-zinc-400 max-w-xs truncate align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-[300px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]">
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <div className="truncate cursor-help">
-                                {term.remarks || <span className="text-gray-600 italic">No remarks</span>}
+                                {term.remarks || <span className="text-zinc-600 italic">No remarks</span>}
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -351,14 +354,14 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                 </TooltipProvider>
             </td>
             <td
-                className="whitespace-pre-wrap px-3 py-4 text-sm text-gray-300 max-w-xs align-top cursor-pointer hover:bg-gray-700/30 transition-colors"
+                className="whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors"
                 onClick={() => enterEditMode(baseLanguage)}
             >
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <div className="cursor-help decoration-dashed decoration-gray-600 underline-offset-4">
-                                {baseValue || <span className="text-gray-600 italic">Empty</span>}
+                            <div className="cursor-help decoration-dashed decoration-zinc-600 underline-offset-4">
+                                {baseValue || <span className="text-zinc-600 italic">Empty</span>}
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -378,14 +381,14 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                 return (
                     <td
                         key={lang}
-                        className="whitespace-pre-wrap px-3 py-4 text-sm text-gray-300 max-w-xs align-top cursor-pointer hover:bg-gray-700/30 transition-colors"
+                        className="whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors"
                         onClick={() => enterEditMode(lang)}
                     >
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div className="cursor-help">
-                                        {val || <span className="text-gray-600 italic">Empty</span>}
+                                        {val || <span className="text-zinc-600 italic">Empty</span>}
                                     </div>
                                 </TooltipTrigger>
                                 {modBy && (
@@ -398,6 +401,25 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                     </td>
                 );
             })}
+
+            <Dialog open={translating.length > 0} onOpenChange={() => { }}>
+                <DialogContent className="bg-zinc-900 border-zinc-800 text-white [&>button]:hidden">
+                    <DialogHeader>
+                        <DialogTitle>Translating {translating.length > 1 ? 'Row' : 'Term'}</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Translating using AI... This may take a while.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-emerald-400 mb-4" />
+                        <p className="text-sm text-zinc-400">
+                            {translating.length === 1 ? 'Translating definition into target language...' : `Translating ${translating.length} missing languages in row...`}
+                        </p>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
         </tr>
     );
 }

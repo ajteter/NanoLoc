@@ -14,12 +14,12 @@ export function SiteHeader() {
     if (isLoginPage) return null;
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-gray-800 bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-gray-950/60">
+        <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60">
             <div className="container flex h-14 items-center mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8">
                 <div className="mr-4 hidden md:flex">
                     <Link href="/" className="mr-6 flex items-center space-x-2">
                         <LogoIcon className="w-7 h-7" />
-                        <span className="hidden font-bold sm:inline-block bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent text-xl">
+                        <span className="hidden font-bold sm:inline-block text-zinc-50 tracking-tight text-xl">
                             NanoLoc
                         </span>
                     </Link>

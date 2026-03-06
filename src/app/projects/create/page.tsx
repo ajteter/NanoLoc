@@ -39,15 +39,15 @@ export default function CreateProjectPage() {
     return (
         <div className="container mx-auto max-w-5xl py-8 px-4 sm:px-6 lg:px-8">
             <div className="mb-8">
-                <Link href="/projects" className="flex items-center text-sm text-gray-400 hover:text-white mb-4 transition-colors">
+                <Link href="/projects" className="flex items-center text-sm text-zinc-400 hover:text-white mb-4 transition-colors">
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Back to Projects
                 </Link>
                 <h1 className="text-3xl font-bold text-white">Create New Project</h1>
-                <p className="text-gray-400 mt-2">Initialize a new localization project.</p>
+                <p className="text-zinc-400 mt-2">Initialize a new localization project.</p>
             </div>
 
-            <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 sm:p-8">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 sm:p-8">
                 <ProjectForm
                     onSubmit={(data) => mutation.mutate(data)}
                     isSubmitting={mutation.isPending}

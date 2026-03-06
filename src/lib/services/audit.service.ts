@@ -9,6 +9,7 @@ export type AuditAction =
     | 'DELETE_TERM'
     | 'UPDATE_TRANSLATION'
     | 'IMPORT_XML'
+    | 'IMPORT_FILE'
     | 'BATCH_TRANSLATE';
 
 /**

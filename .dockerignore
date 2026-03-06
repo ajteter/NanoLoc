@@ -10,3 +10,6 @@ data/
 .DS_Store
 .vscode/
 .benchmarks/
+Prompt.md/
+Import Samples/
+.agent/

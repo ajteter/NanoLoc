@@ -12,16 +12,18 @@ NanoLoc is a lightweight localization (i18n) management platform with AI-powered
 - **Activity Log**: Global audit log tracking all changes (project/term CRUD, translations, imports, batch translates) with user attribution
 - **User Profile**: Change display name and password from the UI
 - **Audit Trail**: Tracks "Last Modified By" for every translation entry
-- **Modern UI**: Sticky columns, server-side pagination, instant search, real-time translation status
+- **Modern SaaS UI**: Monochrome dark mode (Zinc & Emerald) with high data density, sticky columns, instant search, and real-time translation status
+- **Smart Navigation**: Dual pagination (Top & Bottom on project pages) and streamlined dashboard navigation
 - **Security**: NextAuth.js username-based authentication
 - **Concurrency Safe**: SQLite WAL mode, busy timeout, process-level batch translation locks, chunked import transactions
 - **Translation Scripts**: Offline CSV-to-Android-res conversion scripts for OPPO and Vanso apps
 
 ## 🛠 Tech Stack
 
-- **Framework**: [Next.js 15 (App Router)](https://nextjs.org/)
+- **Framework**: [Next.js 16 (App Router)](https://nextjs.org/)
 - **Database**: [Prisma](https://www.prisma.io/) + SQLite (Dev) / PostgreSQL (Prod)
-- **UI**: [Tailwind CSS](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/), [Lucide Icons](https://lucide.dev/)
+- **UI**: [Tailwind CSS v4](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/), [Lucide Icons](https://lucide.dev/)
+- **Branding**: Monochrome tech startup logo ([icon.svg](./public/icon.svg))
 - **Authentication**: [NextAuth.js (v5 Beta)](https://authjs.dev/)
 
 ## 📁 Project Structure

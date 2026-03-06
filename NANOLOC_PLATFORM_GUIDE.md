@@ -82,13 +82,15 @@ NanoLoc 是一个轻量级多语言翻译管理平台，为应用开发团队提
 - **分页**：服务端分页，每页 50 条
 - **冻结列**：Key 列和基础语言列固定不动，方便横向滚动查看其他语言
 - **审计信息**：每个翻译单元格显示最后修改人
+- **魔法棒图标**：所有 AI 触发动作（单条、行、列、批量）均统一为 **Emerald (祖母绿)** 色调。
+- **双分页系统**：在词条列表的顶部和底部均提供了分页控制，极大减少了长列表滚动后的操作负担。
 
 ### 五、AI 翻译
 
 NanoLoc 集成了 AI 翻译功能，支持四种翻译模式：
 
 #### 1. 单单元格翻译
-- 点击任意目标语言单元格中的 🪄 **魔术棒图标**
+- 点击任意目标语言单元格中的 🪄 **绿色魔法棒图标**
 - AI 会根据源语言内容翻译到该目标语言
 - 适合逐条精确翻译
 
@@ -97,7 +99,8 @@ NanoLoc 集成了 AI 翻译功能，支持四种翻译模式：
 - 适合一次性完成单个 key 的所有语言翻译
 
 #### 3. 整列翻译
-- 选择某一列（目标语言），AI 将所有空的单元格翻译
+- **方案 A**：点击目标语言列头中的 🪄 **绿色魔法棒**
+- **方案 B**：AI 将所有空的单元格翻译
 - 适合快速补全某个语言的所有缺失翻译
 
 #### 4. 批量翻译
@@ -227,6 +230,8 @@ Click the ✏️ edit icon on any row to modify translations.
 - **Pagination**: Server-side, 50 items per page
 - **Sticky Columns**: Key and base language columns are frozen for easy horizontal scrolling
 - **Audit**: Each cell shows the last modifier
+- **Wand Palette**: All AI-triggered actions (Cell, Row, Column, Batch) are unified with **Emerald** success tones
+- **Smart Navigation**: Dual-pagination controls at both Top and Bottom of the term grids
 
 ### 5. AI Translation
 

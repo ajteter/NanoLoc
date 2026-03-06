@@ -78,7 +78,7 @@ export default function ProjectSettingsPage() {
         }
     });
 
-    if (isLoading) return <div className="container mx-auto py-12 text-center text-gray-400">Loading settings...</div>;
+    if (isLoading) return <div className="container mx-auto py-12 text-center text-zinc-400">Loading settings...</div>;
     if (isError || !project) return <div className="container mx-auto py-12 text-center text-red-500">Failed to load project</div>;
 
     const initialData = {
@@ -95,20 +95,20 @@ export default function ProjectSettingsPage() {
     return (
         <div className="container mx-auto max-w-5xl py-8 px-4 sm:px-6 lg:px-8">
             <div className="mb-8">
-                <Link href={`/projects/${projectId}`} className="flex items-center text-sm text-gray-400 hover:text-white mb-4 transition-colors">
+                <Link href={`/projects/${projectId}`} className="flex items-center text-sm text-zinc-400 hover:text-white mb-4 transition-colors">
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Back to Project
                 </Link>
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-white">Project Settings</h1>
-                        <p className="text-gray-400 mt-2">Manage configuration for <span className="text-white font-medium">{project.name}</span>.</p>
+                        <p className="text-zinc-400 mt-2">Manage configuration for <span className="text-white font-medium">{project.name}</span>.</p>
                     </div>
                 </div>
             </div>
 
             <div className="grid gap-8">
-                <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 sm:p-8">
+                <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 sm:p-8">
                     <ProjectForm
                         initialData={initialData}
                         onSubmit={(data) => updateMutation.mutate(data)}
@@ -119,7 +119,7 @@ export default function ProjectSettingsPage() {
 
                 <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-6 sm:p-8">
                     <h3 className="text-lg font-medium text-red-400 mb-2">Danger Zone</h3>
-                    <p className="text-gray-400 text-sm mb-4">Deleting this project will permanently remove all terms and translations.</p>
+                    <p className="text-zinc-400 text-sm mb-4">Deleting this project will permanently remove all terms and translations.</p>
 
                     {deleteConfirm ? (
                         <div className="space-y-3 max-w-md">
@@ -129,7 +129,7 @@ export default function ProjectSettingsPage() {
                             <Input
                                 value={deleteInput}
                                 onChange={(e) => setDeleteInput(e.target.value)}
-                                className="bg-gray-900 border-red-700 text-white"
+                                className="bg-zinc-900 border-red-700 text-white"
                                 autoFocus
                                 placeholder="Type project name..."
                             />
@@ -145,7 +145,7 @@ export default function ProjectSettingsPage() {
                                 <Button
                                     variant="ghost"
                                     onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
-                                    className="text-gray-400"
+                                    className="text-zinc-400"
                                 >
                                     Cancel
                                 </Button>

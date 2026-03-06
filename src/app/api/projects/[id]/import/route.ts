@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getProject } from '@/lib/services/project.service';
-import { importXml } from '@/lib/services/storage.service';
+import { importFile } from '@/lib/services/storage.service';
 import { logAudit } from '@/lib/services/audit.service';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -28,9 +28,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
         }
 
-        const xmlContent = await file.text();
-        const result = await importXml(projectId, xmlContent, project.baseLanguage, userId);
-        logAudit({ action: 'IMPORT_XML', userId, projectId, projectName: project.name, details: result });
+        const fileContent = await file.text();
+        const result = await importFile(projectId, fileContent, file.name, project.baseLanguage, userId);
+        logAudit({ action: 'IMPORT_FILE', userId, projectId, projectName: project.name, details: result });
         return NextResponse.json({ success: true, ...result });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error';

@@ -12,16 +12,18 @@ NanoLoc 是一个轻量级的本地化 (i18n) 管理平台，支持 AI 驱动的
 - **改动记录**：全局审计日志，跟踪所有变更（项目/词条增删改、翻译更新、导入、批量翻译），标注操作人
 - **用户设置**：支持修改显示名称和密码
 - **审计追踪**：记录每条翻译的最后修改人
-- **现代 UI**：冻结列、服务端分页、即时搜索、实时翻译状态指示
+- **现代 SaaS UI**：黑白灰极简极深模式 (Zinc & Emerald)，高数据密度，支持冻结列、即时搜索、实时翻译状态
+- **智能导航**：双分页系统（详情页顶部 & 底部均有分页控制），优化的仪表盘布局
 - **安全认证**：基于用户名的 NextAuth.js 认证
 - **并发安全**：SQLite WAL 模式、busy timeout、批量翻译进程锁、导入事务分块
 - **翻译转换脚本**：提供离线 CSV 转 Android res 资源文件的脚本（OPPO / Vanso）
 
 ## 🛠 技术栈
 
-- **框架**：[Next.js 15 (App Router)](https://nextjs.org/)
+- **框架**：[Next.js 16 (App Router)](https://nextjs.org/)
 - **数据库**：[Prisma](https://www.prisma.io/) + SQLite (开发) / PostgreSQL (生产)
-- **UI**：[Tailwind CSS](https://tailwindcss.com/)、[Shadcn UI](https://ui.shadcn.com/)、[Lucide Icons](https://lucide.dev/)
+- **UI**：[Tailwind CSS v4](https://tailwindcss.com/)、[Shadcn UI](https://ui.shadcn.com/)、[Lucide Icons](https://lucide.dev/)
+- **品牌设计**：极简科技感 Logo ([icon.svg](./public/icon.svg))
 - **认证**：[NextAuth.js (v5 Beta)](https://authjs.dev/)
 
 ## 📁 项目结构

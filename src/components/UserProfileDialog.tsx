@@ -103,18 +103,19 @@ export function UserProfileDialog() {
         <Dialog open={open} onOpenChange={handleOpen}>
             <DialogTrigger asChild>
                 <Button
+                    id="profile-trigger"
                     variant="ghost"
                     size="sm"
-                    className="text-gray-400 hover:text-white hover:bg-gray-800 gap-2"
+                    className="hidden"
                     title="Profile Settings"
                 >
                     <UserCog className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 text-white">
+            <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700 text-white">
                 <DialogHeader>
                     <DialogTitle className="text-white">Profile Settings</DialogTitle>
-                    <DialogDescription className="text-gray-400">
+                    <DialogDescription className="text-zinc-400">
                         Update your display name or password.
                     </DialogDescription>
                 </DialogHeader>
@@ -122,13 +123,13 @@ export function UserProfileDialog() {
                 <div className="space-y-5 mt-2">
                     {/* Username (read-only) */}
                     <div className="space-y-1.5">
-                        <Label className="text-gray-400">Username</Label>
+                        <Label className="text-zinc-400">Username</Label>
                         <Input
-                            value={session?.user?.name || ''}
+                            value={(session?.user as any)?.username || session?.user?.name || ''}
                             disabled
-                            className="bg-gray-800 border-gray-700 text-gray-400"
+                            className="bg-zinc-800 border-zinc-700 text-zinc-400"
                         />
-                        <p className="text-xs text-gray-500">Username cannot be changed.</p>
+                        <p className="text-xs text-zinc-500">Username cannot be changed.</p>
                     </div>
 
                     {/* Display Name */}
@@ -138,14 +139,17 @@ export function UserProfileDialog() {
                             id="profile-name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="bg-gray-800 border-gray-700"
+                            className="bg-zinc-800 border-zinc-700"
                             placeholder="Your display name"
                         />
+                        <p className="text-xs text-zinc-500 mt-1">
+                            Your Profile Settings Display Name changes how you appear visually. You will still use your original Username to log in.
+                        </p>
                     </div>
 
                     {/* Password Section */}
-                    <div className="border-t border-gray-700 pt-4 space-y-3">
-                        <h4 className="text-sm font-medium text-gray-300">Change Password</h4>
+                    <div className="border-t border-zinc-700 pt-4 space-y-3">
+                        <h4 className="text-sm font-medium text-zinc-300">Change Password</h4>
 
                         <div className="space-y-1.5">
                             <Label htmlFor="current-pw">Current Password</Label>
@@ -155,13 +159,13 @@ export function UserProfileDialog() {
                                     type={showCurrent ? 'text' : 'password'}
                                     value={currentPassword}
                                     onChange={(e) => setCurrentPassword(e.target.value)}
-                                    className="bg-gray-800 border-gray-700 pr-10"
+                                    className="bg-zinc-800 border-zinc-700 pr-10"
                                     placeholder="Enter current password"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowCurrent(!showCurrent)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
                                 >
                                     {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>
@@ -176,13 +180,13 @@ export function UserProfileDialog() {
                                     type={showNew ? 'text' : 'password'}
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
-                                    className="bg-gray-800 border-gray-700 pr-10"
+                                    className="bg-zinc-800 border-zinc-700 pr-10"
                                     placeholder="At least 6 characters"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowNew(!showNew)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
                                 >
                                     {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 </button>
@@ -196,7 +200,7 @@ export function UserProfileDialog() {
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="bg-gray-800 border-gray-700"
+                                className="bg-zinc-800 border-zinc-700"
                                 placeholder="Repeat new password"
                             />
                         </div>
@@ -205,7 +209,7 @@ export function UserProfileDialog() {
                     <Button
                         onClick={handleSave}
                         disabled={loading}
-                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white"
+                        className="w-full bg-zinc-100 hover:bg-white text-zinc-900"
                     >
                         {loading ? 'Saving...' : 'Save Changes'}
                     </Button>

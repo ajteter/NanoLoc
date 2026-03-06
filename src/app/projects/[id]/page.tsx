@@ -11,6 +11,7 @@ import { PaginationControls } from './components/PaginationControls';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TermRow } from './components/TermRow';
 import { CreateTermRowWrapper } from './components/CreateTermRowWrapper';
+import { TranslateColumnHead } from './components/TranslateColumnHead';
 import { LANGUAGES } from '@/lib/constants/languages';
 
 const getLangDisplayStr = (code: string) => {
@@ -43,27 +44,27 @@ export default async function ProjectDetailPage({
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
-                        <Link href="/" className="text-gray-400 hover:text-white transition-colors">
+                        <Link href="/" className="text-zinc-400 hover:text-white transition-colors">
                             <Home className="h-4 w-4" />
                         </Link>
-                        <span className="text-gray-600">/</span>
-                        <span className="text-gray-200 text-sm font-medium">{project.name}</span>
+                        <span className="text-zinc-600">/</span>
+                        <span className="text-zinc-200 text-sm font-medium">{project.name}</span>
                     </div>
                     <div className="flex items-baseline gap-4">
                         <h1 className="text-3xl font-bold tracking-tight text-white">
                             {project.name}
                         </h1>
-                        <Badge variant="outline" className="text-gray-400 border-gray-600">
+                        <Badge variant="outline" className="text-zinc-400 border-zinc-600">
                             {project.baseLanguage || 'en-US'}
                         </Badge>
-                        <Button variant="outline" size="sm" asChild className="text-gray-300 border-gray-600 hover:bg-gray-800 hover:text-white gap-2">
+                        <Button variant="outline" size="sm" asChild className="text-zinc-300 border-zinc-600 hover:bg-zinc-800 hover:text-white gap-2">
                             <Link href={`/projects/${id}/settings`}>
                                 <Settings className="h-4 w-4" />
                                 Settings
                             </Link>
                         </Button>
                     </div>
-                    <p className="mt-1 text-sm text-gray-400 max-w-2xl">{project.description}</p>
+                    <p className="mt-1 text-sm text-zinc-400 max-w-2xl">{project.description}</p>
                 </div>
 
                 <ProjectToolbar
@@ -100,25 +101,24 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
                 <PaginationControls total={termsData.meta.total} page={page} limit={limit} totalPages={termsData.meta.totalPages} />
             </div>
 
-            <div className="rounded-md border border-gray-700 bg-gray-900/50 overflow-hidden">
+            <div className="rounded-md border border-zinc-700 bg-zinc-900/50 overflow-hidden">
                 <div className="overflow-x-auto">
                     <Table>
-                        <TableHeader className="bg-gray-800">
-                            <TableRow className="border-gray-700 hover:bg-gray-800">
-                                <TableHead className="w-[100px] min-w-[100px] bg-gray-900 border-r border-gray-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Actions</TableHead>
-                                <TableHead className="w-[200px] min-w-[200px] bg-gray-900 border-r border-gray-800 sticky left-[100px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-gray-300">Key</TableHead>
-                                <TableHead className="w-[200px] min-w-[200px] bg-gray-900 border-r border-gray-800 sticky left-[300px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-gray-300">Remarks</TableHead>
-                                <TableHead className="text-gray-300 w-64 min-w-[16rem]">
+                        <TableHeader className="bg-zinc-800">
+                            <TableRow className="border-zinc-700 hover:bg-zinc-800">
+                                <TableHead className="w-[100px] min-w-[100px] bg-zinc-900 border-r border-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Actions</TableHead>
+                                <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[100px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Key</TableHead>
+                                <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[300px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Remarks</TableHead>
+                                <TableHead className="text-zinc-300 w-64 min-w-[16rem]">
                                     {getLangDisplayStr(project.baseLanguage || 'en-US')}
                                 </TableHead>
                                 {targetLangs.map((lang: string) => (
-                                    <TableHead key={lang} className="text-gray-300 w-64 min-w-[16rem]">
-                                        <div className="flex items-center gap-2">
-                                            <span className="truncate" title={getLangDisplayStr(lang)}>
-                                                {getLangDisplayStr(lang)}
-                                            </span>
-                                        </div>
-                                    </TableHead>
+                                    <TranslateColumnHead
+                                        key={lang}
+                                        projectId={projectId}
+                                        lang={lang}
+                                        displayStr={getLangDisplayStr(lang)}
+                                    />
                                 ))}
                             </TableRow>
                         </TableHeader>
@@ -133,7 +133,7 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
 
                             {termsData.data.length === 0 && !isCreating ? (
                                 <TableRow>
-                                    <TableCell colSpan={10} className="h-24 text-center text-gray-400">
+                                    <TableCell colSpan={10} className="h-24 text-center text-zinc-400">
                                         No terms found
                                     </TableCell>
                                 </TableRow>
@@ -152,15 +152,19 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
                     </Table>
                 </div>
             </div>
+
+            <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 mt-4">
+                <PaginationControls total={termsData.meta.total} page={page} limit={limit} totalPages={termsData.meta.totalPages} />
+            </div>
         </>
     );
 }
 
 function TableLoadingSkeleton({ targetLangs, baseLang }: any) {
     return (
-        <div className="rounded-md border border-gray-700 bg-gray-900/50 overflow-hidden animate-pulse">
+        <div className="rounded-md border border-zinc-700 bg-zinc-900/50 overflow-hidden animate-pulse">
             <div className="h-[400px] flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+                <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
             </div>
         </div>
     );

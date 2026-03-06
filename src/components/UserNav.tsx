@@ -30,28 +30,33 @@ export function UserNav({ showName }: UserNavProps) {
 
     return (
         <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8 border border-gray-700">
-                    {session.user.image && <AvatarImage src={session.user.image} alt={session.user.name || ""} />}
-                    <AvatarFallback className="bg-indigo-600 text-white font-medium text-xs">{initials}</AvatarFallback>
-                </Avatar>
-                {showName && (
-                    <div className="hidden md:flex flex-col">
-                        <span className="text-sm font-medium text-white leading-none">{session.user.name}</span>
-                    </div>
-                )}
-            </div>
             <UserProfileDialog />
-            <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-400 hover:text-white hover:bg-gray-800"
-                onClick={() => signOut()}
-                title="Sign out"
-            >
-                <LogOut className="h-4 w-4" />
-                {showName && <span className="ml-2">Sign out</span>}
-            </Button>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full border border-zinc-700">
+                        <Avatar className="h-8 w-8">
+                            {session.user.image && <AvatarImage src={session.user.image} alt={session.user.name || ""} />}
+                            <AvatarFallback className="bg-zinc-100 text-zinc-900 font-medium text-xs dark:bg-zinc-800 dark:text-zinc-100">{initials}</AvatarFallback>
+                        </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-zinc-900 border-zinc-800 text-white" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">{session.user.name}</p>
+                        </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-zinc-800" />
+                    <DropdownMenuItem className="cursor-pointer focus:bg-zinc-800 focus:text-white" onClick={() => document.getElementById('profile-trigger')?.click()}>
+                        <UserIcon className="mr-2 h-4 w-4" />
+                        <span>Profile Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer text-red-500 focus:bg-red-500/10 focus:text-red-500" onClick={() => signOut()}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Sign out</span>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     );
 }

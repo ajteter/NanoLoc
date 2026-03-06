@@ -33,10 +33,10 @@ function CopyButton({ text }: { text: string }) {
             variant="ghost"
             size="icon"
             onClick={handleCopy}
-            className="h-6 w-6 text-gray-400 hover:text-white shrink-0"
+            className="h-6 w-6 text-zinc-400 hover:text-white shrink-0"
             title="Copy"
         >
-            {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+            {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
         </Button>
     );
 }
@@ -67,13 +67,13 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
                     API
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl bg-gray-900 border-gray-700 text-white">
+            <DialogContent className="sm:max-w-2xl bg-zinc-900 border-zinc-700 text-white">
                 <DialogHeader>
                     <DialogTitle className="text-white flex items-center gap-2">
-                        <Code className="h-5 w-5 text-indigo-400" />
+                        <Code className="h-5 w-5 text-zinc-300" />
                         Developer API — {projectName}
                     </DialogTitle>
-                    <DialogDescription className="text-gray-400">
+                    <DialogDescription className="text-zinc-400">
                         Use these commands in your CI/CD pipeline or build scripts to pull translations directly.
                     </DialogDescription>
                 </DialogHeader>
@@ -81,9 +81,9 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
                 <div className="space-y-5 mt-2">
                     {/* Project ID */}
                     <div>
-                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Project ID</label>
-                        <div className="mt-1 flex items-center gap-2 bg-gray-800 rounded-md px-3 py-2 border border-gray-700">
-                            <code className="text-sm text-indigo-300 font-mono flex-1 select-all">{projectId}</code>
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Project ID</label>
+                        <div className="mt-1 flex items-center gap-2 bg-zinc-800 rounded-md px-3 py-2 border border-zinc-700">
+                            <code className="text-sm text-zinc-200 font-mono flex-1 select-all">{projectId}</code>
                             <CopyButton text={projectId} />
                         </div>
                     </div>
@@ -97,11 +97,11 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
 
                     {/* Full JSON Dump */}
                     <div>
-                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
                             Full JSON Dump (all languages)
                         </label>
                         <div className="mt-1 relative">
-                            <pre className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 text-xs text-gray-300 font-mono overflow-x-auto whitespace-pre-wrap">{curlJsonAll}</pre>
+                            <pre className="bg-zinc-800 rounded-md px-3 py-2 border border-zinc-700 text-xs text-zinc-300 font-mono overflow-x-auto whitespace-pre-wrap">{curlJsonAll}</pre>
                             <div className="absolute top-1 right-1">
                                 <CopyButton text={curlJsonAll} />
                             </div>
@@ -110,11 +110,11 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
 
                     {/* Single Language JSON */}
                     <div>
-                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
                             Single Language (JSON)
                         </label>
                         <div className="mt-1 relative">
-                            <pre className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 text-xs text-gray-300 font-mono overflow-x-auto whitespace-pre-wrap">{curlJsonLang}</pre>
+                            <pre className="bg-zinc-800 rounded-md px-3 py-2 border border-zinc-700 text-xs text-zinc-300 font-mono overflow-x-auto whitespace-pre-wrap">{curlJsonLang}</pre>
                             <div className="absolute top-1 right-1">
                                 <CopyButton text={curlJsonLang} />
                             </div>
@@ -123,11 +123,11 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
 
                     {/* Android XML */}
                     <div>
-                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
                             Android XML
                         </label>
                         <div className="mt-1 relative">
-                            <pre className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 text-xs text-gray-300 font-mono overflow-x-auto whitespace-pre-wrap">{curlXml}</pre>
+                            <pre className="bg-zinc-800 rounded-md px-3 py-2 border border-zinc-700 text-xs text-zinc-300 font-mono overflow-x-auto whitespace-pre-wrap">{curlXml}</pre>
                             <div className="absolute top-1 right-1">
                                 <CopyButton text={curlXml} />
                             </div>
@@ -136,11 +136,11 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
 
                     {/* Available Languages */}
                     <div>
-                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Available Languages</label>
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Available Languages</label>
                         <div className="mt-1 flex flex-wrap gap-1.5">
-                            <span className="px-2 py-0.5 bg-indigo-600/30 text-indigo-300 rounded text-xs font-mono">{baseLanguage} (base)</span>
+                            <span className="px-2 py-0.5 bg-zinc-100/30 text-zinc-200 rounded text-xs font-mono">{baseLanguage} (base)</span>
                             {targetLanguages.map(l => (
-                                <span key={l} className="px-2 py-0.5 bg-gray-800 text-gray-300 rounded text-xs font-mono border border-gray-700">{l}</span>
+                                <span key={l} className="px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded text-xs font-mono border border-zinc-700">{l}</span>
                             ))}
                         </div>
                     </div>
