@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { createTerm, updateTerm, deleteTerm, getProject } from '@/lib/services/project.service';
+import { createTerm, updateTerm, deleteTerm, getProject, clearTermTranslations } from '@/lib/services/project.service';
 import { batchTranslateProject } from '@/lib/services/translate.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { importFile } from '@/lib/services/storage.service';
@@ -99,3 +99,22 @@ export async function importFileAction(projectId: string, formData: FormData): P
     }
 }
 
+export async function clearTermTranslationsAction(projectId: string, keyId: string, baseLanguage: string): Promise<ActionResult> {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    try {
+        const project = await getProject(projectId);
+        if (!project) throw new Error("Project not found");
+
+        const term = await clearTermTranslations(keyId, baseLanguage, session.user.id);
+
+        await logAudit({ action: 'UPDATE_TERM', userId: session.user.id, projectId, projectName: project.name, details: { key: term?.stringName, action: 'Cleared all non-base translations' } });
+
+        revalidatePath(`/projects/${projectId}`);
+        return { success: true };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to clear translations";
+        return { success: false, error: message };
+    }
+}

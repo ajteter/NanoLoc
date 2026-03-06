@@ -194,6 +194,37 @@ export async function deleteTerm(keyId: string) {
     return prisma.translationKey.delete({ where: { id: keyId } });
 }
 
+export async function clearTermTranslations(keyId: string, baseLanguage: string, userId: string) {
+    return prisma.$transaction(async (tx) => {
+        const term = await tx.translationKey.findUnique({
+            where: { id: keyId },
+            include: { values: true },
+        });
+
+        if (!term) throw new Error("Term not found");
+
+        const valuesToDelete = term.values.filter(v => v.languageCode !== baseLanguage);
+
+        if (valuesToDelete.length > 0) {
+            await tx.translationValue.deleteMany({
+                where: {
+                    id: { in: valuesToDelete.map(v => v.id) }
+                }
+            });
+        }
+
+        await tx.translationKey.update({
+            where: { id: keyId },
+            data: { lastModifiedById: userId }
+        });
+
+        return tx.translationKey.findUnique({
+            where: { id: keyId },
+            include: { values: true },
+        });
+    });
+}
+
 // ─── User helpers ────────────────────────────────────────────────────────────
 
 export async function getUserByUsername(username: string) {

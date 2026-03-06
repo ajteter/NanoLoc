@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
-import { Edit2, Trash2, Save, X, Check, Wand2, Copy, Info } from 'lucide-react';
+import { Edit2, Trash2, Save, X, Check, Wand2, Copy, Info, MoreHorizontal, Eraser } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Loader2 } from "lucide-react";
 import { TranslationKey } from '@/types';
 import { toast } from 'sonner';
-import { updateTermAction, deleteTermAction } from '@/lib/actions/term.actions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { updateTermAction, deleteTermAction, clearTermTranslationsAction } from '@/lib/actions/term.actions';
 import { cn } from '@/lib/utils';
 
 interface TermRowProps {
@@ -25,9 +26,11 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
     const [focusLang, setFocusLang] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [deleteInput, setDeleteInput] = useState('');
+    const [clearConfirm, setClearConfirm] = useState(false);
 
     const [isPendingUpdate, startUpdate] = useTransition();
     const [isPendingDelete, startDelete] = useTransition();
+    const [isPendingClear, startClear] = useTransition();
 
     const [formData, setFormData] = useState({
         stringName: term.stringName,
@@ -69,6 +72,18 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                 toast.success('Term deleted');
             } else {
                 toast.error(res.error || 'Delete failed');
+            }
+        });
+    };
+
+    const doClear = () => {
+        startClear(async () => {
+            const res = await clearTermTranslationsAction(projectId, term.id, baseLanguage);
+            if (res.success) {
+                toast.success('Term row cleared (kept key & base language)');
+                setClearConfirm(false);
+            } else {
+                toast.error(res.error || 'Clear failed');
             }
         });
     };
@@ -306,6 +321,27 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                             </Button>
                         </div>
                     </div>
+                ) : clearConfirm ? (
+                    <div className="flex flex-col gap-1 min-w-[180px]">
+                        <p className="text-xs text-amber-400">Clear row?</p>
+                        <div className="flex gap-1 mt-1">
+                            <Button
+                                variant="outline" size="sm"
+                                onClick={doClear}
+                                disabled={isPendingClear}
+                                className="h-6 text-xs flex-1 bg-amber-900/20 text-amber-400 border-amber-800 hover:bg-amber-900/50 hover:text-amber-300"
+                            >
+                                {isPendingClear ? '...' : 'Clear Row'}
+                            </Button>
+                            <Button
+                                variant="ghost" size="sm"
+                                onClick={() => setClearConfirm(false)}
+                                className="h-6 text-xs text-zinc-400"
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
                 ) : (
                     <div className="flex gap-1 opacity-100 transition-opacity">
                         <Button
@@ -324,14 +360,33 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         >
                             <Wand2 className="w-4 h-4 text-emerald-400" />
                         </Button>
-                        <Button
-                            variant="ghost" size="icon"
-                            onClick={() => setDeleteConfirm(true)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                            title="Delete"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost" size="icon"
+                                    className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
+                                    title="More actions"
+                                >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-300">
+                                <DropdownMenuItem
+                                    className="hover:bg-zinc-800 focus:bg-zinc-800 focus:text-white cursor-pointer"
+                                    onClick={() => setClearConfirm(true)}
+                                >
+                                    <Eraser className="w-4 h-4 mr-2" />
+                                    Clear Row
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="hover:bg-red-900/50 text-red-400 focus:bg-red-900/50 focus:text-red-300 cursor-pointer"
+                                    onClick={() => setDeleteConfirm(true)}
+                                >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Term
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 )}
             </td>
@@ -403,11 +458,11 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
             })}
 
             <Dialog open={translating.length > 0} onOpenChange={() => { }}>
-                <DialogContent className="bg-zinc-900 border-zinc-800 text-white [&>button]:hidden">
+                <DialogContent showCloseButton={false} className="bg-zinc-900 border-zinc-800 text-white [&>button]:hidden">
                     <DialogHeader>
                         <DialogTitle>Translating {translating.length > 1 ? 'Row' : 'Term'}</DialogTitle>
-                        <DialogDescription className="text-zinc-400">
-                            Translating using AI... This may take a while.
+                        <DialogDescription className="text-amber-400">
+                            ⚠️ Please do not close the browser. Translating using AI... This may take a while.
                         </DialogDescription>
                     </DialogHeader>
 

@@ -56,11 +56,11 @@ export function TranslateColumnHead({ projectId, lang, displayStr }: TranslateCo
             </div>
 
             <Dialog open={open} onOpenChange={(val) => { if (!isPending) setOpen(val); }}>
-                <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                <DialogContent showCloseButton={false} className="bg-zinc-900 border-zinc-800 text-white">
                     <DialogHeader>
                         <DialogTitle>Translating {displayStr}</DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            {isPending ? 'Translating missing items... This may take a while.' : 'Translation Complete!'}
+                            {isPending ? '⚠️ Please do not close the browser. Translating missing items... This may take a while.' : 'Translation Complete!'}
                         </DialogDescription>
                     </DialogHeader>
 
