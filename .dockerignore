@@ -1,15 +1,41 @@
-Dockerfile
-.dockerignore
+# Dependencies
 node_modules
-npm-debug.log
-.next
+npm-debug.log*
+
+# Next.js build output
+.next/
+out/
+
+# Git
 .git
-.env
-*.db
-data/
-.DS_Store
+.gitignore
+.gitattributes
+
+# IDE & OS
 .vscode/
-.benchmarks/
+.idea/
+.DS_Store
+
+# Docker self-references
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+
+# Project-specific exclusions
 Prompt.md/
 Import Samples/
 .agent/
+.gemini/
+.benchmarks/
+
+# Data & env
+*.db
+data/
+*.pem
+.env*.local
+coverage/
+tmp/
+temp/

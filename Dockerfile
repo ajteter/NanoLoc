@@ -1,24 +1,26 @@
-FROM node:20-slim AS base
+# ── Stage 1: Dependencies ──
+FROM node:20-alpine AS deps
 
-# Install dependencies only when needed
-FROM base AS deps
-# Install OpenSSL (required for Prisma)
-RUN apt-get update -y && apt-get install -y openssl
+# Install system dependencies required by Prisma and native modules
+RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Install dependencies — delete lockfile to force resolution of correct
+# platform-native bindings (lightningcss / Tailwind v4 on Alpine musl)
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
-# Delete lockfile to force resolution of Linux bindings (fix for lightningcss/Tailwind v4 on ARM64)
 RUN rm -f package-lock.json
 RUN npm install
 
-# Rebuild the source code only when needed
-FROM base AS builder
+# ── Stage 2: Builder ──
+FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Disable telemetry during build
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Generate Prisma Client
 RUN npx prisma generate
@@ -26,33 +28,35 @@ RUN npx prisma generate
 # Build Next.js
 RUN npm run build
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# ── Stage 3: Runner (Production) ──
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install openssl for Prisma and gosu for privilege de-escalation
-RUN apt-get update -y && apt-get install -y openssl gosu && rm -rf /var/lib/apt/lists/*
-
-# Install Prisma globally (needed for migrations in production)
-RUN npm install -g prisma@6.19.2
+# Install minimal runtime dependencies: openssl (Prisma) + su-exec (privilege de-escalation)
+RUN apk add --no-cache openssl su-exec
 
 # Create non-root user (container starts as root for permission fixing)
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN mkdir .next && chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# Copy prisma schema/migrations for deployment
+
+# Copy prisma schema/migrations + generated client for deployment
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+
 # Copy start script
 COPY --from=builder /app/scripts/start.sh ./scripts/start.sh
 
@@ -61,8 +65,8 @@ RUN chmod +x ./scripts/start.sh && sed -i 's/\r$//' ./scripts/start.sh
 
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 # Container starts as root — start.sh handles permission fixing then drops to nextjs
 CMD ["./scripts/start.sh"]
