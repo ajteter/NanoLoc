@@ -83,6 +83,8 @@ NanoLoc 是一个轻量级多语言翻译管理平台，为应用开发团队提
 - **冻结列**：Key 列和基础语言列固定不动，方便横向滚动查看其他语言
 - **审计信息**：每个翻译单元格显示最后修改人
 - **魔法棒图标**：所有 AI 触发动作（单条、行、列、批量）均统一为 **Emerald (祖母绿)** 色调。
+- **更多操作菜单**：将“删除词条”和“清空整行”由原来的零散按钮整合进词条末尾的 **More Actions (更多操作)** 菜单中。
+- **清空整行 (Clear Row)**：支持清理该词条除 Key、en-US (源语言) 以及 Remarks 以外的所有翻译内容，适用于需要重置翻译的场景。
 - **双分页系统**：在词条列表的顶部和底部均提供了分页控制，极大减少了长列表滚动后的操作负担。
 
 ### 五、AI 翻译
@@ -108,6 +110,7 @@ NanoLoc 集成了 AI 翻译功能，支持四种翻译模式：
 - AI 自动扫描所有空的翻译单元格
 - 在后台批量翻译所有缺失内容
 - 页面顶部会显示 🔄 **"正在翻译..."** 全局状态指示
+- **防中断保护**：在翻译过程中，进度对话框将隐藏关闭按钮，并提醒：**"⚠️ 请不要关闭浏览器"**，确保翻译任务完整执行并正确落库。
 
 > **提示**：批量翻译过程中，全局指示器会防止重复提交，避免冲突操作。
 
@@ -176,6 +179,9 @@ npm run dev
 ```
 脚本会自动处理密钥生成、数据目录创建、容器构建和启动。数据持久化在 `./data` 目录中。
 
+> [!IMPORTANT]
+> **镜像瘦身优化**：通过采用 Alpine Linux 基础镜像和多阶段构建，NanoLoc 生产镜像大小已从 **~1GB 优化至 ~472MB**，大幅提升了部署效率。
+
 ---
 
 ## English
@@ -231,6 +237,8 @@ Click the ✏️ edit icon on any row to modify translations.
 - **Sticky Columns**: Key and base language columns are frozen for easy horizontal scrolling
 - **Audit**: Each cell shows the last modifier
 - **Wand Palette**: All AI-triggered actions (Cell, Row, Column, Batch) are unified with **Emerald** success tones
+- **More Actions Menu**: Grouped "Delete Term" and "Clear Row" into a single dropdown for a cleaner grid
+- **Clear Row**: Quickly wipe all target translations for a term while keeping the Key, Source content, and Remarks intact
 - **Smart Navigation**: Dual-pagination controls at both Top and Bottom of the term grids
 
 ### 5. AI Translation
@@ -244,7 +252,8 @@ Four translation modes:
 | **Column** | Fill all empty cells for one target language |
 | **Batch** | Click purple **Batch Translate** button to auto-fill all empty cells |
 
-A global "Translating..." indicator prevents conflicts during batch operations.
+A global "Translating..." indicator prevents conflicts during batch operations. 
+**Safe Processing**: During active translation, the dialog disables the close button and warns: **"⚠️ Please do not close the browser"** to ensure data integrity.
 
 #### Custom System Prompt
 Set per-project system prompts in Settings to control AI translation style and quality.
@@ -289,3 +298,6 @@ npm install && npx prisma generate && npx prisma db push && npm run dev
 ./deploy.sh
 ```
 Data persists in `./data`.
+
+> [!TIP]
+> **Optimized Performance**: The production image is built using Alpine Linux and multi-stage building techniques, reducing the size to **~472MB** (down from ~1GB).

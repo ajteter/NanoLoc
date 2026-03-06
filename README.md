@@ -13,6 +13,8 @@ NanoLoc is a lightweight localization (i18n) management platform with AI-powered
 - **User Profile**: Change display name and password from the UI
 - **Audit Trail**: Tracks "Last Modified By" for every translation entry
 - **Modern SaaS UI**: Monochrome dark mode (Zinc & Emerald) with high data density, sticky columns, instant search, and real-time translation status
+- **Action Grouping**: Destructive actions (Delete, Clear Row) are grouped under a "More Actions" menu for a cleaner interface
+- **Clear Row**: Quickly remove all target translations for a term while preserving the key, Source (en-US), and Remarks
 - **Smart Navigation**: Dual pagination (Top & Bottom on project pages) and streamlined dashboard navigation
 - **Security**: NextAuth.js username-based authentication
 - **Concurrency Safe**: SQLite WAL mode, busy timeout, process-level batch translation locks, chunked import transactions
@@ -89,7 +91,10 @@ For a complete guide on using the NanoLoc platform — including project setup, 
 ./deploy.sh
 ```
 
-The script auto-generates secrets, creates data directories, and starts the container on port `3000`. Data is persisted in `./data`.
+The script auto-generates secrets, creates data directories, and starts the container on port `3000`. Data is persisted in `./data`. 
+
+> [!TIP]
+> **Optimized Image**: The Docker image uses a multi-stage Alpine-based build, reducing the size from ~1GB to **~472MB** for faster deployments.
 
 
 ## 📋 Translation Scripts Guide
