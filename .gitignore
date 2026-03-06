@@ -40,6 +40,9 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+.gemini/
+.agent/
+
 
 # Generated
 *.tsbuildinfo
@@ -53,4 +56,3 @@ next-env.d.ts
 # Others
 Prompt.md/
 Import Samples/
-.agent/
