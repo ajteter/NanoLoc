@@ -38,6 +38,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Install minimal runtime dependencies: openssl (Prisma) + su-exec (privilege de-escalation)
 RUN apk add --no-cache openssl su-exec
 
+# Install Prisma globally so that 'npx prisma migrate deploy' has its full node_modules dependencies
+RUN npm install -g prisma@6.19.2
+
 # Create non-root user (container starts as root for permission fixing)
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -55,7 +58,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
 # Copy start script
 COPY --from=builder /app/scripts/start.sh ./scripts/start.sh
