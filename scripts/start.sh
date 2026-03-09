@@ -14,7 +14,7 @@ chmod -R 775 /app/prisma/data
 
 # 2. Run Migrations (as nextjs user)
 echo "🚀 Running database migrations..."
-su-exec nextjs npx prisma migrate deploy
+su-exec nextjs node ./node_modules/prisma/build/index.js migrate deploy
 
 # 3. Start Server (as nextjs user, exec replaces shell PID)
 echo "✅ Starting NanoLoc server as nextjs user..."
