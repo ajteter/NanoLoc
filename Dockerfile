@@ -6,8 +6,8 @@ RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
-# Enable pnpm via corepack (included in Node.js 20)
-RUN corepack enable pnpm
+# Install pnpm globally (more reliable than corepack on Alpine)
+RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml* ./
 COPY prisma ./prisma
@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 # ── Stage 2: Builder ──
 FROM node:20-alpine AS builder
 WORKDIR /app
-RUN corepack enable pnpm
+RUN npm install -g pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
