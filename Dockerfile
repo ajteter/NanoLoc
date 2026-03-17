@@ -6,12 +6,12 @@ RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
-# Install dependencies — delete lockfile to force resolution of correct
-# platform-native bindings (lightningcss / Tailwind v4 on Alpine musl)
-COPY package.json package-lock.json* ./
+# Enable pnpm via corepack (included in Node.js 20)
+RUN corepack enable pnpm
+
+COPY package.json pnpm-lock.yaml* ./
 COPY prisma ./prisma
-RUN rm -f package-lock.json
-RUN npm install
+RUN pnpm install --frozen-lockfile
 
 # ── Stage 2: Builder ──
 FROM node:20-alpine AS builder
@@ -26,7 +26,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
 
 # Build Next.js
-RUN npm run build
+RUN pnpm run build
 
 # ── Stage 3: Runner (Production) ──
 FROM node:20-alpine AS runner
