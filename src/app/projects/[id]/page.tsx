@@ -70,6 +70,7 @@ export default async function ProjectDetailPage({
                 <ProjectToolbar
                     projectId={id}
                     targetLanguages={targetLangs}
+                    baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
                 />
             </div>
 
@@ -118,6 +119,7 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
                                         projectId={projectId}
                                         lang={lang}
                                         displayStr={getLangDisplayStr(lang)}
+                                        baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
                                     />
                                 ))}
                             </TableRow>
@@ -144,7 +146,9 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
                                         term={term}
                                         projectId={projectId}
                                         baseLanguage={project.baseLanguage || 'en-US'}
+                                        baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
                                         targetLanguages={targetLangs}
+                                        searchQuery={search}
                                     />
                                 ))
                             )}

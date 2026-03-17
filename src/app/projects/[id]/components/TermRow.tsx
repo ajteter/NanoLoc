@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { Edit2, Trash2, Save, X, Check, Wand2, Copy, Info, MoreHorizontal, Eraser } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import Highlighter from 'react-highlight-words';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -18,19 +19,27 @@ interface TermRowProps {
     term: TranslationKey;
     projectId: string;
     baseLanguage: string;
+    baseLanguageDisplay: string;
     targetLanguages: string[];
+    searchQuery?: string;
 }
 
-export function TermRow({ term, projectId, baseLanguage, targetLanguages }: TermRowProps) {
+export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, targetLanguages, searchQuery }: TermRowProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [focusLang, setFocusLang] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [deleteInput, setDeleteInput] = useState('');
     const [clearConfirm, setClearConfirm] = useState(false);
+    const [confirmTranslate, setConfirmTranslate] = useState<{ type: 'row' | 'cell', lang?: string } | null>(null);
 
     const [isPendingUpdate, startUpdate] = useTransition();
     const [isPendingDelete, startDelete] = useTransition();
     const [isPendingClear, startClear] = useTransition();
+
+    const isMatch = (text?: string | null) => {
+        if (!searchQuery || !text) return false;
+        return text.toLowerCase().includes(searchQuery.toLowerCase());
+    };
 
     const [formData, setFormData] = useState({
         stringName: term.stringName,
@@ -354,7 +363,7 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         </Button>
                         <Button
                             variant="ghost" size="icon"
-                            onClick={handleTranslateRow}
+                            onClick={() => setConfirmTranslate({ type: 'row' })}
                             className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
                             title="Translate Row"
                         >
@@ -390,16 +399,34 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                     </div>
                 )}
             </td>
-            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6 max-w-xs break-all truncate align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]">
-                <div className="truncate" title={term.stringName}>{term.stringName}</div>
+            <td className={cn("whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6 max-w-xs break-all truncate align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]", isMatch(term.stringName) && "bg-emerald-500/10 group-hover:bg-emerald-500/20")}>
+                <div className="truncate" title={term.stringName}>
+                    {searchQuery ? (
+                        <Highlighter
+                            searchWords={[searchQuery]}
+                            autoEscape={true}
+                            textToHighlight={term.stringName}
+                            highlightClassName="bg-emerald-500/20 text-emerald-400 rounded-sm px-0.5"
+                        />
+                    ) : term.stringName}
+                </div>
                 <div className="text-xs text-zinc-600 mt-1 font-mono">{lastUpdated}</div>
             </td>
-            <td className="px-3 py-4 text-sm text-zinc-400 max-w-xs truncate align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-[300px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]">
+            <td className={cn("px-3 py-4 text-sm text-zinc-400 max-w-xs truncate align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-[300px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]", isMatch(term.remarks) && "bg-emerald-500/10 group-hover:bg-emerald-500/20")}>
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <div className="truncate cursor-help">
-                                {term.remarks || <span className="text-zinc-600 italic">No remarks</span>}
+                                {term.remarks ? (
+                                    searchQuery ? (
+                                        <Highlighter
+                                            searchWords={[searchQuery]}
+                                            autoEscape={true}
+                                            textToHighlight={term.remarks}
+                                            highlightClassName="bg-emerald-500/20 text-emerald-400 rounded-sm px-0.5"
+                                        />
+                                    ) : term.remarks
+                                ) : <span className="text-zinc-600 italic">No remarks</span>}
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -409,14 +436,23 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                 </TooltipProvider>
             </td>
             <td
-                className="whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors"
+                className={cn("whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors", isMatch(baseValue) && "bg-emerald-500/10 hover:bg-emerald-500/20")}
                 onClick={() => enterEditMode(baseLanguage)}
             >
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <div className="cursor-help decoration-dashed decoration-zinc-600 underline-offset-4">
-                                {baseValue || <span className="text-zinc-600 italic">Empty</span>}
+                                {baseValue ? (
+                                    searchQuery ? (
+                                        <Highlighter
+                                            searchWords={[searchQuery]}
+                                            autoEscape={true}
+                                            textToHighlight={baseValue}
+                                            highlightClassName="bg-emerald-500/20 text-emerald-400 rounded-sm px-0.5"
+                                        />
+                                    ) : baseValue
+                                ) : <span className="text-zinc-600 italic">Empty</span>}
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -436,14 +472,23 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                 return (
                     <td
                         key={lang}
-                        className="whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors"
+                        className={cn("whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors", isMatch(val) && "bg-emerald-500/10 hover:bg-emerald-500/20")}
                         onClick={() => enterEditMode(lang)}
                     >
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div className="cursor-help">
-                                        {val || <span className="text-zinc-600 italic">Empty</span>}
+                                        {val ? (
+                                            searchQuery ? (
+                                                <Highlighter
+                                                    searchWords={[searchQuery]}
+                                                    autoEscape={true}
+                                                    textToHighlight={val}
+                                                    highlightClassName="bg-emerald-500/20 text-emerald-400 rounded-sm px-0.5"
+                                                />
+                                            ) : val
+                                        ) : <span className="text-zinc-600 italic">Empty</span>}
                                     </div>
                                 </TooltipTrigger>
                                 {modBy && (
@@ -471,6 +516,37 @@ export function TermRow({ term, projectId, baseLanguage, targetLanguages }: Term
                         <p className="text-sm text-zinc-400">
                             {translating.length === 1 ? 'Translating definition into target language...' : `Translating ${translating.length} missing languages in row...`}
                         </p>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!confirmTranslate} onOpenChange={(val) => { if (!val) setConfirmTranslate(null); }}>
+                <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle>Confirm Translation</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Please confirm before proceeding.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p className="text-emerald-400 font-medium mb-2">
+                            请检查 {baseLanguageDisplay} 的文案内容是否正确
+                        </p>
+                        <p className="text-sm text-zinc-400">
+                            Please review the {baseLanguageDisplay} text content before translating to ensure accuracy.
+                        </p>
+                    </div>
+                    {/* <DialogFooter> is normally flex row, let's keep it standard */}
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="ghost" onClick={() => setConfirmTranslate(null)} className="text-zinc-400">Cancel</Button>
+                        <Button className="bg-emerald-600 hover:bg-emerald-500 text-white" onClick={() => {
+                            if (confirmTranslate?.type === 'row') {
+                                handleTranslateRow();
+                            } else if (confirmTranslate?.type === 'cell' && confirmTranslate.lang) {
+                                handleTranslate(confirmTranslate.lang);
+                            }
+                            setConfirmTranslate(null);
+                        }}>Confirm Translate</Button>
                     </div>
                 </DialogContent>
             </Dialog>

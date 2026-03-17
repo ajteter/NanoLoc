@@ -13,9 +13,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface ProjectToolbarProps {
     projectId: string;
     targetLanguages: string[];
+    baseLanguageDisplay: string;
 }
 
-export function ProjectToolbar({ projectId, targetLanguages }: ProjectToolbarProps) {
+export function ProjectToolbar({ projectId, targetLanguages, baseLanguageDisplay }: ProjectToolbarProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
@@ -85,7 +86,7 @@ export function ProjectToolbar({ projectId, targetLanguages }: ProjectToolbarPro
                 </Link>
             </Button>
 
-            <BatchTranslateButton projectId={projectId} targetLanguages={targetLanguages} />
+            <BatchTranslateButton projectId={projectId} targetLanguages={targetLanguages} baseLanguageDisplay={baseLanguageDisplay} />
 
             <Button
                 onClick={handleNewTerm}
