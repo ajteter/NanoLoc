@@ -27,7 +27,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
 
 # Build Next.js
-RUN pnpm run build
+RUN npm run build
 
 # ── Stage 3: Runner (Production) ──
 FROM node:20-alpine AS runner
