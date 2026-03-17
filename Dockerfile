@@ -6,8 +6,8 @@ RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
-# Install pnpm globally (more reliable than corepack on Alpine)
-RUN npm install -g pnpm
+# Enable pnpm via corepack (included in Node.js 20)
+RUN corepack enable pnpm
 
 COPY package.json pnpm-lock.yaml* ./
 COPY prisma ./prisma
@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 # ── Stage 2: Builder ──
 FROM node:20-alpine AS builder
 WORKDIR /app
-RUN npm install -g pnpm
+RUN corepack enable pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -27,7 +27,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
 
 # Build Next.js
-RUN npm run build
+RUN pnpm run build
 
 # ── Stage 3: Runner (Production) ──
 FROM node:20-alpine AS runner
