@@ -16,6 +16,7 @@ RUN pnpm install --frozen-lockfile
 # ── Stage 2: Builder ──
 FROM node:20-alpine AS builder
 WORKDIR /app
+RUN corepack enable pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
