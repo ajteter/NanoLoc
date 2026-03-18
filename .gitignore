@@ -42,7 +42,10 @@ Thumbs.db
 .idea/
 .gemini/
 .agent/
-
+.ruff_cache/
+.pypirc
+.cursorignore
+.cursorindexingignore
 
 # Generated
 *.tsbuildinfo
@@ -53,6 +56,6 @@ next-env.d.ts
 *.pem
 .vercel
 
-# Others
+# Project Specific
 Prompt.md/
-Import Samples/
+"Import Samples/"
