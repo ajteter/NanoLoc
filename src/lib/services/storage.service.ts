@@ -56,6 +56,11 @@ async function importParsedStrings(
                 continue;
             }
 
+            if (!existingKey) {
+                skipped++;
+                continue;
+            }
+
             const baseValue = existingKey.values.find(
                 (v: { languageCode: string }) => v.languageCode === baseLanguage
             );
