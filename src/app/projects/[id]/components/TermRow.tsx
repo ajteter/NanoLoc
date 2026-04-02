@@ -132,10 +132,19 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             const res = await fetch('/api/translate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ projectId, texts: [sourceText], targetLang: lang })
+                body: JSON.stringify({
+                    projectId,
+                    texts: [sourceText],
+                    targetLang: lang,
+                    translationKeyId: term.id,
+                    keyName: currentStringName,
+                    source: expectedRowLangs.current.length > 0 ? 'row' : 'single',
+                })
             });
-            if (!res.ok) throw new Error('Translation failed');
             const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || 'Translation failed');
+            }
 
             if (data.translations && data.translations[0]) {
                 const translated = data.translations[0];
@@ -181,7 +190,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
     const handleTranslateRow = () => {
         const langsToTranslate = targetLanguages.filter(lang => {
             const val = term.values.find(v => v.languageCode === lang)?.content;
-            return !val;
+            return !val || !val.trim();
         });
 
         if (langsToTranslate.length === 0) {

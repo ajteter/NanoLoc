@@ -41,7 +41,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             return NextResponse.json({ error: "No target languages configured" }, { status: 400 });
         }
 
-        const translated = await batchTranslateProject(id, targetLanguages, userId);
+        const translated = await batchTranslateProject(id, targetLanguages, userId, targetLanguages.length === 1 ? 'column' : 'batch');
         logAudit({ action: 'BATCH_TRANSLATE', userId, projectId: id, projectName: project.name, details: { languages: targetLanguages, results: translated } });
         return NextResponse.json({ success: true, translated });
     } catch (error: unknown) {

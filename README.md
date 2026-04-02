@@ -7,7 +7,7 @@ NanoLoc is a lightweight localization (i18n) management platform with AI-powered
 ## ✨ Features
 
 - **Project Management**: Multi-project support with per-project language and AI configurations
-- **Import/Export**: Android `strings.xml` import with smart merge; CSV export (Excel-compatible BOM)
+- **Import/Export**: Android `strings.xml`, iOS `Localizable.strings`, and H5 JSON import with smart merge that preserves existing base-language values and logs imported conflicts to remarks; CSV export (Excel-compatible BOM)
 - **AI Translation**: Batch, Row, Column, and Single-cell modes powered by LLMs
 - **Activity Log**: Global audit log tracking all changes (project/term CRUD, translations, imports, batch translates) with user attribution
 - **User Profile**: Change display name and password from the UI

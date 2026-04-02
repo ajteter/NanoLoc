@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { AndroidXmlParser } from '@/lib/parsers/android-xml';
 import { H5JsonParser } from '@/lib/parsers/h5-json';
+import { IOSStringsParser } from '@/lib/parsers/ios-strings';
 
 /**
  * Shared upsert logic for importing parsed strings into a project.
@@ -38,40 +39,33 @@ async function importParsedStrings(
     let skipped = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const operations: any[] = [];
+    const pendingNewKeys = new Map<string, { remarks: string[] }>();
+    const pendingExistingRemarks = new Map<string, string[]>();
 
     for (let idx = 0; idx < parsedStrings.length; idx++) {
         const item = parsedStrings[idx];
         const { name: stringName, value: content } = item;
         const existingKey = existingMap.get(stringName);
+        const pendingNewKey = pendingNewKeys.get(stringName);
 
-        if (existingKey) {
+        if (existingKey || pendingNewKey) {
+            if (pendingNewKey) {
+                const duplicateRemark = `[Imported Duplicate Value]: ${content} -- First imported value preserved at ${new Date().toISOString()}`;
+                pendingNewKey.remarks.push(duplicateRemark);
+                updated++;
+                continue;
+            }
+
             const baseValue = existingKey.values.find(
                 (v: { languageCode: string }) => v.languageCode === baseLanguage
             );
 
             if (baseValue) {
                 if (baseValue.content !== content) {
-                    const oldContent = baseValue.content;
-                    const newRemark = `[Old Value]: ${oldContent} -- Updated at ${new Date().toISOString()}`;
-
-                    operations.push(
-                        prisma.translationValue.update({
-                            where: { id: baseValue.id },
-                            data: { content, lastModifiedById: userId },
-                        })
-                    );
-
-                    operations.push(
-                        prisma.translationKey.update({
-                            where: { id: existingKey.id },
-                            data: {
-                                remarks: existingKey.remarks
-                                    ? existingKey.remarks + '\n' + newRemark
-                                    : newRemark,
-                                lastModifiedById: userId,
-                            },
-                        })
-                    );
+                    const newRemark = `[Imported Value]: ${content} -- Existing ${baseLanguage} preserved at ${new Date().toISOString()}`;
+                    const existingRemarks = pendingExistingRemarks.get(existingKey.id) || [];
+                    existingRemarks.push(newRemark);
+                    pendingExistingRemarks.set(existingKey.id, existingRemarks);
                     updated++;
                 } else {
                     skipped++;
@@ -91,11 +85,13 @@ async function importParsedStrings(
             }
         } else {
             // sortOrder = currentMax + 1 + idx, preserving file order
+            pendingNewKeys.set(stringName, { remarks: [] });
             operations.push(
                 prisma.translationKey.create({
                     data: {
                         projectId,
                         stringName,
+                        remarks: null,
                         sortOrder: currentMaxOrder + 1 + idx,
                         lastModifiedById: userId,
                         values: {
@@ -118,6 +114,37 @@ async function importParsedStrings(
         for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
             const chunk = operations.slice(i, i + CHUNK_SIZE);
             await prisma.$transaction(chunk);
+        }
+    }
+
+    if (pendingExistingRemarks.size > 0) {
+        for (const existingKey of existingKeys) {
+            const appendedRemarks = pendingExistingRemarks.get(existingKey.id);
+            if (!appendedRemarks || appendedRemarks.length === 0) continue;
+
+            await prisma.translationKey.update({
+                where: { id: existingKey.id },
+                data: {
+                    remarks: existingKey.remarks
+                        ? existingKey.remarks + '\n' + appendedRemarks.join('\n')
+                        : appendedRemarks.join('\n'),
+                    lastModifiedById: userId,
+                },
+            });
+        }
+    }
+
+    if (pendingNewKeys.size > 0) {
+        for (const [stringName, pending] of pendingNewKeys.entries()) {
+            if (pending.remarks.length === 0) continue;
+
+            await prisma.translationKey.update({
+                where: { projectId_stringName: { projectId, stringName } },
+                data: {
+                    remarks: pending.remarks.join('\n'),
+                    lastModifiedById: userId,
+                },
+            });
         }
     }
 
@@ -153,8 +180,22 @@ export async function importJson(
 }
 
 /**
+ * Import an iOS Localizable.strings file into a project.
+ */
+export async function importIOSStrings(
+    projectId: string,
+    stringsContent: string,
+    baseLanguage: string,
+    userId: string
+): Promise<{ added: number; updated: number; skipped: number }> {
+    const parser = new IOSStringsParser();
+    const parsedStrings = parser.parse(stringsContent);
+    return importParsedStrings(projectId, parsedStrings, baseLanguage, userId);
+}
+
+/**
  * Auto-detect file format and import accordingly.
- * Supports: .xml (Android), .json (H5 flat JSON)
+ * Supports: .xml (Android), .json (H5 flat JSON), .strings (iOS Localizable.strings)
  */
 export async function importFile(
     projectId: string,
@@ -175,7 +216,12 @@ export async function importFile(
         return { ...result, format: 'json' };
     }
 
-    throw new Error(`Unsupported file format: .${ext}. Supported formats: .xml (Android), .json (H5)`);
+    if (ext === 'strings') {
+        const result = await importIOSStrings(projectId, fileContent, baseLanguage, userId);
+        return { ...result, format: 'strings' };
+    }
+
+    throw new Error(`Unsupported file format: .${ext}. Supported formats: .xml (Android), .json (H5), .strings (iOS)`);
 }
 
 /**

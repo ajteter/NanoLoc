@@ -5,6 +5,8 @@ export interface AIConfig {
     systemPrompt?: string;
 }
 
+export const TRANSLATION_ERROR_PLACEHOLDER = "[Translation Error]";
+
 export class BRClient {
     private config: AIConfig;
 
@@ -226,11 +228,11 @@ export class BRClient {
                         if (singleResult) {
                             results[item.index] = singleResult;
                         } else {
-                            results[item.index] = "[Translation Error]";
+                            results[item.index] = TRANSLATION_ERROR_PLACEHOLDER;
                         }
                     } catch (err) {
                         console.error(`Single retry failed for "${item.text}":`, err);
-                        results[item.index] = "[Translation Error]";
+                        results[item.index] = TRANSLATION_ERROR_PLACEHOLDER;
                     }
                 }
             }

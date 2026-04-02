@@ -41,6 +41,7 @@ model Project {
   // Relations
   users            User[]
   keys             TranslationKey[]
+  translationErrors TranslationErrorLog[]
   
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -56,6 +57,7 @@ model TranslationKey {
   project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
   values        TranslationValue[]
+  translationErrors TranslationErrorLog[]
 
   // Audit
   lastModifiedById String?
@@ -101,4 +103,22 @@ model AuditLog {
 
   @@index([createdAt])
   @@index([projectId])
+}
+
+model TranslationErrorLog {
+  id            String         @id @default(cuid())
+  projectId      String
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  translationKeyId String?
+  translationKey TranslationKey? @relation(fields: [translationKeyId], references: [id], onDelete: SetNull)
+  keyName        String?
+  languageCode   String
+  errorCode      String
+  errorMessage   String
+  source         String
+  details        String?
+  createdAt      DateTime       @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([translationKeyId])
 }

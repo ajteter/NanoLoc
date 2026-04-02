@@ -6,6 +6,7 @@ import { createTerm, updateTerm, deleteTerm, getProject, clearTermTranslations }
 import { batchTranslateProject } from '@/lib/services/translate.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { importFile } from '@/lib/services/storage.service';
+import type { TranslationErrorSource } from '@/lib/services/translation-error.service';
 
 export type ActionResult<T = Record<string, unknown>> =
     | ({ success: true } & T)
@@ -53,7 +54,11 @@ export async function deleteTermAction(projectId: string, keyId: string): Promis
     }
 }
 
-export async function batchTranslateAction(projectId: string, targetLanguages?: string[]): Promise<ActionResult> {
+export async function batchTranslateAction(
+    projectId: string,
+    targetLanguages?: string[],
+    source: Extract<TranslationErrorSource, 'batch' | 'column'> = 'batch'
+): Promise<ActionResult> {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -64,7 +69,7 @@ export async function batchTranslateAction(projectId: string, targetLanguages?: 
         const langs = targetLanguages?.length ? targetLanguages : JSON.parse(project.targetLanguages || '[]');
         if (!langs.length) throw new Error("No target languages configured");
 
-        const translated = await batchTranslateProject(projectId, langs, session.user.id);
+        const translated = await batchTranslateProject(projectId, langs, session.user.id, source);
         await logAudit({ action: 'BATCH_TRANSLATE', userId: session.user.id, projectId, projectName: project.name, details: { languages: langs, results: translated } });
 
         revalidatePath(`/projects/${projectId}`);

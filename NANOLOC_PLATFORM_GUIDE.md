@@ -10,7 +10,7 @@
 
 NanoLoc 是一个轻量级多语言翻译管理平台，为应用开发团队提供：
 - 集中管理多项目、多语言的翻译词条
-- 导入 Android `strings.xml`，导出 CSV 翻译文件
+- 导入 Android `strings.xml`、iOS `Localizable.strings` 或 H5 JSON，导出 CSV 翻译文件
 - AI 驱动的自动翻译（支持多种翻译模式）
 - 完整的翻译审计追踪
 
@@ -64,12 +64,12 @@ NanoLoc 是一个轻量级多语言翻译管理平台，为应用开发团队提
 
 ### 四、词条管理
 
-#### 导入 strings.xml
+#### 导入语言文件
 1. 进入项目详情页
 2. 点击 **Import XML**
-3. 上传 Android `strings.xml` 文件
+3. 上传 Android `strings.xml`、iOS `Localizable.strings` 或 H5 JSON 文件
 4. 系统自动解析并导入所有 key-value 对
-5. **智能合并**：如果 key 已存在，旧值会保存到"备注 (Remarks)"列中
+5. **智能合并**：如果 key 已存在，则保留当前项目中的源语言内容，并将导入文件中的冲突值追加到"备注 (Remarks)"列中
 
 #### 手动添加/编辑词条
 1. 在词条列表中找到目标词条
@@ -190,7 +190,7 @@ npm run dev
 
 NanoLoc is a lightweight multilingual translation management platform providing:
 - Centralized management of multi-project, multi-language translation entries
-- Android `strings.xml` import and CSV export
+- Android `strings.xml`, iOS `Localizable.strings`, and H5 JSON import with CSV export
 - AI-powered automatic translation (multiple modes)
 - Full translation audit trail
 
@@ -222,11 +222,11 @@ Navigate to project → **Settings** → modify and save.
 
 ### 4. Term Management
 
-#### Import strings.xml
+#### Import Localization File
 1. Go to the project detail page
 2. Click **Import XML**
-3. Upload your `strings.xml`
-4. Keys are parsed and merged automatically. Existing values are preserved in the "Remarks" column.
+3. Upload your Android `strings.xml`, iOS `Localizable.strings`, or H5 JSON file
+4. Keys are parsed and merged automatically. When the same key already exists, the current base-language value is kept and the imported value is appended to "Remarks".
 
 #### Manual Editing
 Click the ✏️ edit icon on any row to modify translations.

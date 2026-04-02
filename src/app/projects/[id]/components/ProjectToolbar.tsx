@@ -53,7 +53,7 @@ export function ProjectToolbar({ projectId, targetLanguages, baseLanguageDisplay
         <div className="flex gap-3 items-center">
             <input
                 type="file"
-                accept=".xml,.json"
+                accept=".xml,.json,.strings"
                 hidden
                 ref={fileInputRef}
                 onChange={handleFileUpload}
@@ -72,7 +72,7 @@ export function ProjectToolbar({ projectId, targetLanguages, baseLanguageDisplay
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>.xml (Android) / .json (H5)</p>
+                        <p>.xml (Android) / .json (H5) / .strings (iOS)</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>

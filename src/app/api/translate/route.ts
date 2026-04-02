@@ -4,7 +4,7 @@ import { translateTexts } from "@/lib/services/translate.service";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { projectId, texts, targetLang } = body;
+        const { projectId, texts, targetLang, translationKeyId, keyName, source } = body;
 
         if (!projectId || !texts || !targetLang) {
             return NextResponse.json(
@@ -20,7 +20,11 @@ export async function POST(request: Request) {
             );
         }
 
-        const translations = await translateTexts(projectId, texts, targetLang);
+        const translations = await translateTexts(projectId, texts, targetLang, {
+            translationKeyId,
+            keyName,
+            source,
+        });
         return NextResponse.json({ translations });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error';

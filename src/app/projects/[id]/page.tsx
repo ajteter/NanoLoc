@@ -6,6 +6,7 @@ import { Home, Settings, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProjectToolbar } from './components/ProjectToolbar';
+import { ErrorLogButton } from './components/ErrorLogButton';
 import { SearchFilter } from '@/components/SearchFilter';
 import { PaginationControls } from './components/PaginationControls';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -63,6 +64,7 @@ export default async function ProjectDetailPage({
                                 Settings
                             </Link>
                         </Button>
+                        <ErrorLogButton projectId={id} />
                     </div>
                     <p className="mt-1 text-sm text-zinc-400 max-w-2xl">{project.description}</p>
                 </div>

@@ -1,0 +1,20 @@
+/*
+ Localizable.strings
+ Source: docs/translations/values/strings.xml
+ English localization.
+*/
+
+"language_tag" = "en-US";
+"app_name" = "Vanso";
+"system_playlist" = "System playlist";
+"login_bottom_privacy" = "By signing in, you agree to our %@ and %@.";
+"playback_timeout" = "Playback timed out. Try again later.";
+
+"new_recommend_tips" = "New playback content has been recommended for you";
+"no_more_recommend" = "No more recommendations for now";
+"refresh_recommend" = "Refresh Recommendations";
+"mail_app_not_configured" = "You haven't configured the email application yet";
+
+"create_by_user" = "Created by %@";
+"image_crop_desc" = "Drag and resize the image, then crop it to a 1:1 format.";
+"now_playing" = "Now Playing";

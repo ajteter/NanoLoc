@@ -18,7 +18,7 @@ interface TranslateColumnHeadProps {
 export function TranslateColumnHead({ projectId, lang, displayStr, baseLanguageDisplay }: TranslateColumnHeadProps) {
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState<'confirm' | 'translating' | 'done'>('confirm');
-    const [result, setResult] = useState<Record<string, number> | null>(null);
+    const [result, setResult] = useState<Record<string, { success: number; failed: number }> | null>(null);
     const [isPending, startTransition] = useTransition();
 
     const handleStart = () => {
@@ -30,13 +30,18 @@ export function TranslateColumnHead({ projectId, lang, displayStr, baseLanguageD
     const confirmTranslate = () => {
         setStep('translating');
         startTransition(async () => {
-            const res = await batchTranslateAction(projectId, [lang]);
+            const res = await batchTranslateAction(projectId, [lang], 'column');
             if (res.success) {
-                const translated = (res as Record<string, unknown>).translated as Record<string, number> | undefined;
+                const translated = (res as Record<string, unknown>).translated as Record<string, { success: number; failed: number }> | undefined;
                 if (translated) {
                     setResult(translated);
                 }
-                toast.success(`Translation completed for ${displayStr}!`);
+                const summary = translated?.[lang];
+                if (summary && summary.failed > 0) {
+                    toast.warning(`Translation partially completed for ${displayStr}. Check Error Log.`);
+                } else {
+                    toast.success(`Translation completed for ${displayStr}!`);
+                }
             } else {
                 toast.error(res.error || 'Translation failed');
             }
@@ -95,10 +100,16 @@ export function TranslateColumnHead({ projectId, lang, displayStr, baseLanguageD
                                 <p className="text-sm font-medium text-white mb-2">Results:</p>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-zinc-300">{lang}</span>
-                                    <span className="text-emerald-400">+{result[lang] || 0} items</span>
+                                    <div className="flex gap-4">
+                                        <span className="text-emerald-400">+{result[lang]?.success || 0} success</span>
+                                        <span className={(result[lang]?.failed || 0) > 0 ? "text-amber-400" : "text-zinc-500"}>{result[lang]?.failed || 0} failed</span>
+                                    </div>
                                 </div>
                                 {Object.keys(result).length === 0 && (
                                     <p className="text-sm text-zinc-500 italic">No missing translations found.</p>
+                                )}
+                                {(result[lang]?.failed || 0) > 0 && (
+                                    <p className="text-xs text-amber-400">Some items failed. See Error Log for details.</p>
                                 )}
                             </div>
                         )}
