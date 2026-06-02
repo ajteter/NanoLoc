@@ -5,10 +5,11 @@ import { CreateTermRow } from './CreateTermRow';
 interface WrapperProps {
     projectId: string;
     baseLanguage: string;
+    isBasePinned?: boolean;
     targetLanguages: string[];
 }
 
-export function CreateTermRowWrapper({ projectId, baseLanguage, targetLanguages }: WrapperProps) {
+export function CreateTermRowWrapper({ projectId, baseLanguage, isBasePinned = false, targetLanguages }: WrapperProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -22,6 +23,7 @@ export function CreateTermRowWrapper({ projectId, baseLanguage, targetLanguages 
         <CreateTermRow
             projectId={projectId}
             baseLanguage={baseLanguage}
+            isBasePinned={isBasePinned}
             targetLanguages={targetLanguages}
             onCancel={closeRow}
             onSuccess={closeRow}

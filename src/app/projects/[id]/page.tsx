@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TermRow } from './components/TermRow';
 import { CreateTermRowWrapper } from './components/CreateTermRowWrapper';
 import { TranslateColumnHead } from './components/TranslateColumnHead';
+import { BaseLanguageColumnHead } from './components/BaseLanguageColumnHead';
 import { LANGUAGES } from '@/lib/constants/languages';
 
 const getLangDisplayStr = (code: string) => {
@@ -34,6 +35,7 @@ export default async function ProjectDetailPage({
     const limit = 50;
     const search = typeof resolvedParams?.search === 'string' ? resolvedParams.search : '';
     const isCreating = resolvedParams?.create === 'true';
+    const isBasePinned = resolvedParams?.pinBase === '1';
 
     const project = await getProject(id);
     if (!project) notFound();
@@ -80,13 +82,14 @@ export default async function ProjectDetailPage({
                 <SearchFilter initialSearch={search} />
             </div>
 
-            <Suspense key={`${page}-${search}-${isCreating}`} fallback={<TableLoadingSkeleton targetLangs={targetLangs} baseLang={project.baseLanguage || 'en-US'} />}>
+            <Suspense key={`${page}-${search}-${isCreating}-${isBasePinned}`} fallback={<TableLoadingSkeleton targetLangs={targetLangs} baseLang={project.baseLanguage || 'en-US'} />}>
                 <TermsTable
                     projectId={id}
                     page={page}
                     limit={limit}
                     search={search}
                     isCreating={isCreating}
+                    isBasePinned={isBasePinned}
                     project={project}
                     targetLangs={targetLangs}
                 />
@@ -95,7 +98,7 @@ export default async function ProjectDetailPage({
     );
 }
 
-async function TermsTable({ projectId, page, limit, search, isCreating, project, targetLangs }: any) {
+async function TermsTable({ projectId, page, limit, search, isCreating, isBasePinned, project, targetLangs }: any) {
     const termsData = await listTerms(projectId, { page, limit, search });
 
     return (
@@ -112,9 +115,10 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
                                 <TableHead className="w-[100px] min-w-[100px] bg-zinc-900 border-r border-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Actions</TableHead>
                                 <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[100px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Key</TableHead>
                                 <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[300px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Remarks</TableHead>
-                                <TableHead className="text-zinc-300 w-64 min-w-[16rem]">
-                                    {getLangDisplayStr(project.baseLanguage || 'en-US')}
-                                </TableHead>
+                                <BaseLanguageColumnHead
+                                    displayStr={getLangDisplayStr(project.baseLanguage || 'en-US')}
+                                    isPinned={isBasePinned}
+                                />
                                 {targetLangs.map((lang: string) => (
                                     <TranslateColumnHead
                                         key={lang}
@@ -131,6 +135,7 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
                                 <CreateTermRowWrapper
                                     projectId={projectId}
                                     baseLanguage={project.baseLanguage || 'en-US'}
+                                    isBasePinned={isBasePinned}
                                     targetLanguages={targetLangs}
                                 />
                             )}
@@ -149,6 +154,7 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
                                         projectId={projectId}
                                         baseLanguage={project.baseLanguage || 'en-US'}
                                         baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
+                                        isBasePinned={isBasePinned}
                                         targetLanguages={targetLangs}
                                         searchQuery={search}
                                     />

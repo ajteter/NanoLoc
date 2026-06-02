@@ -280,10 +280,11 @@ export async function exportCsv(
         return s;
     };
 
-    let csvContent = '\uFEFF' + header.map(escapeCsv).join(',') + '\n';
-    rows.forEach((r) => {
-        csvContent += r.map(escapeCsv).join(',') + '\n';
-    });
+    const csvLines = [
+        header.map(escapeCsv).join(','),
+        ...rows.map((r) => r.map(escapeCsv).join(',')),
+    ];
+    const csvContent = '\uFEFF' + csvLines.join('\r\n') + '\r\n';
 
     const safeName = project.name.replace(/[^a-z0-9 \-_.]/gi, '_').trim();
 

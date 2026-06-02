@@ -12,11 +12,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     try {
         const { csvContent, fileName } = await exportCsv(id);
+        const csvBytes = new TextEncoder().encode(csvContent);
 
-        return new NextResponse(csvContent, {
+        return new NextResponse(csvBytes, {
             headers: {
                 'Content-Type': 'text/csv; charset=utf-8',
                 'Content-Disposition': `attachment; filename="${fileName}"`,
+                'Content-Length': String(csvBytes.byteLength),
             },
         });
     } catch (error) {
