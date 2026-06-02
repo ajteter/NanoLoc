@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
-import { Edit2, Trash2, Save, X, Check, Wand2, Copy, Info, MoreHorizontal, Eraser } from 'lucide-react';
+import { Edit2, Trash2, X, Check, Wand2, Copy, MoreHorizontal, Eraser } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import Highlighter from 'react-highlight-words';
 import { Input } from "@/components/ui/input";
@@ -20,11 +20,12 @@ interface TermRowProps {
     projectId: string;
     baseLanguage: string;
     baseLanguageDisplay: string;
+    isBasePinned?: boolean;
     targetLanguages: string[];
     searchQuery?: string;
 }
 
-export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, targetLanguages, searchQuery }: TermRowProps) {
+export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, isBasePinned = false, targetLanguages, searchQuery }: TermRowProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [focusLang, setFocusLang] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -228,6 +229,10 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
 
     const baseValue = term.values.find(v => v.languageCode === baseLanguage)?.content;
     const lastUpdated = term.updatedAt ? new Date(term.updatedAt).toLocaleString() : '';
+    const pinnedBaseCellClass = isBasePinned
+        ? "sticky left-[500px] z-10 border-r border-zinc-800 bg-zinc-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]"
+        : "";
+    const pinnedBaseHoverClass = isBasePinned ? "group-hover:bg-zinc-800" : "";
 
     if (isEditing) {
         return (
@@ -267,7 +272,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                         className="bg-zinc-900 border-zinc-700 text-zinc-400 min-h-[4rem] w-full"
                     />
                 </td>
-                <td className="p-4 align-top relative group/base">
+                <td className={cn("p-4 align-top relative group/base", pinnedBaseCellClass)}>
                     <Textarea
                         value={formData.values[baseLanguage] || ''}
                         onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
@@ -445,7 +450,13 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                 </TooltipProvider>
             </td>
             <td
-                className={cn("whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors", isMatch(baseValue) && "bg-emerald-500/10 hover:bg-emerald-500/20")}
+                className={cn(
+                    "whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors",
+                    pinnedBaseCellClass,
+                    pinnedBaseHoverClass,
+                    isMatch(baseValue) && "bg-emerald-500/10 hover:bg-emerald-500/20",
+                    isMatch(baseValue) && isBasePinned && "group-hover:bg-emerald-500/20"
+                )}
                 onClick={() => enterEditMode(baseLanguage)}
             >
                 <TooltipProvider>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Save, X, Check } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,12 +11,13 @@ import { toast } from 'sonner';
 interface CreateTermRowProps {
     projectId: string;
     baseLanguage: string;
+    isBasePinned?: boolean;
     targetLanguages: string[];
     onCancel: () => void;
     onSuccess: () => void;
 }
 
-export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCancel, onSuccess }: CreateTermRowProps) {
+export function CreateTermRow({ projectId, baseLanguage, isBasePinned = false, targetLanguages, onCancel, onSuccess }: CreateTermRowProps) {
     const [isPending, startTransition] = useTransition();
     const [formData, setFormData] = useState({
         stringName: '',
@@ -92,7 +93,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                     className="bg-zinc-900 border-zinc-600 text-zinc-400 min-h-[4rem]"
                 />
             </td>
-            <td className="p-4 align-top">
+            <td className={isBasePinned ? "p-4 align-top sticky left-[500px] z-10 border-r border-zinc-800 bg-zinc-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]" : "p-4 align-top"}>
                 <Textarea
                     value={formData.values[baseLanguage] || ''}
                     onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
