@@ -6,7 +6,7 @@ import { createTerm, updateTerm, deleteTerm, getProject, clearTermTranslations }
 import { batchTranslateProject } from '@/lib/services/translate.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { importFile } from '@/lib/services/storage.service';
-import { parseTargetLanguages } from '@/lib/language-utils';
+import { getProjectLanguageCodes, normalizeTargetLanguages } from '@/lib/language-utils';
 import type { TranslationErrorSource } from '@/lib/services/translation-error.service';
 
 export type ActionResult<T = Record<string, unknown>> =
@@ -67,7 +67,10 @@ export async function batchTranslateAction(
         const project = await getProject(projectId);
         if (!project) throw new Error("Not found");
 
-        const langs = targetLanguages?.length ? targetLanguages : parseTargetLanguages(project.targetLanguages);
+        const { baseLanguage, targetLanguages: configuredTargetLanguages } = getProjectLanguageCodes(project);
+        const langs = targetLanguages?.length
+            ? normalizeTargetLanguages(targetLanguages, baseLanguage)
+            : configuredTargetLanguages;
         if (!langs.length) throw new Error("No target languages configured");
 
         const translated = await batchTranslateProject(projectId, langs, session.user.id, source);

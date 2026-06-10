@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Project, ProjectFormData } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { parseTargetLanguages } from '@/lib/language-utils';
+import { getProjectLanguageCodes } from '@/lib/language-utils';
 
 export default function ProjectSettingsPage() {
     const params = useParams();
@@ -82,11 +82,13 @@ export default function ProjectSettingsPage() {
     if (isLoading) return <div className="container mx-auto py-12 text-center text-zinc-400">Loading settings...</div>;
     if (isError || !project) return <div className="container mx-auto py-12 text-center text-red-500">Failed to load project</div>;
 
+    const { targetLanguages } = getProjectLanguageCodes(project);
+
     const initialData = {
         name: project.name,
         description: project.description || '',
         baseLanguage: project.baseLanguage,
-        targetLanguages: parseTargetLanguages(project.targetLanguages),
+        targetLanguages,
         aiBaseUrl: project.aiBaseUrl || '',
         aiApiKey: project.aiApiKey || '',
         aiModelId: project.aiModelId || '',

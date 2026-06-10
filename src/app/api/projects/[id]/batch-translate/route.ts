@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { getProject } from '@/lib/services/project.service';
 import { batchTranslateProject } from '@/lib/services/translate.service';
 import { logAudit } from '@/lib/services/audit.service';
-import { parseTargetLanguages } from '@/lib/language-utils';
+import { getProjectLanguageCodes, normalizeTargetLanguages } from '@/lib/language-utils';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
@@ -32,10 +32,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             // No body sent — that's fine, we'll use the project's configured languages
         }
 
+        const { baseLanguage, targetLanguages: configuredTargetLanguages } = getProjectLanguageCodes(project);
+
         if (body.targetLanguages && Array.isArray(body.targetLanguages)) {
-            targetLanguages = parseTargetLanguages(body.targetLanguages);
+            targetLanguages = normalizeTargetLanguages(body.targetLanguages, baseLanguage);
         } else {
-            targetLanguages = parseTargetLanguages(project.targetLanguages);
+            targetLanguages = configuredTargetLanguages;
         }
 
         if (!Array.isArray(targetLanguages) || targetLanguages.length === 0) {
