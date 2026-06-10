@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from '@/lib/utils';
 import { SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './stickyColumnClasses';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
 
 interface TermScreenshotCellProps {
     projectId: string;
@@ -54,10 +55,10 @@ export function TermScreenshotCell({
                 method: 'PUT',
                 body: formData,
             });
-            const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || t('screenshot.uploadFailed'));
+                const data = await readApiErrorBody(response);
+                throw new Error(getLocalizedApiError(data, t, t('screenshot.uploadFailed')));
             }
 
             toast.success(t('screenshot.updated'));
@@ -80,10 +81,10 @@ export function TermScreenshotCell({
             const response = await fetch(`/api/projects/${projectId}/terms/${termId}/screenshot`, {
                 method: 'DELETE',
             });
-            const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || t('screenshot.deleteFailed'));
+                const data = await readApiErrorBody(response);
+                throw new Error(getLocalizedApiError(data, t, t('screenshot.deleteFailed')));
             }
 
             toast.success(t('screenshot.deleted'));

@@ -3,21 +3,22 @@ import { auth } from '@/auth';
 import { getProject, updateTerm, deleteTerm } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { updateTermSchema } from '@/lib/validators/term.schema';
+import { jsonError, jsonErrorFromUnknown, jsonValidationError } from '@/lib/api/responses';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id, keyId } = await params;
 
     const project = await getProject(id);
-    if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    if (!project) return jsonError('PROJECT_NOT_FOUND');
 
     const userId = session.user.id;
     if (!userId) {
-        return NextResponse.json({ error: "Session missing user ID" }, { status: 401 });
+        return jsonError('SESSION_USER_MISSING');
     }
 
     try {
@@ -25,7 +26,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         const result = updateTermSchema.safeParse(body);
 
         if (!result.success) {
-            return NextResponse.json({ error: result.error.issues }, { status: 400 });
+            return jsonValidationError(result.error.issues);
         }
 
         const updatedKey = await updateTerm(keyId, result.data, userId);
@@ -40,22 +41,21 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         });
         return NextResponse.json({ term: updatedKey });
     } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
         console.error("Update term error:", error);
-        return NextResponse.json({ error: "Internal Server Error", details: message }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'TERM_UPDATE_FAILED');
     }
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id, keyId } = await params;
 
     const project = await getProject(id);
-    if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    if (!project) return jsonError('PROJECT_NOT_FOUND');
 
     try {
         await deleteTerm(keyId);
@@ -63,6 +63,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Delete term error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'TERM_DELETE_FAILED');
     }
 }

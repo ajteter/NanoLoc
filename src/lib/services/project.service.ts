@@ -3,6 +3,7 @@ import {
     deleteProjectScreenshotDirectory,
     deleteScreenshotFileByPath,
 } from '@/lib/services/term-screenshot.service';
+import { AppError } from '@/lib/api/errors';
 import { parseTargetLanguages, serializeTargetLanguages } from '@/lib/language-utils';
 import type { CreateProjectInput, UpdateProjectInput } from '@/lib/validators/project.schema';
 import type { CreateTermInput, UpdateTermInput } from '@/lib/validators/term.schema';
@@ -120,7 +121,7 @@ export async function createTerm(
         where: { projectId_stringName: { projectId, stringName } },
     });
     if (existing) {
-        throw new ConflictError('Term with this key already exists');
+        throw new ConflictError();
     }
 
     // Assign sortOrder = max + 1 so new terms appear at top (DESC display)
@@ -217,7 +218,7 @@ export async function clearTermTranslations(keyId: string, baseLanguage: string,
             include: { values: true },
         });
 
-        if (!term) throw new Error("Term not found");
+        if (!term) throw new AppError('TERM_NOT_FOUND');
 
         const valuesToDelete = term.values.filter(v => v.languageCode !== baseLanguage);
 
@@ -281,8 +282,8 @@ export async function listRecentActivity(options: { page: number; limit: number 
 // ─── Errors ──────────────────────────────────────────────────────────────────
 
 export class ConflictError extends Error {
-    constructor(message: string) {
-        super(message);
+    constructor() {
+        super('Term with this key already exists');
         this.name = 'ConflictError';
     }
 }

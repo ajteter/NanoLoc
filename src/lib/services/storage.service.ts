@@ -4,6 +4,7 @@ import { AndroidXmlParser } from '@/lib/parsers/android-xml';
 import { H5JsonParser } from '@/lib/parsers/h5-json';
 import { IOSStringsParser } from '@/lib/parsers/ios-strings';
 import { getProjectLanguageCodes } from '@/lib/language-utils';
+import { AppError } from '@/lib/api/errors';
 
 type TranslationValueRow = {
     languageCode: string;
@@ -30,7 +31,7 @@ async function importParsedStrings(
     // Verify the user exists to prevent FK constraint violations
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-        throw new Error(`Import failed: user ID "${userId}" not found. Please log out and log back in.`);
+        throw new AppError('USER_NOT_FOUND');
     }
 
     const stringNames = parsedStrings.map((s) => s.name);
@@ -238,7 +239,7 @@ export async function importFile(
         return { ...result, format: 'strings' };
     }
 
-    throw new Error(`Unsupported file format: .${ext}. Supported formats: .xml (Android), .json (H5), .strings (iOS)`);
+    throw new AppError('UNSUPPORTED_FILE_FORMAT', { details: { extension: ext } });
 }
 
 /**
@@ -252,7 +253,7 @@ export async function exportCsv(
         select: { name: true, baseLanguage: true, targetLanguages: true },
     });
 
-    if (!project) throw new Error('Project not found');
+    if (!project) throw new AppError('PROJECT_NOT_FOUND');
 
     const { baseLanguage, targetLanguages: targetLangs, allLanguages } = getProjectLanguageCodes(project);
 
@@ -319,7 +320,7 @@ export async function pullProjectTranslations(
         select: { baseLanguage: true, targetLanguages: true },
     });
 
-    if (!project) throw new Error('Project not found');
+    if (!project) throw new AppError('PROJECT_NOT_FOUND');
 
     const { baseLanguage, allLanguages } = getProjectLanguageCodes(project);
     const targetLang = lang || baseLanguage;

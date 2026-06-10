@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { listAuditLogs } from '@/lib/services/audit.service';
+import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
 
 export async function GET(request: Request) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { searchParams } = new URL(request.url);
@@ -17,6 +18,6 @@ export async function GET(request: Request) {
         return NextResponse.json(result);
     } catch (error) {
         console.error('Activity API error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'ACTIVITY_LOAD_FAILED');
     }
 }

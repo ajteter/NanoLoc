@@ -4,21 +4,22 @@ import { getProject } from '@/lib/services/project.service';
 import { batchTranslateProject } from '@/lib/services/translate.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { getProjectLanguageCodes, normalizeTargetLanguages } from '@/lib/language-utils';
+import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id } = await params;
 
     const project = await getProject(id);
-    if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!project) return jsonError('PROJECT_NOT_FOUND');
 
     const userId = session.user.id;
     if (!userId) {
-        return NextResponse.json({ error: "Session missing user ID" }, { status: 401 });
+        return jsonError('SESSION_USER_MISSING');
     }
 
     try {
@@ -41,15 +42,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         }
 
         if (!Array.isArray(targetLanguages) || targetLanguages.length === 0) {
-            return NextResponse.json({ error: "No target languages configured" }, { status: 400 });
+            return jsonError('NO_TARGET_LANGUAGES');
         }
 
         const translated = await batchTranslateProject(id, targetLanguages, userId, targetLanguages.length === 1 ? 'column' : 'batch');
         logAudit({ action: 'BATCH_TRANSLATE', userId, projectId: id, projectName: project.name, details: { languages: targetLanguages, results: translated } });
         return NextResponse.json({ success: true, translated });
     } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
         console.error("Batch translate error:", error);
-        return NextResponse.json({ error: message || "Internal Server Error" }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'TRANSLATION_FAILED');
     }
 }

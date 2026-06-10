@@ -8,6 +8,7 @@ import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { ProjectFormData } from '@/types';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
 
 export default function CreateProjectPage() {
     const { t } = useI18n();
@@ -23,8 +24,8 @@ export default function CreateProjectPage() {
             });
 
             if (!res.ok) {
-                const json = await res.json();
-                throw new Error(JSON.stringify(json.error) || t('projectCreate.failed'));
+                const json = await readApiErrorBody(res);
+                throw new Error(getLocalizedApiError(json, t, t('projectCreate.failed')));
             }
             return res.json();
         },

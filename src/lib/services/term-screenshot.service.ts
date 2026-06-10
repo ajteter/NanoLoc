@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 import { prisma } from '@/lib/prisma';
+import { AppError } from '@/lib/api/errors';
 
 const UPLOAD_ROOT = path.join(process.cwd(), 'data', 'uploads', 'term-screenshots');
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
@@ -18,7 +19,7 @@ function resolveStoredPath(storedPath: string) {
     const root = path.resolve(UPLOAD_ROOT);
 
     if (resolved !== root && !resolved.startsWith(root + path.sep)) {
-        throw new Error('Invalid screenshot path');
+        throw new AppError('INVALID_SCREENSHOT_PATH');
     }
 
     return resolved;
@@ -61,11 +62,11 @@ export async function saveTermScreenshot({
     userId: string;
 }) {
     if (!ALLOWED_TYPES.has(file.type)) {
-        throw new Error('Unsupported image type. Use PNG, JPG, JPEG, or WEBP.');
+        throw new AppError('UNSUPPORTED_IMAGE_TYPE');
     }
 
     if (file.size > MAX_UPLOAD_BYTES) {
-        throw new Error('Screenshot is too large. Maximum upload size is 5MB.');
+        throw new AppError('SCREENSHOT_TOO_LARGE');
     }
 
     const term = await prisma.translationKey.findFirst({
@@ -77,7 +78,7 @@ export async function saveTermScreenshot({
     });
 
     if (!term) {
-        throw new Error('Term not found');
+        throw new AppError('TERM_NOT_FOUND');
     }
 
     const input = Buffer.from(await file.arrayBuffer());
@@ -147,7 +148,7 @@ export async function removeTermScreenshot({
     });
 
     if (!term) {
-        throw new Error('Term not found');
+        throw new AppError('TERM_NOT_FOUND');
     }
 
     const updatedTerm = await prisma.translationKey.update({

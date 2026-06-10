@@ -3,11 +3,12 @@ import { auth } from '@/auth';
 import { listProjects, createProject } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { createProjectSchema } from '@/lib/validators/project.schema';
+import { jsonError, jsonErrorFromUnknown, jsonValidationError } from '@/lib/api/responses';
 
 export async function GET() {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const projects = await listProjects();
@@ -17,7 +18,7 @@ export async function GET() {
 export async function POST(request: Request) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     try {
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
         const result = createProjectSchema.safeParse(body);
 
         if (!result.success) {
-            return NextResponse.json({ error: result.error.issues }, { status: 400 });
+            return jsonValidationError(result.error.issues);
         }
 
         const project = await createProject(result.data);
@@ -33,6 +34,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ project }, { status: 201 });
     } catch (error) {
         console.error("Create project error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'PROJECT_CREATE_FAILED');
     }
 }

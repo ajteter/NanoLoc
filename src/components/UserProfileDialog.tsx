@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
 
 type SessionUserWithUsername = {
     name?: string | null;
@@ -35,23 +36,6 @@ export function UserProfileDialog() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
-
-    const getProfileError = (error: unknown) => {
-        switch (error) {
-            case 'Current password is required':
-                return t('profile.currentPasswordRequired');
-            case 'New password must be at least 6 characters':
-                return t('profile.newPasswordTooShort');
-            case 'User not found':
-                return t('profile.userNotFound');
-            case 'Current password is incorrect':
-                return t('profile.currentPasswordIncorrect');
-            case 'Nothing to update':
-                return t('profile.nothingToUpdate');
-            default:
-                return t('profile.updateFailed');
-        }
-    };
 
     const handleOpen = (isOpen: boolean) => {
         setOpen(isOpen);
@@ -102,10 +86,9 @@ export function UserProfileDialog() {
                 body: JSON.stringify(payload),
             });
 
-            const data = await res.json();
-
             if (!res.ok) {
-                toast.error(getProfileError(data.error));
+                const data = await readApiErrorBody(res);
+                toast.error(getLocalizedApiError(data, t, t('profile.updateFailed')));
                 return;
             }
 

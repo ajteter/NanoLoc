@@ -8,17 +8,13 @@ import { toast } from 'sonner';
 import { LogoIcon } from '@/components/LogoIcon';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
 
 function RegisterForm() {
     const { t } = useI18n();
     const router = useRouter();
     const [isPending, setIsPending] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-    const getRegistrationError = (error: unknown) => {
-        if (error === 'User already exists') return t('auth.userExists');
-        return t('auth.registrationFailed');
-    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -50,10 +46,9 @@ function RegisterForm() {
                 body: JSON.stringify({ username, password }),
             });
 
-            const data = await res.json();
-
             if (!res.ok) {
-                setErrorMessage(getRegistrationError(data.error));
+                const data = await readApiErrorBody(res);
+                setErrorMessage(getLocalizedApiError(data, t, t('auth.registrationFailed')));
                 setIsPending(false);
                 return;
             }

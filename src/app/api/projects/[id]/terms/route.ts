@@ -3,17 +3,18 @@ import { auth } from '@/auth';
 import { listTerms, createTerm, getProject, ConflictError } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { createTermSchema } from '@/lib/validators/term.schema';
+import { jsonError, jsonErrorFromUnknown, jsonValidationError } from '@/lib/api/responses';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id } = await params;
 
     const project = await getProject(id);
-    if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!project) return jsonError('PROJECT_NOT_FOUND');
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -25,25 +26,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         return NextResponse.json(result);
     } catch (error) {
         console.error("Fetch terms error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'TERM_UPDATE_FAILED');
     }
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id } = await params;
 
     const project = await getProject(id);
-    if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!project) return jsonError('PROJECT_NOT_FOUND');
 
     // Resolve userId from session for audit
     const userId = session.user.id;
     if (!userId) {
-        return NextResponse.json({ error: "Session missing user ID" }, { status: 401 });
+        return jsonError('SESSION_USER_MISSING');
     }
 
     try {
@@ -51,7 +52,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const result = createTermSchema.safeParse(body);
 
         if (!result.success) {
-            return NextResponse.json({ error: result.error.issues }, { status: 400 });
+            return jsonValidationError(result.error.issues);
         }
 
         const term = await createTerm(id, result.data, userId);
@@ -59,9 +60,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         return NextResponse.json({ term }, { status: 201 });
     } catch (error) {
         if (error instanceof ConflictError) {
-            return NextResponse.json({ error: error.message }, { status: 409 });
+            return jsonError('TERM_KEY_EXISTS');
         }
         console.error("Create term error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'TERM_CREATE_FAILED');
     }
 }

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getProjectLanguageCodes } from '@/lib/language-utils';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
 
 export default function ProjectSettingsPage() {
     const { t } = useI18n();
@@ -27,7 +28,10 @@ export default function ProjectSettingsPage() {
         queryKey: ['project', projectId],
         queryFn: async () => {
             const res = await fetch(`/api/projects/${projectId}`);
-            if (!res.ok) throw new Error(t('projectSettings.loadFailed'));
+            if (!res.ok) {
+                const json = await readApiErrorBody(res);
+                throw new Error(getLocalizedApiError(json, t, t('projectSettings.loadFailed')));
+            }
             return res.json();
         },
     });
@@ -47,8 +51,8 @@ export default function ProjectSettingsPage() {
             });
 
             if (!res.ok) {
-                const json = await res.json();
-                throw new Error(JSON.stringify(json.error) || t('projectSettings.failed'));
+                const json = await readApiErrorBody(res);
+                throw new Error(getLocalizedApiError(json, t, t('projectSettings.failed')));
             }
             return res.json();
         },
@@ -68,7 +72,10 @@ export default function ProjectSettingsPage() {
             const res = await fetch(`/api/projects/${projectId}`, {
                 method: 'DELETE',
             });
-            if (!res.ok) throw new Error(t('projectSettings.deleteFailed'));
+            if (!res.ok) {
+                const json = await readApiErrorBody(res);
+                throw new Error(getLocalizedApiError(json, t, t('projectSettings.deleteFailed')));
+            }
             return res.json();
         },
         onSuccess: () => {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AIConfig } from "./br-client";
+import { AppError } from '@/lib/api/errors';
 
 export async function getProjectAIConfig(projectId: string): Promise<AIConfig> {
     const project = await prisma.project.findUnique({
@@ -13,7 +14,7 @@ export async function getProjectAIConfig(projectId: string): Promise<AIConfig> {
     });
 
     if (!project) {
-        throw new Error(`Project not found: ${projectId}`);
+        throw new AppError('PROJECT_NOT_FOUND');
     }
 
     // Fallback to Env Vars if project config is missing
@@ -22,7 +23,7 @@ export async function getProjectAIConfig(projectId: string): Promise<AIConfig> {
     const modelId = project.aiModelId || process.env.bedrock_model_id;
 
     if (!baseUrl || !apiKey || !modelId) {
-        throw new Error("Missing AI configuration. Please configure Project AI settings or Environment variables.");
+        throw new AppError('AI_CONFIG_MISSING');
     }
 
     return {

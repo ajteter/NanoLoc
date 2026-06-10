@@ -3,18 +3,19 @@ import { auth } from '@/auth';
 import { getProject, updateProject, deleteProject } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { updateProjectSchema } from '@/lib/validators/project.schema';
+import { jsonError, jsonErrorFromUnknown, jsonValidationError } from '@/lib/api/responses';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id } = await params;
     const project = await getProject(id);
 
     if (!project) {
-        return NextResponse.json({ error: "Project not found" }, { status: 404 });
+        return jsonError('PROJECT_NOT_FOUND');
     }
 
     return NextResponse.json({ project });
@@ -23,19 +24,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id } = await params;
     try {
         const existing = await getProject(id);
-        if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        if (!existing) return jsonError('PROJECT_NOT_FOUND');
 
         const body = await request.json();
         const result = updateProjectSchema.safeParse(body);
 
         if (!result.success) {
-            return NextResponse.json({ error: result.error.issues }, { status: 400 });
+            return jsonValidationError(result.error.issues);
         }
 
         const updated = await updateProject(id, result.data);
@@ -43,19 +44,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         return NextResponse.json({ project: updated });
     } catch (error) {
         console.error("Update project error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'PROJECT_UPDATE_FAILED');
     }
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id } = await params;
     const existing = await getProject(id);
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!existing) return jsonError('PROJECT_NOT_FOUND');
 
     await deleteProject(id);
     logAudit({ action: 'DELETE_PROJECT', userId: session.user.id, projectId: id, projectName: existing.name });

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getLanguageDisplayName } from '@/lib/language-utils';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
 
 interface DuplicateTerm {
     id: string;
@@ -57,12 +58,13 @@ export function DuplicateContentButton({ projectId, languageCodes }: DuplicateCo
                 ignoreCase: String(ignoreCase),
             });
             const response = await fetch(`/api/projects/${projectId}/duplicates?${params.toString()}`);
-            const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || t('duplicates.failedFallback'));
+                const data = await readApiErrorBody(response);
+                throw new Error(getLocalizedApiError(data, t, t('duplicates.failedFallback')));
             }
 
+            const data = await response.json();
             setResult(data);
         } catch (error) {
             const message = error instanceof Error ? error.message : t('duplicates.failedFallback');

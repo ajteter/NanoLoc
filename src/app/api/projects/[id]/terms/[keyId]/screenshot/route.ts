@@ -8,13 +8,15 @@ import {
     removeTermScreenshot,
     saveTermScreenshot,
 } from '@/lib/services/term-screenshot.service';
+import { AppError } from '@/lib/api/errors';
+import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
 
 export const runtime = 'nodejs';
 
 async function requireProject(id: string) {
     const project = await getProject(id);
     if (!project) {
-        throw new Error('Project not found');
+        throw new AppError('PROJECT_NOT_FOUND');
     }
 
     return project;
@@ -23,7 +25,7 @@ async function requireProject(id: string) {
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id, keyId } = await params;
@@ -33,7 +35,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         const screenshot = await getTermScreenshot(id, keyId);
 
         if (!screenshot) {
-            return NextResponse.json({ error: 'Screenshot not found' }, { status: 404 });
+            return jsonError('SCREENSHOT_NOT_FOUND');
         }
 
         return new NextResponse(screenshot.data, {
@@ -47,16 +49,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
             },
         });
     } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to load screenshot';
-        const status = message === 'Project not found' ? 404 : 500;
-        return NextResponse.json({ error: message }, { status });
+        return jsonErrorFromUnknown(error, 'SCREENSHOT_LOAD_FAILED');
     }
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
     if (!session?.user?.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id, keyId } = await params;
@@ -67,7 +67,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         const file = formData.get('file');
 
         if (!(file instanceof File)) {
-            return NextResponse.json({ error: 'No screenshot uploaded' }, { status: 400 });
+            return jsonError('NO_SCREENSHOT_UPLOADED');
         }
 
         const term = await saveTermScreenshot({
@@ -93,16 +93,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         revalidatePath(`/projects/${id}`);
         return NextResponse.json({ success: true, term });
     } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to upload screenshot';
-        const status = message === 'Project not found' || message === 'Term not found' ? 404 : 400;
-        return NextResponse.json({ error: message }, { status });
+        return jsonErrorFromUnknown(error, 'SCREENSHOT_UPLOAD_FAILED');
     }
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
     if (!session?.user?.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id, keyId } = await params;
@@ -127,8 +125,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
         revalidatePath(`/projects/${id}`);
         return NextResponse.json({ success: true });
     } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to delete screenshot';
-        const status = message === 'Project not found' || message === 'Term not found' ? 404 : 400;
-        return NextResponse.json({ error: message }, { status });
+        return jsonErrorFromUnknown(error, 'SCREENSHOT_DELETE_FAILED');
     }
 }

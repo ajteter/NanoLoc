@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { batchTranslateAction } from '@/lib/actions/term.actions';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError } from '@/lib/api/errors';
 import type { TranslationKey } from '@/lib/i18n/dictionaries';
 
 interface TranslateColumnHeadProps {
@@ -54,7 +55,7 @@ export function TranslateColumnHead({ projectId, lang, displayStr, baseLanguageD
                     toast.success(formatMessage('translateColumn.successToast', { language: displayStr }));
                 }
             } else {
-                toast.error(res.error || t('term.translationFailed'));
+                toast.error(getLocalizedApiError(res, t, t('term.translationFailed')));
             }
             setStep('done');
         });
