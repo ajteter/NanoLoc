@@ -15,6 +15,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useI18n } from '@/lib/i18n/client';
 
 type SessionUserWithUsername = {
     name?: string | null;
@@ -23,6 +24,7 @@ type SessionUserWithUsername = {
 
 export function UserProfileDialog() {
     const { data: session, update: updateSession } = useSession();
+    const { t } = useI18n();
     const sessionUser = session?.user as SessionUserWithUsername | undefined;
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -33,6 +35,23 @@ export function UserProfileDialog() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
+
+    const getProfileError = (error: unknown) => {
+        switch (error) {
+            case 'Current password is required':
+                return t('profile.currentPasswordRequired');
+            case 'New password must be at least 6 characters':
+                return t('profile.newPasswordTooShort');
+            case 'User not found':
+                return t('profile.userNotFound');
+            case 'Current password is incorrect':
+                return t('profile.currentPasswordIncorrect');
+            case 'Nothing to update':
+                return t('profile.nothingToUpdate');
+            default:
+                return t('profile.updateFailed');
+        }
+    };
 
     const handleOpen = (isOpen: boolean) => {
         setOpen(isOpen);
@@ -55,15 +74,15 @@ export function UserProfileDialog() {
         // Password change
         if (newPassword || currentPassword) {
             if (!currentPassword) {
-                toast.error('Please enter your current password');
+                toast.error(t('profile.currentPasswordRequired'));
                 return;
             }
             if (newPassword.length < 6) {
-                toast.error('New password must be at least 6 characters');
+                toast.error(t('profile.newPasswordTooShort'));
                 return;
             }
             if (newPassword !== confirmPassword) {
-                toast.error('New passwords do not match');
+                toast.error(t('profile.passwordsMismatch'));
                 return;
             }
             payload.currentPassword = currentPassword;
@@ -71,7 +90,7 @@ export function UserProfileDialog() {
         }
 
         if (Object.keys(payload).length === 0) {
-            toast.info('No changes to save');
+            toast.info(t('profile.noChanges'));
             return;
         }
 
@@ -86,11 +105,11 @@ export function UserProfileDialog() {
             const data = await res.json();
 
             if (!res.ok) {
-                toast.error(data.error || 'Update failed');
+                toast.error(getProfileError(data.error));
                 return;
             }
 
-            toast.success('Profile updated successfully');
+            toast.success(t('profile.updated'));
 
             // Update session if name changed
             if (payload.name) {
@@ -99,7 +118,7 @@ export function UserProfileDialog() {
 
             setOpen(false);
         } catch {
-            toast.error('Failed to update profile');
+            toast.error(t('profile.failed'));
         } finally {
             setLoading(false);
         }
@@ -113,52 +132,52 @@ export function UserProfileDialog() {
                     variant="ghost"
                     size="sm"
                     className="hidden"
-                    title="Profile Settings"
+                    title={t('profile.title')}
                 >
                     <UserCog className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700 text-white">
                 <DialogHeader>
-                    <DialogTitle className="text-white">Profile Settings</DialogTitle>
+                    <DialogTitle className="text-white">{t('profile.title')}</DialogTitle>
                     <DialogDescription className="text-zinc-400">
-                        Update your display name or password.
+                        {t('profile.description')}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-5 mt-2">
                     {/* Username (read-only) */}
                     <div className="space-y-1.5">
-                        <Label className="text-zinc-400">Username</Label>
+                        <Label className="text-zinc-400">{t('profile.username')}</Label>
                         <Input
                             value={sessionUser?.username || sessionUser?.name || ''}
                             disabled
                             className="bg-zinc-800 border-zinc-700 text-zinc-400"
                         />
-                        <p className="text-xs text-zinc-500">Username cannot be changed.</p>
+                        <p className="text-xs text-zinc-500">{t('profile.usernameReadonly')}</p>
                     </div>
 
                     {/* Display Name */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="profile-name">Display Name</Label>
+                        <Label htmlFor="profile-name">{t('profile.displayName')}</Label>
                         <Input
                             id="profile-name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             className="bg-zinc-800 border-zinc-700"
-                            placeholder="Your display name"
+                            placeholder={t('profile.displayNamePlaceholder')}
                         />
                         <p className="text-xs text-zinc-500 mt-1">
-                            Your Profile Settings Display Name changes how you appear visually. You will still use your original Username to log in.
+                            {t('profile.displayNameHint')}
                         </p>
                     </div>
 
                     {/* Password Section */}
                     <div className="border-t border-zinc-700 pt-4 space-y-3">
-                        <h4 className="text-sm font-medium text-zinc-300">Change Password</h4>
+                        <h4 className="text-sm font-medium text-zinc-300">{t('profile.changePassword')}</h4>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="current-pw">Current Password</Label>
+                            <Label htmlFor="current-pw">{t('profile.currentPassword')}</Label>
                             <div className="relative">
                                 <Input
                                     id="current-pw"
@@ -166,7 +185,7 @@ export function UserProfileDialog() {
                                     value={currentPassword}
                                     onChange={(e) => setCurrentPassword(e.target.value)}
                                     className="bg-zinc-800 border-zinc-700 pr-10"
-                                    placeholder="Enter current password"
+                                    placeholder={t('profile.currentPasswordPlaceholder')}
                                 />
                                 <button
                                     type="button"
@@ -179,7 +198,7 @@ export function UserProfileDialog() {
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="new-pw">New Password</Label>
+                            <Label htmlFor="new-pw">{t('profile.newPassword')}</Label>
                             <div className="relative">
                                 <Input
                                     id="new-pw"
@@ -187,7 +206,7 @@ export function UserProfileDialog() {
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
                                     className="bg-zinc-800 border-zinc-700 pr-10"
-                                    placeholder="At least 6 characters"
+                                    placeholder={t('profile.newPasswordPlaceholder')}
                                 />
                                 <button
                                     type="button"
@@ -200,14 +219,14 @@ export function UserProfileDialog() {
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="confirm-pw">Confirm New Password</Label>
+                            <Label htmlFor="confirm-pw">{t('profile.confirmNewPassword')}</Label>
                             <Input
                                 id="confirm-pw"
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 className="bg-zinc-800 border-zinc-700"
-                                placeholder="Repeat new password"
+                                placeholder={t('profile.confirmNewPasswordPlaceholder')}
                             />
                         </div>
                     </div>
@@ -217,7 +236,7 @@ export function UserProfileDialog() {
                         disabled={loading}
                         className="w-full bg-zinc-100 hover:bg-white text-zinc-900"
                     >
-                        {loading ? 'Saving...' : 'Save Changes'}
+                        {loading ? t('common.saving') : t('common.saveChanges')}
                     </Button>
                 </div>
             </DialogContent>

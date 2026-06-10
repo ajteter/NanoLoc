@@ -6,11 +6,19 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
 import { LogoIcon } from '@/components/LogoIcon';
+import { LocaleSwitcher } from '@/components/LocaleSwitcher';
+import { useI18n } from '@/lib/i18n/client';
 
 function RegisterForm() {
+    const { t } = useI18n();
     const router = useRouter();
     const [isPending, setIsPending] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    const getRegistrationError = (error: unknown) => {
+        if (error === 'User already exists') return t('auth.userExists');
+        return t('auth.registrationFailed');
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -23,12 +31,12 @@ function RegisterForm() {
 
         // Client-side password confirmation
         if (password !== confirmPassword) {
-            setErrorMessage('Passwords do not match.');
+            setErrorMessage(t('auth.passwordsMismatch'));
             return;
         }
 
         if (password.length < 6) {
-            setErrorMessage('Password must be at least 6 characters.');
+            setErrorMessage(t('auth.passwordTooShort'));
             return;
         }
 
@@ -45,17 +53,13 @@ function RegisterForm() {
             const data = await res.json();
 
             if (!res.ok) {
-                setErrorMessage(
-                    typeof data.error === 'string'
-                        ? data.error
-                        : 'Registration failed.'
-                );
+                setErrorMessage(getRegistrationError(data.error));
                 setIsPending(false);
                 return;
             }
 
-            toast.message('Account created', {
-                description: 'Logging you in...',
+            toast.message(t('auth.accountCreated'), {
+                description: t('auth.loggingIn'),
             });
 
             // Auto sign-in after registration
@@ -66,27 +70,30 @@ function RegisterForm() {
             });
 
             if (signInRes?.error) {
-                toast.error('Login failed after registration. Please sign in manually.');
+                toast.error(t('auth.loginAfterRegisterFailed'));
                 router.push('/login');
             } else {
                 router.push('/projects');
             }
         } catch {
-            setErrorMessage('An unexpected error occurred.');
+            setErrorMessage(t('auth.unexpectedError'));
         } finally {
             setIsPending(false);
         }
     };
 
     return (
-        <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+        <div className="relative flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+            <div className="absolute right-4 top-4">
+                <LocaleSwitcher />
+            </div>
             <div className="sm:mx-auto sm:w-full sm:max-w-sm">
                 <div className="flex justify-center items-center gap-3 mb-4">
                     <LogoIcon className="w-10 h-10" />
                     <span className="text-3xl font-bold text-zinc-50 tracking-tight">NanoLoc</span>
                 </div>
                 <h2 className="mt-4 text-center text-2xl font-bold leading-9 tracking-tight text-white/90">
-                    Create your account
+                    {t('auth.createAccountTitle')}
                 </h2>
             </div>
 
@@ -94,7 +101,7 @@ function RegisterForm() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                         <label htmlFor="username" className="block text-sm font-medium leading-6 text-white/90">
-                            Username
+                            {t('auth.username')}
                         </label>
                         <div className="mt-2">
                             <input
@@ -110,7 +117,7 @@ function RegisterForm() {
 
                     <div>
                         <label htmlFor="password" className="block text-sm font-medium leading-6 text-white/90">
-                            Password
+                            {t('auth.password')}
                         </label>
                         <div className="mt-2">
                             <input
@@ -127,7 +134,7 @@ function RegisterForm() {
 
                     <div>
                         <label htmlFor="confirmPassword" className="block text-sm font-medium leading-6 text-white/90">
-                            Confirm Password
+                            {t('auth.confirmPassword')}
                         </label>
                         <div className="mt-2">
                             <input
@@ -154,15 +161,15 @@ function RegisterForm() {
                             disabled={isPending}
                             className="flex w-full justify-center rounded-md bg-zinc-100 px-3 py-1.5 text-sm font-semibold leading-6 text-zinc-900 shadow-sm hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400 disabled:opacity-50"
                         >
-                            {isPending ? 'Creating account...' : 'Sign up'}
+                            {isPending ? t('auth.creatingAccount') : t('auth.signUp')}
                         </button>
                     </div>
                 </form>
 
                 <p className="mt-10 text-center text-sm text-zinc-400">
-                    Already have an account?{' '}
+                    {t('auth.hasAccount')}{' '}
                     <Link href="/login" className="font-semibold leading-6 text-zinc-300 hover:text-zinc-200">
-                        Sign in
+                        {t('auth.signIn')}
                     </Link>
                 </p>
             </div>
