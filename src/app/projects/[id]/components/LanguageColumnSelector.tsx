@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getLanguageDisplayName } from '@/lib/language-utils';
+import { useI18n } from '@/lib/i18n/client';
 
 interface LanguageColumnSelectorProps {
     targetLanguages: string[];
@@ -21,13 +22,14 @@ export function LanguageColumnSelector({
     const searchParams = useSearchParams();
     const [open, setOpen] = useState(false);
     const [draftLanguages, setDraftLanguages] = useState<string[]>(visibleTargetLanguages);
+    const { t } = useI18n();
 
     const allSelected = visibleTargetLanguages.length === targetLanguages.length;
     const visibleLabel = allSelected
-        ? `All languages (${targetLanguages.length})`
+        ? `${t('languageSelector.allLanguages')} (${targetLanguages.length})`
         : visibleTargetLanguages.length === 0
-            ? 'Base only'
-        : `${visibleTargetLanguages.length} of ${targetLanguages.length} languages`;
+            ? t('common.baseOnly')
+        : `${visibleTargetLanguages.length} ${t('languageSelector.ofLanguages').replace('{total}', String(targetLanguages.length))}`;
 
     const handleOpenChange = (nextOpen: boolean) => {
         setOpen(nextOpen);
@@ -76,9 +78,9 @@ export function LanguageColumnSelector({
             <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Displayed Languages</DialogTitle>
+                        <DialogTitle>{t('languageSelector.displayedLanguages')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            Limit visible language columns to reduce table render and search cost on large projects. Export and Pull API remain unchanged.
+                            {t('languageSelector.description')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -104,7 +106,7 @@ export function LanguageColumnSelector({
                             onClick={() => setDraftLanguages(targetLanguages)}
                             className="text-zinc-400 hover:text-white"
                         >
-                            Select All
+                            {t('languageSelector.selectAll')}
                         </Button>
                         <div className="flex gap-2">
                             <Button
@@ -113,14 +115,14 @@ export function LanguageColumnSelector({
                                 onClick={() => applySelection([])}
                                 className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
                             >
-                                Base Only
+                                {t('common.baseOnly')}
                             </Button>
                             <Button
                                 type="button"
                                 onClick={() => applySelection()}
                                 className="bg-zinc-100 text-zinc-900 hover:bg-white"
                             >
-                                Apply
+                                {t('common.apply')}
                             </Button>
                         </div>
                     </div>

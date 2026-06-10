@@ -10,6 +10,7 @@ import { DuplicateContentButton } from './DuplicateContentButton';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useI18n } from '@/lib/i18n/client';
 
 interface ProjectToolbarProps {
     projectId: string;
@@ -23,6 +24,7 @@ export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseL
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { t } = useI18n();
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -31,13 +33,13 @@ export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseL
             formData.append('file', file);
 
             startTransition(async () => {
-                const toastId = toast.loading('Importing...');
+                const toastId = toast.loading(t('projectToolbar.importing'));
                 const res = await importFileAction(projectId, formData);
 
                 if (res.success) {
-                    toast.success(`Imported! Added: ${res.added}, Updated: ${res.updated}, Skipped: ${res.skipped}`, { id: toastId });
+                    toast.success(`${t('projectToolbar.imported')} ${t('projectToolbar.added')}: ${res.added}, ${t('projectToolbar.updated')}: ${res.updated}, ${t('projectToolbar.skipped')}: ${res.skipped}`, { id: toastId });
                 } else {
-                    toast.error(`Import failed: ${res.error}`, { id: toastId });
+                    toast.error(`${t('projectToolbar.importFailed')}: ${res.error}`, { id: toastId });
                 }
             });
         }
@@ -69,7 +71,7 @@ export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseL
                             disabled={isPending}
                         >
                             <Upload className="h-4 w-4 mr-2" />
-                            {isPending ? 'Importing...' : 'Import'}
+                            {isPending ? t('projectToolbar.importing') : t('projectToolbar.import')}
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -83,7 +85,7 @@ export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseL
             >
                 <Link href={`/api/projects/${projectId}/export`} target="_blank">
                     <Upload className="h-4 w-4 mr-2 rotate-180" />
-                    Export CSV
+                    {t('projectToolbar.exportCsv')}
                 </Link>
             </Button>
 
@@ -96,7 +98,7 @@ export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseL
                 className="bg-zinc-100 hover:bg-white text-zinc-900"
             >
                 <Plus className="h-4 w-4 mr-2" />
-                New Term
+                {t('projectToolbar.newTerm')}
             </Button>
         </div>
     );
