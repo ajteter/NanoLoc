@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
+import { useI18n } from '@/lib/i18n/client';
 
 interface PaginationProps {
     total: number;
@@ -14,6 +15,7 @@ interface PaginationProps {
 }
 
 export function PaginationControls({ total, page, limit, totalPages }: PaginationProps) {
+    const { t } = useI18n();
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
@@ -34,7 +36,7 @@ export function PaginationControls({ total, page, limit, totalPages }: Paginatio
             isPending && "opacity-70"
         )}>
             <span className="text-sm text-zinc-400 hidden lg:inline-block">
-                {(page - 1) * limit + 1}-{Math.min(page * limit, total)} of {total}
+                {(page - 1) * limit + 1}-{Math.min(page * limit, total)} {t('pagination.of')} {total}
             </span>
 
             <div className="flex items-center gap-2">
@@ -45,7 +47,7 @@ export function PaginationControls({ total, page, limit, totalPages }: Paginatio
                         onClick={() => updatePage(1)}
                         disabled={page === 1 || isPending}
                         className="h-8 w-8 text-zinc-400 hover:text-white"
-                        title="First Page"
+                        title={t('pagination.firstPage')}
                     >
                         <ChevronsLeft className="h-4 w-4" />
                     </Button>
@@ -55,7 +57,7 @@ export function PaginationControls({ total, page, limit, totalPages }: Paginatio
                         onClick={() => updatePage(Math.max(1, page - 1))}
                         disabled={page === 1 || isPending}
                         className="h-8 w-8 text-zinc-400 hover:text-white"
-                        title="Previous Page"
+                        title={t('pagination.previousPage')}
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -68,7 +70,7 @@ export function PaginationControls({ total, page, limit, totalPages }: Paginatio
                         onClick={() => updatePage(Math.min(totalPages, page + 1))}
                         disabled={page === totalPages || isPending}
                         className="h-8 w-8 text-zinc-400 hover:text-white"
-                        title="Next Page"
+                        title={t('pagination.nextPage')}
                     >
                         <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -78,7 +80,7 @@ export function PaginationControls({ total, page, limit, totalPages }: Paginatio
                         onClick={() => updatePage(totalPages)}
                         disabled={page === totalPages || isPending}
                         className="h-8 w-8 text-zinc-400 hover:text-white"
-                        title="Last Page"
+                        title={t('pagination.lastPage')}
                     >
                         <ChevronsRight className="h-4 w-4" />
                     </Button>
