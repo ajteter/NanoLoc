@@ -3,7 +3,8 @@ export interface Project {
     name: string;
     description: string | null;
     baseLanguage: string;
-    targetLanguages: string; // JSON string in DB, need parsing usually, but let's keep it string for simple display or parse it
+    // Serialized JSON array from Prisma/API. Use getProjectLanguageCodes before UI logic.
+    targetLanguages: string;
     aiBaseUrl?: string;
     aiApiKey?: string;
     aiModelId?: string;
@@ -14,13 +15,13 @@ export interface Project {
 
 export interface ProjectFormData {
     name: string;
-    description?: string;
+    description: string;
     baseLanguage: string;
-    targetLanguages: string[]; // Array for form
-    aiBaseUrl?: string;
-    aiApiKey?: string;
-    aiModelId?: string;
-    systemPrompt?: string;
+    targetLanguages: string[];
+    aiBaseUrl: string;
+    aiApiKey: string;
+    aiModelId: string;
+    systemPrompt: string;
 }
 
 export interface User {
