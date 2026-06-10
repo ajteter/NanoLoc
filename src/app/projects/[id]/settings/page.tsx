@@ -11,8 +11,10 @@ import { Project, ProjectFormData } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getProjectLanguageCodes } from '@/lib/language-utils';
+import { useI18n } from '@/lib/i18n/client';
 
 export default function ProjectSettingsPage() {
+    const { t } = useI18n();
     const params = useParams();
     const projectId = params.id as string;
     const router = useRouter();
@@ -25,7 +27,7 @@ export default function ProjectSettingsPage() {
         queryKey: ['project', projectId],
         queryFn: async () => {
             const res = await fetch(`/api/projects/${projectId}`);
-            if (!res.ok) throw new Error('Failed to fetch project');
+            if (!res.ok) throw new Error(t('projectSettings.loadFailed'));
             return res.json();
         },
     });
@@ -46,13 +48,13 @@ export default function ProjectSettingsPage() {
 
             if (!res.ok) {
                 const json = await res.json();
-                throw new Error(JSON.stringify(json.error) || 'Failed to update project');
+                throw new Error(JSON.stringify(json.error) || t('projectSettings.failed'));
             }
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['project', projectId] });
-            toast.success('Project updated successfully');
+            toast.success(t('projectSettings.success'));
             router.push(`/projects/${projectId}`);
         },
         onError: (err) => {
@@ -66,12 +68,12 @@ export default function ProjectSettingsPage() {
             const res = await fetch(`/api/projects/${projectId}`, {
                 method: 'DELETE',
             });
-            if (!res.ok) throw new Error('Failed to delete project');
+            if (!res.ok) throw new Error(t('projectSettings.deleteFailed'));
             return res.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
-            toast.success('Project deleted');
+            toast.success(t('projectSettings.deleted'));
             router.push('/projects');
         },
         onError: (err) => {
@@ -79,8 +81,8 @@ export default function ProjectSettingsPage() {
         }
     });
 
-    if (isLoading) return <div className="container mx-auto py-12 text-center text-zinc-400">Loading settings...</div>;
-    if (isError || !project) return <div className="container mx-auto py-12 text-center text-red-500">Failed to load project</div>;
+    if (isLoading) return <div className="container mx-auto py-12 text-center text-zinc-400">{t('projectSettings.loading')}</div>;
+    if (isError || !project) return <div className="container mx-auto py-12 text-center text-red-500">{t('projectSettings.loadFailed')}</div>;
 
     const { targetLanguages } = getProjectLanguageCodes(project);
 
@@ -95,17 +97,24 @@ export default function ProjectSettingsPage() {
         systemPrompt: project.systemPrompt || '',
     };
 
+    const [projectDescriptionPrefix, projectDescriptionSuffix = ''] = t('projectSettings.description').split('{name}');
+    const [deleteConfirmPrefix, deleteConfirmSuffix = ''] = t('projectSettings.deleteConfirmPrompt').split('{name}');
+
     return (
         <div className="container mx-auto max-w-5xl py-8 px-4 sm:px-6 lg:px-8">
             <div className="mb-8">
                 <Link href={`/projects/${projectId}`} className="flex items-center text-sm text-zinc-400 hover:text-white mb-4 transition-colors">
                     <ChevronLeft className="h-4 w-4 mr-1" />
-                    Back to Project
+                    {t('projectSettings.back')}
                 </Link>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-white">Project Settings</h1>
-                        <p className="text-zinc-400 mt-2">Manage configuration for <span className="text-white font-medium">{project.name}</span>.</p>
+                        <h1 className="text-3xl font-bold text-white">{t('projectSettings.title')}</h1>
+                        <p className="text-zinc-400 mt-2">
+                            {projectDescriptionPrefix}
+                            <span className="text-white font-medium">{project.name}</span>
+                            {projectDescriptionSuffix}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -116,25 +125,27 @@ export default function ProjectSettingsPage() {
                         initialData={initialData}
                         onSubmit={(data) => updateMutation.mutate(data)}
                         isSubmitting={updateMutation.isPending}
-                        submitLabel="Save Changes"
+                        submitLabel={t('common.saveChanges')}
                     />
                 </div>
 
                 <div className="bg-red-950/20 border border-red-900/50 rounded-lg p-6 sm:p-8">
-                    <h3 className="text-lg font-medium text-red-400 mb-2">Danger Zone</h3>
-                    <p className="text-zinc-400 text-sm mb-4">Deleting this project will permanently remove all terms and translations.</p>
+                    <h3 className="text-lg font-medium text-red-400 mb-2">{t('projectSettings.dangerZone')}</h3>
+                    <p className="text-zinc-400 text-sm mb-4">{t('projectSettings.dangerDescription')}</p>
 
                     {deleteConfirm ? (
                         <div className="space-y-3 max-w-md">
                             <p className="text-sm text-red-300">
-                                Type <span className="font-mono font-bold text-white">{project.name}</span> to confirm deletion:
+                                {deleteConfirmPrefix}
+                                <span className="font-mono font-bold text-white">{project.name}</span>
+                                {deleteConfirmSuffix}
                             </p>
                             <Input
                                 value={deleteInput}
                                 onChange={(e) => setDeleteInput(e.target.value)}
                                 className="bg-zinc-900 border-red-700 text-white"
                                 autoFocus
-                                placeholder="Type project name..."
+                                placeholder={t('projectSettings.deletePlaceholder')}
                             />
                             <div className="flex gap-2">
                                 <Button
@@ -143,14 +154,14 @@ export default function ProjectSettingsPage() {
                                     disabled={deleteInput !== project.name || deleteMutation.isPending}
                                 >
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    {deleteMutation.isPending ? 'Deleting...' : 'Confirm Delete'}
+                                    {deleteMutation.isPending ? t('common.deleting') : t('projectSettings.confirmDelete')}
                                 </Button>
                                 <Button
                                     variant="ghost"
                                     onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
                                     className="text-zinc-400"
                                 >
-                                    Cancel
+                                    {t('common.cancel')}
                                 </Button>
                             </div>
                         </div>
@@ -160,7 +171,7 @@ export default function ProjectSettingsPage() {
                             onClick={() => setDeleteConfirm(true)}
                         >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Project
+                            {t('projectSettings.deleteProject')}
                         </Button>
                     )}
                 </div>
