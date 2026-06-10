@@ -5,9 +5,12 @@ import { UserNav } from '@/components/UserNav';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { LogoIcon } from '@/components/LogoIcon';
+import { LocaleSwitcher } from '@/components/LocaleSwitcher';
+import { useI18n } from '@/lib/i18n/client';
 
 export function SiteHeader() {
     const pathname = usePathname();
+    const { t } = useI18n();
     const isLoginPage = pathname === '/login' || pathname === '/register';
 
     if (isLoginPage) return null;
@@ -30,7 +33,7 @@ export function SiteHeader() {
                                 pathname === "/" ? "text-foreground" : "text-foreground/60"
                             )}
                         >
-                            Projects
+                            {t('common.projects')}
                         </Link>
                     </nav>
                 </div>
@@ -38,6 +41,7 @@ export function SiteHeader() {
                     <div className="w-full flex-1 md:w-auto md:flex-none">
                         {/* Search or other global items could go here */}
                     </div>
+                    <LocaleSwitcher />
                     <UserNav showName />
                 </div>
             </div>
