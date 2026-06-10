@@ -76,7 +76,7 @@ export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseL
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>.xml (Android) / .json (H5) / .strings (iOS)</p>
+                        <p>{t('projectToolbar.importTooltip')}</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>

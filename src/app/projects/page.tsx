@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { Plus, History } from 'lucide-react';
 import { listProjects } from '@/lib/services/project.service';
@@ -6,9 +7,13 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { getServerTranslator } from '@/lib/i18n/server';
 
-export const metadata = {
-    title: 'Projects - NanoLoc',
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const { t } = await getServerTranslator();
+
+    return {
+        title: t('metadata.projectsTitle'),
+    };
+}
 
 export default async function ProjectsPage({
     searchParams,

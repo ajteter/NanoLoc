@@ -94,7 +94,7 @@ export function DuplicateContentButton({ projectId, languageCodes }: DuplicateCo
             </Button>
 
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-5xl">
+                <DialogContent closeLabel={t('common.close')} className="bg-zinc-900 border-zinc-800 text-white max-w-5xl">
                     <DialogHeader>
                         <DialogTitle>{t('duplicates.title')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">

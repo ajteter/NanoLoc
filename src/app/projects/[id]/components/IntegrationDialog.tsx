@@ -72,7 +72,7 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
                     API
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl bg-zinc-900 border-zinc-700 text-white">
+            <DialogContent closeLabel={t('common.close')} className="sm:max-w-2xl bg-zinc-900 border-zinc-700 text-white">
                 <DialogHeader>
                     <DialogTitle className="text-white flex items-center gap-2">
                         <Code className="h-5 w-5 text-zinc-300" />

@@ -59,7 +59,7 @@ export function ErrorLogButton({ projectId }: ErrorLogButtonProps) {
             </Button>
 
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-5xl">
+                <DialogContent closeLabel={t('common.close')} className="bg-zinc-900 border-zinc-800 text-white max-w-5xl">
                     <DialogHeader>
                         <DialogTitle>{t('common.errorLog')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">
