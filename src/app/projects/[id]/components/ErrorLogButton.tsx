@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useI18n } from '@/lib/i18n/client';
 
 interface ErrorLogItem {
     id: string;
@@ -23,13 +24,14 @@ interface ErrorLogButtonProps {
 
 export function ErrorLogButton({ projectId }: ErrorLogButtonProps) {
     const [open, setOpen] = useState(false);
+    const { t } = useI18n();
 
     const { data, isLoading, error, refetch, isFetching } = useQuery<{ errors: ErrorLogItem[] }>({
         queryKey: ['project-error-log', projectId],
         queryFn: async () => {
             const res = await fetch(`/api/projects/${projectId}/errors`);
             if (!res.ok) {
-                throw new Error('Failed to load error log');
+                throw new Error(t('errorLog.loadError'));
             }
             return res.json();
         },
@@ -53,15 +55,15 @@ export function ErrorLogButton({ projectId }: ErrorLogButtonProps) {
                 }}
             >
                 <AlertTriangle className="h-4 w-4" />
-                Error Log
+                {t('common.errorLog')}
             </Button>
 
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-5xl">
                     <DialogHeader>
-                        <DialogTitle>Error Log</DialogTitle>
+                        <DialogTitle>{t('common.errorLog')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            Translation failures recorded for this project. Each record includes the key, language, error code, and error details.
+                            {t('errorLog.description')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -69,22 +71,22 @@ export function ErrorLogButton({ projectId }: ErrorLogButtonProps) {
                         {isLoading || isFetching ? (
                             <div className="flex items-center justify-center py-16 text-zinc-400">
                                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                                Loading error log...
+                                {t('errorLog.loading')}
                             </div>
                         ) : error ? (
-                            <div className="py-16 text-center text-red-400">Failed to load error log.</div>
+                            <div className="py-16 text-center text-red-400">{t('errorLog.loadError')}.</div>
                         ) : items.length === 0 ? (
-                            <div className="py-16 text-center text-zinc-500">No translation errors recorded.</div>
+                            <div className="py-16 text-center text-zinc-500">{t('errorLog.empty')}</div>
                         ) : (
                             <table className="min-w-full text-sm">
                                 <thead className="sticky top-0 bg-zinc-900 border-b border-zinc-800">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">Time</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">Key</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">Language</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">Source</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">Error Code</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">Description</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">{t('errorLog.time')}</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">{t('common.key')}</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">{t('common.language')}</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">{t('errorLog.source')}</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">{t('errorLog.errorCode')}</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">{t('errorLog.descriptionColumn')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-800">

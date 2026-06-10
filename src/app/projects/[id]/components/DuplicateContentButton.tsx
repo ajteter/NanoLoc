@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getLanguageDisplayName } from '@/lib/language-utils';
+import { useI18n } from '@/lib/i18n/client';
 
 interface DuplicateTerm {
     id: string;
@@ -39,10 +40,11 @@ export function DuplicateContentButton({ projectId, languageCodes }: DuplicateCo
     const [ignoreCase, setIgnoreCase] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<DuplicateResult | null>(null);
+    const { t } = useI18n();
 
     const runCheck = async () => {
         if (!languageCode) {
-            toast.error('No language configured for this project.');
+            toast.error(t('duplicates.noLanguage'));
             return;
         }
 
@@ -58,12 +60,12 @@ export function DuplicateContentButton({ projectId, languageCodes }: DuplicateCo
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Duplicate check failed');
+                throw new Error(data.error || t('duplicates.failedFallback'));
             }
 
             setResult(data);
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Duplicate check failed';
+            const message = error instanceof Error ? error.message : t('duplicates.failedFallback');
             toast.error(message);
         } finally {
             setIsLoading(false);
@@ -86,21 +88,21 @@ export function DuplicateContentButton({ projectId, languageCodes }: DuplicateCo
                 disabled={languageCodes.length === 0}
             >
                 <CopyCheck className="h-4 w-4 mr-2 text-amber-400" />
-                Check Duplicates
+                {t('duplicates.button')}
             </Button>
 
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-5xl">
                     <DialogHeader>
-                        <DialogTitle>Duplicate Content Check</DialogTitle>
+                        <DialogTitle>{t('duplicates.title')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            Find repeated non-empty text in one language. Values are trimmed before comparison.
+                            {t('duplicates.description')}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                         <label className="flex flex-1 flex-col gap-2 text-sm text-zinc-300">
-                            Language
+                            {t('common.language')}
                             <select
                                 value={languageCode}
                                 onChange={(event) => setLanguageCode(event.target.value)}
@@ -120,11 +122,11 @@ export function DuplicateContentButton({ projectId, languageCodes }: DuplicateCo
                                 onChange={(event) => setIgnoreCase(event.target.checked)}
                                 className="h-4 w-4 rounded border-zinc-700 bg-zinc-950"
                             />
-                            Ignore case
+                            {t('duplicates.ignoreCase')}
                         </label>
                         <Button type="button" onClick={runCheck} disabled={isLoading || !languageCode}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CopyCheck className="mr-2 h-4 w-4" />}
-                            Check
+                            {t('duplicates.check')}
                         </Button>
                     </div>
 
@@ -132,17 +134,17 @@ export function DuplicateContentButton({ projectId, languageCodes }: DuplicateCo
                         {isLoading ? (
                             <div className="flex items-center justify-center py-16 text-zinc-400">
                                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                Checking duplicate content...
+                                {t('duplicates.loading')}
                             </div>
                         ) : !result ? (
-                            <div className="py-16 text-center text-zinc-500">Run a check to see duplicate content.</div>
+                            <div className="py-16 text-center text-zinc-500">{t('duplicates.prompt')}</div>
                         ) : result.groups.length === 0 ? (
-                            <div className="py-16 text-center text-zinc-500">No duplicate content found.</div>
+                            <div className="py-16 text-center text-zinc-500">{t('duplicates.none')}</div>
                         ) : (
                             <div className="divide-y divide-zinc-800">
                                 <div className="sticky top-0 z-10 flex items-center justify-between bg-zinc-900 px-4 py-3 text-sm text-zinc-300">
                                     <span>
-                                        {result.totalDuplicateGroups} groups, {result.totalDuplicateTerms} terms
+                                        {result.totalDuplicateGroups} {t('duplicates.groups')}, {result.totalDuplicateTerms} {t('duplicates.terms')}
                                     </span>
                                     <span className="text-zinc-500">{getLanguageDisplayName(result.languageCode)}</span>
                                 </div>
@@ -153,7 +155,7 @@ export function DuplicateContentButton({ projectId, languageCodes }: DuplicateCo
                                                 {group.content}
                                             </p>
                                             <span className="rounded-full border border-amber-700/60 px-2 py-0.5 text-xs text-amber-300">
-                                                {group.count} terms
+                                                {group.count} {t('duplicates.terms')}
                                             </span>
                                         </div>
                                         <div className="grid gap-2">

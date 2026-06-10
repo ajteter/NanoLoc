@@ -19,6 +19,7 @@ import { LanguageColumnSelector } from './components/LanguageColumnSelector';
 import { SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './components/stickyColumnClasses';
 import { getLanguageDisplayName, getProjectLanguageCodes, parseVisibleTargetLanguages } from '@/lib/language-utils';
 import { cn } from '@/lib/utils';
+import { getServerTranslator } from '@/lib/i18n/server';
 import type { TranslationKey } from '@/types';
 
 export default async function ProjectDetailPage({
@@ -39,6 +40,7 @@ export default async function ProjectDetailPage({
     const project = await getProject(id);
     if (!project) notFound();
 
+    const { t } = await getServerTranslator();
     const { baseLanguage, targetLanguages: allTargetLangs } = getProjectLanguageCodes(project);
     const visibleTargetLangs = parseVisibleTargetLanguages(resolvedParams?.langs, allTargetLangs);
 
@@ -63,7 +65,7 @@ export default async function ProjectDetailPage({
                         <Button variant="outline" size="sm" asChild className="text-zinc-300 border-zinc-600 hover:bg-zinc-800 hover:text-white gap-2">
                             <Link href={`/projects/${id}/settings`}>
                                 <Settings className="h-4 w-4" />
-                                Settings
+                                {t('common.settings')}
                             </Link>
                         </Button>
                         <ErrorLogButton projectId={id} />
@@ -113,6 +115,7 @@ interface TermsTableProps {
 }
 
 async function TermsTable({ projectId, page, limit, search, isCreating, baseLanguage, targetLangs }: TermsTableProps) {
+    const { t } = await getServerTranslator();
     const termsData = await listTerms(projectId, {
         page,
         limit,
@@ -132,12 +135,12 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
                         <Table>
                             <TableHeader className="bg-zinc-800">
                                 <TableRow className="border-zinc-700 hover:bg-zinc-800">
-                                    <TableHead className="w-[100px] min-w-[100px] bg-zinc-900 border-r border-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Actions</TableHead>
-                                    <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[100px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Key</TableHead>
-                                    <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[300px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Remarks</TableHead>
+                                    <TableHead className="w-[100px] min-w-[100px] bg-zinc-900 border-r border-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">{t('common.actions')}</TableHead>
+                                    <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[100px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">{t('common.key')}</TableHead>
+                                    <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[300px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">{t('common.remarks')}</TableHead>
                                     <TableHead
                                         className={cn('text-zinc-400', SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS.replace('z-20', 'z-30'))}
-                                        aria-label="Term screenshot"
+                                        aria-label={t('projectDetail.termScreenshot')}
                                     >
                                         <ImageIcon className="mx-auto h-4 w-4" />
                                     </TableHead>
@@ -165,7 +168,7 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
                                 {termsData.data.length === 0 && !isCreating ? (
                                     <TableRow>
                                         <TableCell colSpan={5 + targetLangs.length} className="h-24 text-center text-zinc-400">
-                                            No terms found
+                                            {t('projectDetail.noTermsFound')}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
