@@ -30,6 +30,11 @@ export function UserNav({ showName }: UserNavProps) {
 
     return (
         <div className="flex items-center gap-2">
+            {showName && (
+                <span className="hidden text-sm text-zinc-300 sm:inline">
+                    {session.user.name}
+                </span>
+            )}
             <UserProfileDialog />
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>

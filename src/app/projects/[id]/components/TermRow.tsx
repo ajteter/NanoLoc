@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
-import { Edit2, Trash2, Save, X, Check, Wand2, Copy, Info, MoreHorizontal, Eraser } from 'lucide-react';
+import { Edit2, Trash2, X, Check, Wand2, Copy, MoreHorizontal, Eraser } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import Highlighter from 'react-highlight-words';
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,9 @@ import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { updateTermAction, deleteTermAction, clearTermTranslationsAction } from '@/lib/actions/term.actions';
 import { cn } from '@/lib/utils';
-import { BASE_LANGUAGE_STICKY_CLASS, useBaseLanguagePin } from './BaseLanguagePinContext';
+import { useBaseLanguagePin } from './BaseLanguagePinContext';
+import { BASE_LANGUAGE_STICKY_CLASS } from './stickyColumnClasses';
+import { TermScreenshotCell } from './TermScreenshotCell';
 
 interface TermRowProps {
     term: TranslationKey;
@@ -24,6 +26,12 @@ interface TermRowProps {
     targetLanguages: string[];
     searchQuery?: string;
 }
+
+type TermUpdateInput = {
+    stringName?: string;
+    remarks?: string | null;
+    values?: Record<string, string>;
+};
 
 export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, targetLanguages, searchQuery }: TermRowProps) {
     const { isBaseLanguagePinned } = useBaseLanguagePin();
@@ -65,7 +73,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
         }
     }, [term, isEditing]);
 
-    const doUpdate = (data: any, onSuccessCb?: () => void) => {
+    const doUpdate = (data: TermUpdateInput, onSuccessCb?: () => void) => {
         startUpdate(async () => {
             const res = await updateTermAction(projectId, term.id, data);
             if (res.success) {
@@ -168,7 +176,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     doUpdate({ values: { ...formData.values, [lang]: translated } });
                 }
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (expectedRowLangs.current.length > 0) {
                 pendingRowTranslations.current[lang] = formData.values[lang] || '';
                 const allDone = expectedRowLangs.current.every(l => l in pendingRowTranslations.current);
@@ -182,7 +190,8 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     expectedRowLangs.current = [];
                 }
             } else {
-                toast.error('Translate error: ' + err.message);
+                const message = err instanceof Error ? err.message : 'Unknown error';
+                toast.error('Translate error: ' + message);
             }
         } finally {
             setTranslating(prev => prev.filter(l => l !== lang));
@@ -269,6 +278,13 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                         className="bg-zinc-900 border-zinc-700 text-zinc-400 min-h-[4rem] w-full"
                     />
                 </td>
+                <TermScreenshotCell
+                    projectId={projectId}
+                    termId={term.id}
+                    termName={formData.stringName || term.stringName}
+                    hasScreenshot={Boolean(term.screenshotPath)}
+                    screenshotUpdatedAt={term.screenshotUpdatedAt}
+                />
                 <td className={cn("p-4 align-top group/base w-64 min-w-[16rem]", isBaseLanguagePinned ? BASE_LANGUAGE_STICKY_CLASS : "relative")}>
                     <Textarea
                         value={formData.values[baseLanguage] || ''}
@@ -446,6 +462,13 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     </Tooltip>
                 </TooltipProvider>
             </td>
+            <TermScreenshotCell
+                projectId={projectId}
+                termId={term.id}
+                termName={term.stringName}
+                hasScreenshot={Boolean(term.screenshotPath)}
+                screenshotUpdatedAt={term.screenshotUpdatedAt}
+            />
             <td
                 className={cn("whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs w-64 min-w-[16rem] align-top cursor-pointer hover:bg-zinc-700/30 transition-colors", isBaseLanguagePinned && BASE_LANGUAGE_STICKY_CLASS, isMatch(baseValue) && "bg-emerald-500/10 hover:bg-emerald-500/20")}
                 onClick={() => enterEditMode(baseLanguage)}

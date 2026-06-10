@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Save, X, Check } from 'lucide-react';
+import { X, Check, ImageIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createTermAction } from '@/lib/actions/term.actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { BASE_LANGUAGE_STICKY_CLASS, useBaseLanguagePin } from './BaseLanguagePinContext';
+import { useBaseLanguagePin } from './BaseLanguagePinContext';
+import { BASE_LANGUAGE_STICKY_CLASS, SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './stickyColumnClasses';
 
 interface CreateTermRowProps {
     projectId: string;
@@ -94,6 +95,9 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                     placeholder="Remarks"
                     className="bg-zinc-900 border-zinc-600 text-zinc-400 min-h-[4rem]"
                 />
+            </td>
+            <td className={cn("px-2 py-4 align-top text-center", SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS)}>
+                <ImageIcon className="mx-auto mt-2 h-4 w-4 text-zinc-700" />
             </td>
             <td className={cn("p-4 align-top w-64 min-w-[16rem]", isBaseLanguagePinned && BASE_LANGUAGE_STICKY_CLASS)}>
                 <Textarea

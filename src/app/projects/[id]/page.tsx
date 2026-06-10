@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { getProject, listTerms } from '@/lib/services/project.service';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Settings, Loader2 } from 'lucide-react';
+import { Home, ImageIcon, Settings, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProjectToolbar } from './components/ProjectToolbar';
@@ -15,12 +15,10 @@ import { CreateTermRowWrapper } from './components/CreateTermRowWrapper';
 import { TranslateColumnHead } from './components/TranslateColumnHead';
 import { BaseLanguageColumnHead } from './components/BaseLanguageColumnHead';
 import { BaseLanguagePinProvider } from './components/BaseLanguagePinContext';
-import { LANGUAGES } from '@/lib/constants/languages';
-
-const getLangDisplayStr = (code: string) => {
-    const lang = LANGUAGES.find(l => l.code === code);
-    return lang ? `${lang.name} (${lang.localName}) - ${code}` : code;
-};
+import { SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './components/stickyColumnClasses';
+import { getLanguageDisplayName, getProjectLanguageCodes } from '@/lib/language-utils';
+import { cn } from '@/lib/utils';
+import type { TranslationKey } from '@/types';
 
 export default async function ProjectDetailPage({
     params,
@@ -40,7 +38,7 @@ export default async function ProjectDetailPage({
     const project = await getProject(id);
     if (!project) notFound();
 
-    const targetLangs = project.targetLanguages ? JSON.parse(project.targetLanguages) : [];
+    const { baseLanguage, targetLanguages: targetLangs } = getProjectLanguageCodes(project);
 
     return (
         <main className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8 py-8 relative">
@@ -58,7 +56,7 @@ export default async function ProjectDetailPage({
                             {project.name}
                         </h1>
                         <Badge variant="outline" className="text-zinc-400 border-zinc-600">
-                            {project.baseLanguage || 'en-US'}
+                            {baseLanguage}
                         </Badge>
                         <Button variant="outline" size="sm" asChild className="text-zinc-300 border-zinc-600 hover:bg-zinc-800 hover:text-white gap-2">
                             <Link href={`/projects/${id}/settings`}>
@@ -73,8 +71,9 @@ export default async function ProjectDetailPage({
 
                 <ProjectToolbar
                     projectId={id}
+                    baseLanguage={baseLanguage}
                     targetLanguages={targetLangs}
-                    baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
+                    baseLanguageDisplay={getLanguageDisplayName(baseLanguage)}
                 />
             </div>
 
@@ -82,14 +81,14 @@ export default async function ProjectDetailPage({
                 <SearchFilter initialSearch={search} />
             </div>
 
-            <Suspense key={`${page}-${search}-${isCreating}`} fallback={<TableLoadingSkeleton targetLangs={targetLangs} baseLang={project.baseLanguage || 'en-US'} />}>
+            <Suspense key={`${page}-${search}-${isCreating}`} fallback={<TableLoadingSkeleton />}>
                 <TermsTable
                     projectId={id}
                     page={page}
                     limit={limit}
                     search={search}
                     isCreating={isCreating}
-                    project={project}
+                    baseLanguage={baseLanguage}
                     targetLangs={targetLangs}
                 />
             </Suspense>
@@ -97,7 +96,17 @@ export default async function ProjectDetailPage({
     );
 }
 
-async function TermsTable({ projectId, page, limit, search, isCreating, project, targetLangs }: any) {
+interface TermsTableProps {
+    projectId: string;
+    page: number;
+    limit: number;
+    search: string;
+    isCreating: boolean;
+    baseLanguage: string;
+    targetLangs: string[];
+}
+
+async function TermsTable({ projectId, page, limit, search, isCreating, baseLanguage, targetLangs }: TermsTableProps) {
     const termsData = await listTerms(projectId, { page, limit, search });
 
     return (
@@ -115,14 +124,20 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
                                     <TableHead className="w-[100px] min-w-[100px] bg-zinc-900 border-r border-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Actions</TableHead>
                                     <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[100px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Key</TableHead>
                                     <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[300px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Remarks</TableHead>
-                                    <BaseLanguageColumnHead displayStr={getLangDisplayStr(project.baseLanguage || 'en-US')} />
+                                    <TableHead
+                                        className={cn('text-zinc-400', SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS.replace('z-20', 'z-30'))}
+                                        aria-label="Term screenshot"
+                                    >
+                                        <ImageIcon className="mx-auto h-4 w-4" />
+                                    </TableHead>
+                                    <BaseLanguageColumnHead displayStr={getLanguageDisplayName(baseLanguage)} />
                                     {targetLangs.map((lang: string) => (
                                         <TranslateColumnHead
                                             key={lang}
                                             projectId={projectId}
                                             lang={lang}
-                                            displayStr={getLangDisplayStr(lang)}
-                                            baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
+                                            displayStr={getLanguageDisplayName(lang)}
+                                            baseLanguageDisplay={getLanguageDisplayName(baseLanguage)}
                                         />
                                     ))}
                                 </TableRow>
@@ -131,25 +146,25 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
                                 {isCreating && (
                                     <CreateTermRowWrapper
                                         projectId={projectId}
-                                        baseLanguage={project.baseLanguage || 'en-US'}
+                                        baseLanguage={baseLanguage}
                                         targetLanguages={targetLangs}
                                     />
                                 )}
 
                                 {termsData.data.length === 0 && !isCreating ? (
                                     <TableRow>
-                                        <TableCell colSpan={10} className="h-24 text-center text-zinc-400">
+                                        <TableCell colSpan={5 + targetLangs.length} className="h-24 text-center text-zinc-400">
                                             No terms found
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    termsData.data.map((term: any) => (
+                                    termsData.data.map((term: TranslationKey) => (
                                         <TermRow
                                             key={term.id}
                                             term={term}
                                             projectId={projectId}
-                                            baseLanguage={project.baseLanguage || 'en-US'}
-                                            baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
+                                            baseLanguage={baseLanguage}
+                                            baseLanguageDisplay={getLanguageDisplayName(baseLanguage)}
                                             targetLanguages={targetLangs}
                                             searchQuery={search}
                                         />
@@ -168,7 +183,7 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
     );
 }
 
-function TableLoadingSkeleton({ targetLangs, baseLang }: any) {
+function TableLoadingSkeleton() {
     return (
         <div className="rounded-md border border-zinc-700 bg-zinc-900/50 overflow-hidden animate-pulse">
             <div className="h-[400px] flex items-center justify-center">

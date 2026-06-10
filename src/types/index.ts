@@ -8,8 +8,8 @@ export interface Project {
     aiApiKey?: string;
     aiModelId?: string;
     systemPrompt?: string;
-    updatedAt: string;
-    createdAt: string;
+    updatedAt: string | Date;
+    createdAt: string | Date;
 }
 
 export interface ProjectFormData {
@@ -43,11 +43,15 @@ export interface TranslationKey {
     id: string;
     stringName: string;
     remarks: string | null;
+    screenshotPath?: string | null;
+    screenshotMimeType?: string | null;
+    screenshotSize?: number | null;
+    screenshotUpdatedAt?: string | Date | null;
     values: TranslationValue[];
     lastModifiedBy?: {
         name: string | null;
         username?: string;
     } | null;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: string | Date;
+    updatedAt: string | Date;
 }

@@ -4,7 +4,8 @@ import { Pin, PinOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TableHead } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { BASE_LANGUAGE_STICKY_CLASS, useBaseLanguagePin } from './BaseLanguagePinContext';
+import { useBaseLanguagePin } from './BaseLanguagePinContext';
+import { BASE_LANGUAGE_STICKY_CLASS } from './stickyColumnClasses';
 
 interface BaseLanguageColumnHeadProps {
     displayStr: string;

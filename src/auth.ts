@@ -5,6 +5,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+type AuthUserWithUsername = {
+    username?: string;
+};
+
+type SessionUserWithUsername = {
+    username?: string;
+};
+
 export const { auth, signIn, signOut, handlers } = NextAuth({
     ...authConfig,
     providers: [
@@ -32,7 +40,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         async jwt({ token, user, trigger, session }) {
             if (user) {
                 token.id = user.id;
-                token.username = (user as any).username;
+                token.username = (user as AuthUserWithUsername).username;
             }
             if (trigger === "update" && session?.name) {
                 token.name = session.name;
@@ -47,7 +55,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 session.user.name = token.name as string;
             }
             if (token.username && session.user) {
-                (session.user as any).username = token.username;
+                (session.user as typeof session.user & SessionUserWithUsername).username = token.username as string;
             }
             return session;
         },

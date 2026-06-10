@@ -12,9 +12,6 @@ const BaseLanguagePinContext = createContext<BaseLanguagePinContextValue>({
     toggleBaseLanguagePin: () => { },
 });
 
-export const BASE_LANGUAGE_STICKY_CLASS =
-    'bg-zinc-900 border-r border-zinc-800 sticky left-[500px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]';
-
 const PIN_CHANGE_EVENT = 'nanoloc-base-language-pin-change';
 
 function subscribeToPinChanges(onStoreChange: () => void) {

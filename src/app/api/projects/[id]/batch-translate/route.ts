@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { getProject } from '@/lib/services/project.service';
 import { batchTranslateProject } from '@/lib/services/translate.service';
 import { logAudit } from '@/lib/services/audit.service';
+import { parseTargetLanguages } from '@/lib/language-utils';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
@@ -32,9 +33,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         }
 
         if (body.targetLanguages && Array.isArray(body.targetLanguages)) {
-            targetLanguages = body.targetLanguages;
+            targetLanguages = parseTargetLanguages(body.targetLanguages);
         } else {
-            targetLanguages = JSON.parse(project.targetLanguages || '[]');
+            targetLanguages = parseTargetLanguages(project.targetLanguages);
         }
 
         if (!Array.isArray(targetLanguages) || targetLanguages.length === 0) {

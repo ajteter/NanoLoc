@@ -16,8 +16,14 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
+type SessionUserWithUsername = {
+    name?: string | null;
+    username?: string;
+};
+
 export function UserProfileDialog() {
     const { data: session, update: updateSession } = useSession();
+    const sessionUser = session?.user as SessionUserWithUsername | undefined;
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -92,7 +98,7 @@ export function UserProfileDialog() {
             }
 
             setOpen(false);
-        } catch (err) {
+        } catch {
             toast.error('Failed to update profile');
         } finally {
             setLoading(false);
@@ -125,7 +131,7 @@ export function UserProfileDialog() {
                     <div className="space-y-1.5">
                         <Label className="text-zinc-400">Username</Label>
                         <Input
-                            value={(session?.user as any)?.username || session?.user?.name || ''}
+                            value={sessionUser?.username || sessionUser?.name || ''}
                             disabled
                             className="bg-zinc-800 border-zinc-700 text-zinc-400"
                         />

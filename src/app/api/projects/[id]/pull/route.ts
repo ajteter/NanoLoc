@@ -34,8 +34,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 'Cache-Control': 'no-store',
             },
         });
-    } catch (error: any) {
-        if (error.message === 'Project not found') {
+    } catch (error: unknown) {
+        if (error instanceof Error && error.message === 'Project not found') {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
         console.error('Pull API error:', error);

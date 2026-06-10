@@ -1,4 +1,9 @@
 import { prisma } from '@/lib/prisma';
+import {
+    deleteProjectScreenshotDirectory,
+    deleteScreenshotFileByPath,
+} from '@/lib/services/term-screenshot.service';
+import { serializeTargetLanguages } from '@/lib/language-utils';
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 
@@ -28,7 +33,7 @@ export async function createProject(data: {
     return prisma.project.create({
         data: {
             ...rest,
-            targetLanguages: JSON.stringify(targetLanguages ?? []),
+            targetLanguages: serializeTargetLanguages(targetLanguages),
         },
     });
 }
@@ -47,18 +52,16 @@ export async function updateProject(
     }
 ) {
     const updateData: Record<string, unknown> = { ...data };
-    if (data.targetLanguages) {
-        updateData.targetLanguages = JSON.stringify(data.targetLanguages);
-    }
-    // Remove the array version so Prisma gets the stringified value
     if (Array.isArray(updateData.targetLanguages)) {
-        updateData.targetLanguages = JSON.stringify(updateData.targetLanguages);
+        updateData.targetLanguages = serializeTargetLanguages(updateData.targetLanguages);
     }
     return prisma.project.update({ where: { id }, data: updateData });
 }
 
 export async function deleteProject(id: string) {
-    return prisma.project.delete({ where: { id } });
+    const deletedProject = await prisma.project.delete({ where: { id } });
+    await deleteProjectScreenshotDirectory(id);
+    return deletedProject;
 }
 
 // ─── Terms (TranslationKeys + TranslationValues) ────────────────────────────
@@ -191,7 +194,16 @@ export async function updateTerm(
 }
 
 export async function deleteTerm(keyId: string) {
-    return prisma.translationKey.delete({ where: { id: keyId } });
+    const deletedTerm = await prisma.translationKey.delete({
+        where: { id: keyId },
+        select: {
+            id: true,
+            screenshotPath: true,
+        },
+    });
+
+    await deleteScreenshotFileByPath(deletedTerm.screenshotPath);
+    return deletedTerm;
 }
 
 export async function clearTermTranslations(keyId: string, baseLanguage: string, userId: string) {

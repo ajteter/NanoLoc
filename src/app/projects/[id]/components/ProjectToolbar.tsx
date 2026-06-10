@@ -6,17 +6,19 @@ import { Upload, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { importFileAction } from '@/lib/actions/term.actions';
 import { BatchTranslateButton } from './BatchTranslateButton';
+import { DuplicateContentButton } from './DuplicateContentButton';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProjectToolbarProps {
     projectId: string;
+    baseLanguage: string;
     targetLanguages: string[];
     baseLanguageDisplay: string;
 }
 
-export function ProjectToolbar({ projectId, targetLanguages, baseLanguageDisplay }: ProjectToolbarProps) {
+export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseLanguageDisplay }: ProjectToolbarProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
@@ -33,8 +35,7 @@ export function ProjectToolbar({ projectId, targetLanguages, baseLanguageDisplay
                 const res = await importFileAction(projectId, formData);
 
                 if (res.success) {
-                    const data = res as any;
-                    toast.success(`Imported! Added: ${data.added}, Updated: ${data.updated}, Skipped: ${data.skipped}`, { id: toastId });
+                    toast.success(`Imported! Added: ${res.added}, Updated: ${res.updated}, Skipped: ${res.skipped}`, { id: toastId });
                 } else {
                     toast.error(`Import failed: ${res.error}`, { id: toastId });
                 }
@@ -87,6 +88,8 @@ export function ProjectToolbar({ projectId, targetLanguages, baseLanguageDisplay
             </Button>
 
             <BatchTranslateButton projectId={projectId} targetLanguages={targetLanguages} baseLanguageDisplay={baseLanguageDisplay} />
+
+            <DuplicateContentButton projectId={projectId} languageCodes={[baseLanguage, ...targetLanguages]} />
 
             <Button
                 onClick={handleNewTerm}

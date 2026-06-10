@@ -7,10 +7,13 @@ set -e
 # ──────────────────────────────────────────────────────────────────────────────
 
 # 1. Fix Volume Permissions (runs as root)
-echo "🔧 Fixing permissions for /app/prisma/data..."
+echo "🔧 Fixing permissions for persistent data directories..."
 mkdir -p /app/prisma/data
+mkdir -p /app/data
 chown -R nextjs:nodejs /app/prisma/data
+chown -R nextjs:nodejs /app/data
 chmod -R 775 /app/prisma/data
+chmod -R 775 /app/data
 
 # 2. Run Migrations (as nextjs user)
 echo "🚀 Running database migrations..."

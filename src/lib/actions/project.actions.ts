@@ -4,8 +4,15 @@ import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { createProject, updateProject, deleteProject } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
+import type { ProjectFormData } from '@/types';
 
-export async function createProjectAction(data: { name: string; description?: string; baseLanguage?: string; targetLanguages?: string[]; aiBaseUrl?: string; aiApiKey?: string; aiModelId?: string; systemPrompt?: string; }) {
+type ProjectActionInput = Partial<ProjectFormData> & Pick<ProjectFormData, 'name'>;
+
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback;
+}
+
+export async function createProjectAction(data: ProjectActionInput) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -15,12 +22,12 @@ export async function createProjectAction(data: { name: string; description?: st
         revalidatePath('/projects');
         revalidatePath('/');
         return { success: true, project };
-    } catch (error: any) {
-        return { success: false, error: error.message || "Failed to create project" };
+    } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error, "Failed to create project") };
     }
 }
 
-export async function updateProjectAction(id: string, data: any) {
+export async function updateProjectAction(id: string, data: Partial<ProjectFormData>) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
@@ -31,8 +38,8 @@ export async function updateProjectAction(id: string, data: any) {
         revalidatePath(`/projects/${id}/settings`);
         revalidatePath('/projects');
         return { success: true, project };
-    } catch (error: any) {
-        return { success: false, error: error.message || "Failed to update project" };
+    } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error, "Failed to update project") };
     }
 }
 
@@ -46,7 +53,7 @@ export async function deleteProjectAction(id: string) {
         revalidatePath('/projects');
         revalidatePath('/');
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message || "Failed to delete project" };
+    } catch (error: unknown) {
+        return { success: false, error: getErrorMessage(error, "Failed to delete project") };
     }
 }

@@ -51,6 +51,10 @@ model TranslationKey {
   id            String   @id @default(cuid())
   stringName    String   
   remarks       String?  
+  screenshotPath      String?
+  screenshotMimeType  String?
+  screenshotSize      Int?
+  screenshotUpdatedAt DateTime?
   sortOrder     Int      @default(0)
   
   projectId     String

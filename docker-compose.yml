@@ -5,6 +5,7 @@ services:
       - "3000:3000"
     volumes:
       - ./data:/app/prisma/data
+      - ./data:/app/data
     environment:
       - DATABASE_URL=file:/app/prisma/data/dev.db?journal_mode=WAL&busy_timeout=5000
       - AUTH_SECRET=${AUTH_SECRET}

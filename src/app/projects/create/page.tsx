@@ -6,14 +6,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { SiteHeader } from '@/components/SiteHeader'; // Already in layout, but sometimes useful to ensure context, though layout handles it on server. Wait, client usage in layout is cleaner.
+import { ProjectFormData } from '@/types';
 
 export default function CreateProjectPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
-        mutationFn: async (data: any) => {
+        mutationFn: async (data: ProjectFormData) => {
             const res = await fetch('/api/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

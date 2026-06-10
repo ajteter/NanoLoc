@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { AndroidXmlParser } from '@/lib/parsers/android-xml';
 import { H5JsonParser } from '@/lib/parsers/h5-json';
 import { IOSStringsParser } from '@/lib/parsers/ios-strings';
+import { getProjectLanguageCodes, parseTargetLanguages } from '@/lib/language-utils';
 
 /**
  * Shared upsert logic for importing parsed strings into a project.
@@ -247,12 +248,7 @@ export async function exportCsv(
 
     if (!project) throw new Error('Project not found');
 
-    let targetLangs: string[] = [];
-    try {
-        targetLangs = JSON.parse(project.targetLanguages || '[]');
-    } catch {
-        targetLangs = [];
-    }
+    const targetLangs = parseTargetLanguages(project.targetLanguages);
 
     const header = ['Key', 'Remarks', project.baseLanguage, ...targetLangs];
 
@@ -313,18 +309,14 @@ export async function pullProjectTranslations(
 
     if (!project) throw new Error('Project not found');
 
-    const allLangs: string[] = [project.baseLanguage];
-    try {
-        const targets = JSON.parse(project.targetLanguages || '[]');
-        allLangs.push(...targets);
-    } catch { }
+    const { baseLanguage, allLanguages } = getProjectLanguageCodes(project);
 
     if (format === 'json' && !lang) {
         // Mode A: Full dump
         const result: Record<string, Record<string, string>> = {};
         for (const key of project.keys) {
             const entry: Record<string, string> = {};
-            for (const l of allLangs) {
+            for (const l of allLanguages) {
                 const val = key.values.find(v => v.languageCode === l)?.content;
                 if (val) entry[l] = val;
             }
@@ -338,7 +330,7 @@ export async function pullProjectTranslations(
         const result: Record<string, string> = {};
         for (const key of project.keys) {
             const val = key.values.find(v => v.languageCode === lang)?.content
-                || key.values.find(v => v.languageCode === project.baseLanguage)?.content
+                || key.values.find(v => v.languageCode === baseLanguage)?.content
                 || '';
             if (val) result[key.stringName] = val;
         }
@@ -347,7 +339,7 @@ export async function pullProjectTranslations(
 
     if (format === 'xml') {
         // Mode C: Android XML
-        const targetLang = lang || project.baseLanguage;
+        const targetLang = lang || baseLanguage;
         const escapeXml = (s: string) =>
             s.replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
@@ -358,7 +350,7 @@ export async function pullProjectTranslations(
         let xml = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n';
         for (const key of project.keys) {
             const val = key.values.find(v => v.languageCode === targetLang)?.content
-                || key.values.find(v => v.languageCode === project.baseLanguage)?.content
+                || key.values.find(v => v.languageCode === baseLanguage)?.content
                 || '';
             xml += `    <string name="${escapeXml(key.stringName)}">${escapeXml(val)}</string>\n`;
         }

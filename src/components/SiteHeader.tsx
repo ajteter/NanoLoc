@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { UserNav } from '@/components/UserNav';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { LogoIcon } from '@/components/LogoIcon';
 
 export function SiteHeader() {
