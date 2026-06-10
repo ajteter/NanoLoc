@@ -7,8 +7,10 @@ import { toast } from 'sonner';
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { ProjectFormData } from '@/types';
+import { useI18n } from '@/lib/i18n/client';
 
 export default function CreateProjectPage() {
+    const { t } = useI18n();
     const router = useRouter();
     const queryClient = useQueryClient();
 
@@ -22,13 +24,13 @@ export default function CreateProjectPage() {
 
             if (!res.ok) {
                 const json = await res.json();
-                throw new Error(JSON.stringify(json.error) || 'Failed to create project');
+                throw new Error(JSON.stringify(json.error) || t('projectCreate.failed'));
             }
             return res.json();
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
-            toast.success('Project created successfully');
+            toast.success(t('projectCreate.success'));
             router.push(`/projects/${data.project.id}`);
         },
         onError: (err) => {
@@ -41,17 +43,17 @@ export default function CreateProjectPage() {
             <div className="mb-8">
                 <Link href="/projects" className="flex items-center text-sm text-zinc-400 hover:text-white mb-4 transition-colors">
                     <ChevronLeft className="h-4 w-4 mr-1" />
-                    Back to Projects
+                    {t('projectCreate.back')}
                 </Link>
-                <h1 className="text-3xl font-bold text-white">Create New Project</h1>
-                <p className="text-zinc-400 mt-2">Initialize a new localization project.</p>
+                <h1 className="text-3xl font-bold text-white">{t('projectCreate.title')}</h1>
+                <p className="text-zinc-400 mt-2">{t('projectCreate.description')}</p>
             </div>
 
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 sm:p-8">
                 <ProjectForm
                     onSubmit={(data) => mutation.mutate(data)}
                     isSubmitting={mutation.isPending}
-                    submitLabel="Create Project"
+                    submitLabel={t('common.createProject')}
                 />
             </div>
         </div>

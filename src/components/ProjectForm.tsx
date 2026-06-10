@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { LANGUAGES } from '@/lib/constants/languages';
 import { Search, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/client';
 
 interface ProjectFormData {
     name: string;
@@ -30,6 +31,7 @@ interface ProjectFormProps {
 }
 
 export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }: ProjectFormProps) {
+    const { t } = useI18n();
     const [formData, setFormData] = useState<ProjectFormData>({
         name: '',
         description: '',
@@ -80,36 +82,36 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
     return (
         <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl">
             <div className="space-y-4">
-                <h3 className="text-lg font-medium text-white border-b border-zinc-800 pb-2">General Information</h3>
+                <h3 className="text-lg font-medium text-white border-b border-zinc-800 pb-2">{t('projectForm.general')}</h3>
 
                 <div className="grid gap-2">
-                    <Label htmlFor="name">Project Name</Label>
-                    <Input id="name" name="name" value={formData.name} onChange={handleChange} required className="bg-zinc-800 border-zinc-700" placeholder="e.g. My Website" />
+                    <Label htmlFor="name">{t('projectForm.name')}</Label>
+                    <Input id="name" name="name" value={formData.name} onChange={handleChange} required className="bg-zinc-800 border-zinc-700" placeholder={t('projectForm.namePlaceholder')} />
                 </div>
 
                 <div className="grid gap-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea id="description" name="description" value={formData.description} onChange={handleChange} className="bg-zinc-800 border-zinc-700" placeholder="Briefly describe your project..." />
+                    <Label htmlFor="description">{t('projectForm.description')}</Label>
+                    <Textarea id="description" name="description" value={formData.description} onChange={handleChange} className="bg-zinc-800 border-zinc-700" placeholder={t('projectForm.descriptionPlaceholder')} />
                 </div>
             </div>
 
             <div className="space-y-4">
-                <h3 className="text-lg font-medium text-white border-b border-zinc-800 pb-2">Localization Settings</h3>
+                <h3 className="text-lg font-medium text-white border-b border-zinc-800 pb-2">{t('projectForm.localization')}</h3>
 
                 <div className="grid gap-2 max-w-sm">
-                    <Label htmlFor="baseLanguage">Base Language</Label>
+                    <Label htmlFor="baseLanguage">{t('projectForm.baseLanguage')}</Label>
                     <Input id="baseLanguage" name="baseLanguage" value={formData.baseLanguage} onChange={handleChange} className="bg-zinc-800 border-zinc-700" />
-                    <p className="text-xs text-zinc-400">The primary language of your application (usually en-US).</p>
+                    <p className="text-xs text-zinc-400">{t('projectForm.baseLanguageHint')}</p>
                 </div>
 
                 <div className="grid gap-2">
-                    <Label>Target Languages</Label>
+                    <Label>{t('projectForm.targetLanguages')}</Label>
                     <div className="bg-zinc-800 border-zinc-700 rounded-md p-4 space-y-4">
                         <div className="flex flex-col sm:flex-row gap-2 pb-2">
                             <div className="relative flex-1">
                                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
                                 <Input
-                                    placeholder="Search languages..."
+                                    placeholder={t('projectForm.searchLanguages')}
                                     value={languageSearch}
                                     onChange={(e) => setLanguageSearch(e.target.value)}
                                     className="pl-9 bg-zinc-900 border-zinc-600"
@@ -151,8 +153,8 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                                     {LANGUAGES
                                         .filter(l => l.isCommon && l.code !== formData.baseLanguage)
                                         .every(l => formData.targetLanguages.includes(l.code))
-                                        ? 'Deselect Common'
-                                        : 'Select Common'
+                                        ? t('projectForm.deselectCommon')
+                                        : t('projectForm.selectCommon')
                                     }
                                 </Button>
                                 <Button
@@ -162,7 +164,7 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                                     onClick={() => setFormData(prev => ({ ...prev, targetLanguages: [] }))}
                                     className="whitespace-nowrap border-zinc-600 text-zinc-300 hover:text-white hover:bg-zinc-800"
                                 >
-                                    Deselect All
+                                    {t('projectForm.deselectAll')}
                                 </Button>
                             </div>
                         </div>
@@ -190,24 +192,24 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                                                     isBase ? "text-zinc-400" : "cursor-pointer text-white"
                                                 )}
                                             >
-                                                {lang.name} {isBase && '(Base)'}
+                                                {lang.name} {isBase && `(${t('projectForm.baseBadge')})`}
                                             </label>
                                             <span className="text-xs text-zinc-400">
                                                 {lang.localName} - {lang.code}
-                                                {lang.isCommon && <Badge variant="secondary" className="ml-2 text-[10px] h-4 px-1 bg-zinc-800 text-zinc-300 pointer-events-none">Common</Badge>}
+                                                {lang.isCommon && <Badge variant="secondary" className="ml-2 text-[10px] h-4 px-1 bg-zinc-800 text-zinc-300 pointer-events-none">{t('projectForm.commonBadge')}</Badge>}
                                             </span>
                                         </div>
                                     </div>
                                 )
                             })}
                             {filteredLanguages.length === 0 && (
-                                <p className="text-sm text-zinc-400 col-span-full py-4 text-center">No languages found.</p>
+                                <p className="text-sm text-zinc-400 col-span-full py-4 text-center">{t('projectForm.noLanguages')}</p>
                             )}
                         </div>
                         <div className="flex flex-wrap gap-2 pt-2 border-t border-zinc-700/50">
-                            <span className="text-sm text-zinc-400 mr-2 self-center">Selected ({formData.targetLanguages.length}):</span>
+                            <span className="text-sm text-zinc-400 mr-2 self-center">{t('projectForm.selected')} ({formData.targetLanguages.length}):</span>
                             {formData.targetLanguages.length === 0 && (
-                                <span className="text-sm text-zinc-500 italic self-center">None</span>
+                                <span className="text-sm text-zinc-500 italic self-center">{t('projectForm.none')}</span>
                             )}
                             {formData.targetLanguages.map(code => (
                                 <Badge key={code} variant="secondary" className="bg-zinc-400/10 text-zinc-300 border-zinc-400/20 hover:bg-white/20">
@@ -225,21 +227,21 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
             </div>
 
             <div className="space-y-4">
-                <h3 className="text-lg font-medium text-white border-b border-zinc-800 pb-2">AI Configuration (Optional)</h3>
+                <h3 className="text-lg font-medium text-white border-b border-zinc-800 pb-2">{t('projectForm.aiConfig')}</h3>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="grid gap-2">
-                        <Label htmlFor="aiBaseUrl">Base URL</Label>
+                        <Label htmlFor="aiBaseUrl">{t('projectForm.baseUrl')}</Label>
                         <Input id="aiBaseUrl" name="aiBaseUrl" value={formData.aiBaseUrl} onChange={handleChange} className="bg-zinc-800 border-zinc-700" placeholder="https://api.openai.com/v1" />
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="aiModelId">Model ID</Label>
+                        <Label htmlFor="aiModelId">{t('projectForm.modelId')}</Label>
                         <Input id="aiModelId" name="aiModelId" value={formData.aiModelId} onChange={handleChange} className="bg-zinc-800 border-zinc-700" placeholder="gpt-4" />
                     </div>
                 </div>
 
                 <div className="grid gap-2 ml-1">
-                    <Label htmlFor="aiApiKey">API Key</Label>
+                    <Label htmlFor="aiApiKey">{t('projectForm.apiKey')}</Label>
                     <div className="relative">
                         <Input
                             id="aiApiKey"
@@ -258,17 +260,17 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
                             {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                     </div>
-                    <p className="text-xs text-zinc-400">Leave blank to keep existing key (if editing).</p>
+                    <p className="text-xs text-zinc-400">{t('projectForm.apiKeyHint')}</p>
                 </div>
 
                 <div className="grid gap-2">
-                    <Label htmlFor="systemPrompt">System Prompt</Label>
+                    <Label htmlFor="systemPrompt">{t('projectForm.systemPrompt')}</Label>
                     <Textarea
                         id="systemPrompt"
                         name="systemPrompt"
                         value={formData.systemPrompt}
                         onChange={handleChange}
-                        placeholder="Customize the system prompt for AI translation..."
+                        placeholder={t('projectForm.systemPromptPlaceholder')}
                         className="bg-zinc-800 border-zinc-700 min-h-[100px]"
                     />
                 </div>
@@ -276,7 +278,7 @@ export function ProjectForm({ initialData, onSubmit, isSubmitting, submitLabel }
 
             <div className="pt-4 pb-12">
                 <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto bg-zinc-100 hover:bg-white text-zinc-900 min-w-[150px]">
-                    {isSubmitting ? 'Saving...' : submitLabel}
+                    {isSubmitting ? t('common.saving') : submitLabel}
                 </Button>
             </div>
         </form>
