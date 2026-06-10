@@ -68,17 +68,28 @@ export async function deleteProject(id: string) {
 
 export async function listTerms(
     projectId: string,
-    options: { page: number; limit: number; search: string }
+    options: { page: number; limit: number; search: string; displayLanguages?: string[] }
 ) {
-    const { page, limit, search } = options;
+    const { page, limit, search, displayLanguages } = options;
 
     const whereClause: Record<string, unknown> = { projectId };
 
     if (search) {
+        const valueSearchClause = displayLanguages?.length
+            ? {
+                values: {
+                    some: {
+                        languageCode: { in: displayLanguages },
+                        content: { contains: search },
+                    },
+                },
+            }
+            : { values: { some: { content: { contains: search } } } };
+
         whereClause.OR = [
             { stringName: { contains: search } },
             { remarks: { contains: search } },
-            { values: { some: { content: { contains: search } } } },
+            valueSearchClause,
         ];
     }
 
@@ -88,6 +99,9 @@ export async function listTerms(
             where: whereClause,
             include: {
                 values: {
+                    ...(displayLanguages?.length
+                        ? { where: { languageCode: { in: displayLanguages } } }
+                        : {}),
                     include: { lastModifiedBy: { select: { name: true, username: true } } },
                 },
                 lastModifiedBy: { select: { name: true, username: true } },

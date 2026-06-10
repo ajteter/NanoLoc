@@ -15,8 +15,9 @@ import { CreateTermRowWrapper } from './components/CreateTermRowWrapper';
 import { TranslateColumnHead } from './components/TranslateColumnHead';
 import { BaseLanguageColumnHead } from './components/BaseLanguageColumnHead';
 import { BaseLanguagePinProvider } from './components/BaseLanguagePinContext';
+import { LanguageColumnSelector } from './components/LanguageColumnSelector';
 import { SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './components/stickyColumnClasses';
-import { getLanguageDisplayName, getProjectLanguageCodes } from '@/lib/language-utils';
+import { getLanguageDisplayName, getProjectLanguageCodes, parseVisibleTargetLanguages } from '@/lib/language-utils';
 import { cn } from '@/lib/utils';
 import type { TranslationKey } from '@/types';
 
@@ -38,7 +39,8 @@ export default async function ProjectDetailPage({
     const project = await getProject(id);
     if (!project) notFound();
 
-    const { baseLanguage, targetLanguages: targetLangs } = getProjectLanguageCodes(project);
+    const { baseLanguage, targetLanguages: allTargetLangs } = getProjectLanguageCodes(project);
+    const visibleTargetLangs = parseVisibleTargetLanguages(resolvedParams?.langs, allTargetLangs);
 
     return (
         <main className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8 py-8 relative">
@@ -72,16 +74,20 @@ export default async function ProjectDetailPage({
                 <ProjectToolbar
                     projectId={id}
                     baseLanguage={baseLanguage}
-                    targetLanguages={targetLangs}
+                    targetLanguages={allTargetLangs}
                     baseLanguageDisplay={getLanguageDisplayName(baseLanguage)}
                 />
             </div>
 
             <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">
                 <SearchFilter initialSearch={search} />
+                <LanguageColumnSelector
+                    targetLanguages={allTargetLangs}
+                    visibleTargetLanguages={visibleTargetLangs}
+                />
             </div>
 
-            <Suspense key={`${page}-${search}-${isCreating}`} fallback={<TableLoadingSkeleton />}>
+            <Suspense key={`${page}-${search}-${isCreating}-${visibleTargetLangs.join(',')}`} fallback={<TableLoadingSkeleton />}>
                 <TermsTable
                     projectId={id}
                     page={page}
@@ -89,7 +95,7 @@ export default async function ProjectDetailPage({
                     search={search}
                     isCreating={isCreating}
                     baseLanguage={baseLanguage}
-                    targetLangs={targetLangs}
+                    targetLangs={visibleTargetLangs}
                 />
             </Suspense>
         </main>
@@ -107,7 +113,12 @@ interface TermsTableProps {
 }
 
 async function TermsTable({ projectId, page, limit, search, isCreating, baseLanguage, targetLangs }: TermsTableProps) {
-    const termsData = await listTerms(projectId, { page, limit, search });
+    const termsData = await listTerms(projectId, {
+        page,
+        limit,
+        search,
+        displayLanguages: [baseLanguage, ...targetLangs],
+    });
 
     return (
         <>

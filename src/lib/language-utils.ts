@@ -29,6 +29,18 @@ export function parseTargetLanguages(value?: string | string[] | null): string[]
     }
 }
 
+export function parseVisibleTargetLanguages(
+    value: string | string[] | undefined,
+    availableLanguages: string[]
+): string[] {
+    if (value === undefined) return availableLanguages;
+
+    const rawValue = Array.isArray(value) ? value.join(',') : value;
+    const available = new Set(availableLanguages);
+
+    return normalizeLanguageCodes(rawValue.split(',')).filter((code) => available.has(code));
+}
+
 export function serializeTargetLanguages(value?: string[] | null): string {
     return JSON.stringify(normalizeLanguageCodes(value));
 }
