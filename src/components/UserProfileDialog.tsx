@@ -120,7 +120,7 @@ export function UserProfileDialog() {
                     <UserCog className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700 text-white">
+            <DialogContent closeLabel={t('common.close')} className="sm:max-w-md bg-zinc-900 border-zinc-700 text-white">
                 <DialogHeader>
                     <DialogTitle className="text-white">{t('profile.title')}</DialogTitle>
                     <DialogDescription className="text-zinc-400">

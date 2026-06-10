@@ -69,7 +69,7 @@ export function BatchTranslateButton({ projectId, targetLanguages, baseLanguageD
             </Button>
 
             <Dialog open={open} onOpenChange={(val) => { if (!isPending) setOpen(val); }}>
-                <DialogContent showCloseButton={!isPending} className="bg-zinc-900 border-zinc-800 text-white">
+                <DialogContent closeLabel={t('common.close')} showCloseButton={!isPending} className="bg-zinc-900 border-zinc-800 text-white">
                     <DialogHeader>
                         <DialogTitle>{t('batch.title')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">

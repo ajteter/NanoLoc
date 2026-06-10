@@ -4,15 +4,19 @@ import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { auth } from "@/auth";
-import { getServerLocale } from "@/lib/i18n/server";
+import { getServerLocale, getServerTranslator } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: {
-    default: 'NanoLoc',
-    template: '%s | NanoLoc',
-  },
-  description: "AI-powered i18n management",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerTranslator();
+
+  return {
+    title: {
+      default: 'NanoLoc',
+      template: '%s | NanoLoc',
+    },
+    description: t('metadata.description'),
+  };
+}
 
 export default async function RootLayout({
   children,

@@ -129,7 +129,7 @@ export function TermScreenshotCell({
             </Button>
 
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-3xl bg-zinc-950 border-zinc-800 text-white">
+                <DialogContent closeLabel={t('common.close')} className="max-w-3xl bg-zinc-950 border-zinc-800 text-white">
                     <DialogHeader>
                         <DialogTitle>{t('projectDetail.termScreenshot')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">

@@ -578,7 +578,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             </Dialog>
 
             <Dialog open={!!confirmTranslate} onOpenChange={(val) => { if (!val) setConfirmTranslate(null); }}>
-                <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                <DialogContent closeLabel={t('common.close')} className="bg-zinc-900 border-zinc-800 text-white">
                     <DialogHeader>
                         <DialogTitle>{t('term.confirmTranslationTitle')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">

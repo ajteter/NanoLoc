@@ -76,7 +76,7 @@ export function LanguageColumnSelector({
             </Button>
 
             <Dialog open={open} onOpenChange={handleOpenChange}>
-                <DialogContent className="bg-zinc-900 border-zinc-800 text-white max-w-2xl">
+                <DialogContent closeLabel={t('common.close')} className="bg-zinc-900 border-zinc-800 text-white max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{t('languageSelector.displayedLanguages')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">
