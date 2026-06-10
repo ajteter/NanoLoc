@@ -15,6 +15,51 @@ interface TranslateTextsOptions {
     source?: TranslationErrorSource;
 }
 
+type BatchTranslationKey = {
+    id: string;
+    stringName: string;
+    values: {
+        languageCode: string;
+        content: string | null;
+    }[];
+};
+
+type BatchTranslationCandidate = {
+    keyId: string;
+    keyName: string;
+    sourceText: string;
+    valuesByLanguage: Map<string, string>;
+};
+
+function uniqueLanguageCodes(languageCodes: string[]) {
+    return Array.from(new Set(languageCodes));
+}
+
+function buildBatchTranslationCandidates(
+    keys: BatchTranslationKey[],
+    baseLanguage: string
+): BatchTranslationCandidate[] {
+    const candidates: BatchTranslationCandidate[] = [];
+
+    for (const key of keys) {
+        const valuesByLanguage = new Map(
+            key.values.map((value) => [value.languageCode, value.content || ''])
+        );
+        const sourceText = valuesByLanguage.get(baseLanguage);
+
+        if (!sourceText?.trim()) continue;
+
+        candidates.push({
+            keyId: key.id,
+            keyName: key.stringName,
+            sourceText,
+            valuesByLanguage,
+        });
+    }
+
+    return candidates;
+}
+
 /**
  * Translate an array of texts for a single target language using the project's AI config.
  */
@@ -83,27 +128,28 @@ export async function batchTranslateProject(
         const aiConfig = await getProjectAIConfig(projectId);
         const aiClient = new BRClient(aiConfig);
         const resultsSummary: Record<string, { success: number; failed: number }> = {};
+        const languagesToLoad = uniqueLanguageCodes([project.baseLanguage, ...targetLanguages]);
+        const allKeys = await prisma.translationKey.findMany({
+            where: { projectId },
+            select: {
+                id: true,
+                stringName: true,
+                values: {
+                    where: { languageCode: { in: languagesToLoad } },
+                    select: {
+                        languageCode: true,
+                        content: true,
+                    },
+                },
+            },
+        });
+        const candidates = buildBatchTranslationCandidates(allKeys, project.baseLanguage);
+        const keyNameMap = new Map(candidates.map((key) => [key.keyId, key.keyName]));
 
         for (const lang of targetLanguages) {
-            const allKeys = await prisma.translationKey.findMany({
-                where: { projectId },
-                include: { values: true },
-            });
-            const keyNameMap = new Map(allKeys.map((key) => [key.id, key.stringName]));
-
-            const missingItems: { keyId: string; sourceText: string }[] = [];
-
-            for (const key of allKeys) {
-                const baseVal = key.values.find(
-                    (v) => v.languageCode === project.baseLanguage
-                )?.content;
-                if (!baseVal || !baseVal.trim()) continue;
-
-                const targetVal = key.values.find((v) => v.languageCode === lang)?.content;
-                if (!targetVal || !targetVal.trim()) {
-                    missingItems.push({ keyId: key.id, sourceText: baseVal });
-                }
-            }
+            const missingItems = candidates
+                .filter((key) => !key.valuesByLanguage.get(lang)?.trim())
+                .map((key) => ({ keyId: key.keyId, sourceText: key.sourceText }));
 
             if (missingItems.length === 0) {
                 resultsSummary[lang] = { success: 0, failed: 0 };
