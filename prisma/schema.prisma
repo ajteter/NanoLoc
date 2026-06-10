@@ -89,6 +89,7 @@ model TranslationValue {
   updatedAt        DateTime @default(now()) @updatedAt
 
   @@unique([translationKeyId, languageCode])
+  @@index([languageCode, content])
   @@index([updatedAt])
 }
 
