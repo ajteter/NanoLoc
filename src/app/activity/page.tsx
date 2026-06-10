@@ -6,18 +6,20 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowLeft, FileUp, Globe, Plus, Pencil, Trash2, FolderPlus, FolderCog, FolderX, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/client';
+import type { TranslationKey } from '@/lib/i18n/dictionaries';
 
-const ACTION_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-    CREATE_PROJECT: { label: '创建项目', icon: <FolderPlus className="h-3.5 w-3.5" />, color: 'text-emerald-400' },
-    UPDATE_PROJECT: { label: '更新项目设置', icon: <FolderCog className="h-3.5 w-3.5" />, color: 'text-zinc-300' },
-    DELETE_PROJECT: { label: '删除项目', icon: <FolderX className="h-3.5 w-3.5" />, color: 'text-red-500' },
-    CREATE_TERM: { label: '新建词条', icon: <Plus className="h-3.5 w-3.5" />, color: 'text-emerald-400' },
-    UPDATE_TERM: { label: '编辑词条', icon: <Pencil className="h-3.5 w-3.5" />, color: 'text-zinc-300' },
-    DELETE_TERM: { label: '删除词条', icon: <Trash2 className="h-3.5 w-3.5" />, color: 'text-red-500' },
-    UPDATE_TRANSLATION: { label: '更新翻译', icon: <Globe className="h-3.5 w-3.5" />, color: 'text-zinc-300' },
-    IMPORT_XML: { label: '导入 XML', icon: <FileUp className="h-3.5 w-3.5" />, color: 'text-amber-400' },
-    IMPORT_FILE: { label: '导入文件', icon: <FileUp className="h-3.5 w-3.5" />, color: 'text-amber-400' },
-    BATCH_TRANSLATE: { label: '批量翻译', icon: <Wand2 className="h-3.5 w-3.5" />, color: 'text-emerald-400' },
+const ACTION_CONFIG: Record<string, { labelKey: TranslationKey; icon: React.ReactNode; color: string }> = {
+    CREATE_PROJECT: { labelKey: 'activity.action.createProject', icon: <FolderPlus className="h-3.5 w-3.5" />, color: 'text-emerald-400' },
+    UPDATE_PROJECT: { labelKey: 'activity.action.updateProject', icon: <FolderCog className="h-3.5 w-3.5" />, color: 'text-zinc-300' },
+    DELETE_PROJECT: { labelKey: 'activity.action.deleteProject', icon: <FolderX className="h-3.5 w-3.5" />, color: 'text-red-500' },
+    CREATE_TERM: { labelKey: 'activity.action.createTerm', icon: <Plus className="h-3.5 w-3.5" />, color: 'text-emerald-400' },
+    UPDATE_TERM: { labelKey: 'activity.action.updateTerm', icon: <Pencil className="h-3.5 w-3.5" />, color: 'text-zinc-300' },
+    DELETE_TERM: { labelKey: 'activity.action.deleteTerm', icon: <Trash2 className="h-3.5 w-3.5" />, color: 'text-red-500' },
+    UPDATE_TRANSLATION: { labelKey: 'activity.action.updateTranslation', icon: <Globe className="h-3.5 w-3.5" />, color: 'text-zinc-300' },
+    IMPORT_XML: { labelKey: 'activity.action.importXml', icon: <FileUp className="h-3.5 w-3.5" />, color: 'text-amber-400' },
+    IMPORT_FILE: { labelKey: 'activity.action.importFile', icon: <FileUp className="h-3.5 w-3.5" />, color: 'text-amber-400' },
+    BATCH_TRANSLATE: { labelKey: 'activity.action.batchTranslate', icon: <Wand2 className="h-3.5 w-3.5" />, color: 'text-emerald-400' },
 };
 
 interface AuditItem {
@@ -37,14 +39,23 @@ interface AuditResponse {
 }
 
 export default function ActivityPage() {
+    const { t, locale } = useI18n();
     const [page, setPage] = useState(1);
     const limit = 50;
+
+    const formatMessage = (key: TranslationKey, values: Record<string, string | number>) => {
+        let message = t(key);
+        for (const [name, value] of Object.entries(values)) {
+            message = message.replace(`{${name}}`, String(value));
+        }
+        return message;
+    };
 
     const { data, isLoading, error } = useQuery<AuditResponse>({
         queryKey: ['activity', page],
         queryFn: async () => {
             const res = await fetch(`/api/activity?page=${page}&limit=${limit}`);
-            if (!res.ok) throw new Error('Failed to fetch activity');
+            if (!res.ok) throw new Error(t('activity.fetchFailed'));
             return res.json();
         },
     });
@@ -57,23 +68,27 @@ export default function ActivityPage() {
         const diffHr = Math.floor(diffMin / 60);
         const diffDay = Math.floor(diffHr / 24);
 
-        if (diffMin < 1) return 'just now';
-        if (diffMin < 60) return `${diffMin}m ago`;
-        if (diffHr < 24) return `${diffHr}h ago`;
-        if (diffDay < 7) return `${diffDay}d ago`;
-        return d.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        if (diffMin < 1) return t('activity.justNow');
+        if (diffMin < 60) return formatMessage('activity.minutesAgo', { count: diffMin });
+        if (diffHr < 24) return formatMessage('activity.hoursAgo', { count: diffHr });
+        if (diffDay < 7) return formatMessage('activity.daysAgo', { count: diffDay });
+        return d.toLocaleDateString(locale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     };
 
     const getUserName = (item: AuditItem) => {
-        if (!item.user) return 'System';
-        return item.user.name || item.user.username || 'Unknown';
+        if (!item.user) return t('common.system');
+        return item.user.name || item.user.username || t('common.unknown');
     };
 
     const getDetails = (item: AuditItem) => {
         if (!item.details) return null;
         try {
             const d = JSON.parse(item.details);
-            if (d.added !== undefined) return `+${d.added} added, ${d.updated} updated, ${d.skipped} skipped`;
+            if (d.added !== undefined) return formatMessage('activity.importDetails', {
+                added: d.added,
+                updated: d.updated,
+                skipped: d.skipped,
+            });
             if (d.languages) return (d.languages as string[]).join(', ');
             return null;
         } catch {
@@ -89,11 +104,11 @@ export default function ActivityPage() {
                     <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white" asChild>
                         <Link href="/projects">
                             <ArrowLeft className="h-4 w-4 mr-1" />
-                            Back
+                            {t('common.back')}
                         </Link>
                     </Button>
                     <h1 className="text-2xl font-bold leading-7 text-white sm:text-3xl">
-                        Activity Log
+                        {t('activity.title')}
                     </h1>
                 </div>
             </div>
@@ -106,11 +121,11 @@ export default function ActivityPage() {
                 </div>
             )}
 
-            {error && <div className="text-red-500">Error loading activity log</div>}
+            {error && <div className="text-red-500">{t('activity.loadFailed')}</div>}
 
             {data && data.data.length === 0 && (
                 <div className="text-center py-12 text-zinc-400">
-                    No activity recorded yet.
+                    {t('activity.empty')}
                 </div>
             )}
 
@@ -120,17 +135,17 @@ export default function ActivityPage() {
                         <table className="min-w-full">
                             <thead className="bg-zinc-900 border-b border-zinc-800">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Time</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Action</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">User</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Project</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Key</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Details</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">{t('activity.time')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">{t('activity.action')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">{t('activity.user')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">{t('activity.project')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">{t('common.key')}</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">{t('activity.details')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-800">
                                 {data.data.map((item) => {
-                                    const config = ACTION_CONFIG[item.action] || { label: item.action, icon: null, color: 'text-zinc-400' };
+                                    const config = ACTION_CONFIG[item.action];
                                     const details = getDetails(item);
 
                                     return (
@@ -139,9 +154,9 @@ export default function ActivityPage() {
                                                 {formatTime(item.createdAt)}
                                             </td>
                                             <td className="px-4 py-3 text-sm whitespace-nowrap">
-                                                <span className={cn("inline-flex items-center gap-1.5", config.color)}>
-                                                    {config.icon}
-                                                    {config.label}
+                                                <span className={cn("inline-flex items-center gap-1.5", config?.color ?? 'text-zinc-400')}>
+                                                    {config?.icon}
+                                                    {config ? t(config.labelKey) : item.action}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-white whitespace-nowrap">
@@ -176,7 +191,11 @@ export default function ActivityPage() {
                     {data.meta.totalPages > 1 && (
                         <div className="flex items-center justify-between mt-4">
                             <span className="text-sm text-zinc-400">
-                                Page {data.meta.page} of {data.meta.totalPages} ({data.meta.total} records)
+                                {formatMessage('activity.pageSummary', {
+                                    page: data.meta.page,
+                                    totalPages: data.meta.totalPages,
+                                    total: data.meta.total,
+                                })}
                             </span>
                             <div className="flex items-center gap-1">
                                 <Button variant="ghost" size="sm" onClick={() => setPage(1)} disabled={page === 1} className="text-zinc-400 hover:text-white disabled:opacity-30">

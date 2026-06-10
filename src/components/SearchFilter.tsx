@@ -4,8 +4,10 @@ import { Search, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTransition, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n/client';
 
 export function SearchFilter({ initialSearch = '' }: { initialSearch?: string }) {
+    const { t } = useI18n();
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
@@ -59,7 +61,7 @@ export function SearchFilter({ initialSearch = '' }: { initialSearch?: string })
                     "block w-full rounded-md border-0 bg-zinc-800 py-1.5 pl-10 pr-10 text-white shadow-sm ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-400 sm:text-sm sm:leading-6",
                     isPending && "opacity-70"
                 )}
-                placeholder="Search keys, values, or remarks..."
+                placeholder={t('search.placeholder')}
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
             />
@@ -67,6 +69,8 @@ export function SearchFilter({ initialSearch = '' }: { initialSearch?: string })
                 <button
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-500 hover:text-white"
                     onClick={() => handleSearch('')}
+                    aria-label={t('search.clear')}
+                    title={t('search.clear')}
                 >
                     <X className="h-4 w-4" />
                 </button>
