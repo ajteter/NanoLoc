@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { AndroidXmlParser } from '@/lib/parsers/android-xml';
 import { H5JsonParser } from '@/lib/parsers/h5-json';
@@ -38,8 +39,7 @@ async function importParsedStrings(
     let added = 0;
     let updated = 0;
     let skipped = 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const operations: any[] = [];
+    const operations: Prisma.PrismaPromise<unknown>[] = [];
     const pendingNewKeys = new Map<string, { remarks: string[] }>();
     const pendingExistingRemarks = new Map<string, string[]>();
 
@@ -62,9 +62,7 @@ async function importParsedStrings(
                 continue;
             }
 
-            const baseValue = existingKey.values.find(
-                (v: { languageCode: string }) => v.languageCode === baseLanguage
-            );
+            const baseValue = existingKey.values.find((v) => v.languageCode === baseLanguage);
 
             if (baseValue) {
                 if (baseValue.content !== content) {
