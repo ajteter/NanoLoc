@@ -2,18 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { listProjects, createProject } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
-import { z } from 'zod';
-
-const createProjectSchema = z.object({
-    name: z.string().min(1),
-    description: z.string().optional(),
-    baseLanguage: z.string().default('en-US'),
-    targetLanguages: z.array(z.string()).default([]),
-    aiBaseUrl: z.string().optional(),
-    aiApiKey: z.string().optional(),
-    aiModelId: z.string().optional(),
-    systemPrompt: z.string().optional(),
-});
+import { createProjectSchema } from '@/lib/validators/project.schema';
 
 export async function GET() {
     const session = await auth();

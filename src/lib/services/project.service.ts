@@ -4,6 +4,7 @@ import {
     deleteScreenshotFileByPath,
 } from '@/lib/services/term-screenshot.service';
 import { parseTargetLanguages, serializeTargetLanguages } from '@/lib/language-utils';
+import type { CreateProjectInput, UpdateProjectInput } from '@/lib/validators/project.schema';
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 
@@ -19,16 +20,7 @@ export async function getProject(id: string) {
     });
 }
 
-export async function createProject(data: {
-    name: string;
-    description?: string;
-    baseLanguage?: string;
-    targetLanguages?: string[];
-    aiBaseUrl?: string;
-    aiApiKey?: string;
-    aiModelId?: string;
-    systemPrompt?: string;
-}) {
+export async function createProject(data: CreateProjectInput) {
     const { targetLanguages, ...rest } = data;
     return prisma.project.create({
         data: {
@@ -38,19 +30,7 @@ export async function createProject(data: {
     });
 }
 
-export async function updateProject(
-    id: string,
-    data: {
-        name?: string;
-        description?: string;
-        baseLanguage?: string;
-        targetLanguages?: string[];
-        aiBaseUrl?: string;
-        aiApiKey?: string;
-        aiModelId?: string;
-        systemPrompt?: string;
-    }
-) {
+export async function updateProject(id: string, data: UpdateProjectInput) {
     const updateData: Record<string, unknown> = { ...data };
     if (Array.isArray(data.targetLanguages) || data.baseLanguage) {
         const existing = await prisma.project.findUnique({

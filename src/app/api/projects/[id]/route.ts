@@ -2,18 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getProject, updateProject, deleteProject } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
-import { z } from 'zod';
-
-const updateProjectSchema = z.object({
-    name: z.string().min(1).optional(),
-    description: z.string().optional(),
-    baseLanguage: z.string().optional(),
-    targetLanguages: z.array(z.string()).optional(),
-    aiBaseUrl: z.string().optional(),
-    aiApiKey: z.string().optional(),
-    aiModelId: z.string().optional(),
-    systemPrompt: z.string().optional(),
-});
+import { updateProjectSchema } from '@/lib/validators/project.schema';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();

@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { createProject, updateProject, deleteProject } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
+import { createProjectSchema, updateProjectSchema } from '@/lib/validators/project.schema';
 import type { ProjectFormData } from '@/types';
 
 type ProjectActionInput = Partial<ProjectFormData> & Pick<ProjectFormData, 'name'>;
@@ -12,12 +13,25 @@ function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback;
 }
 
+function getValidationErrorMessage(issues: { path: PropertyKey[]; message: string }[]) {
+    const issue = issues[0];
+    if (!issue) return 'Invalid project data';
+
+    const field = issue.path.join('.');
+    return field ? `${field}: ${issue.message}` : issue.message;
+}
+
 export async function createProjectAction(data: ProjectActionInput) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     try {
-        const project = await createProject(data);
+        const result = createProjectSchema.safeParse(data);
+        if (!result.success) {
+            return { success: false, error: getValidationErrorMessage(result.error.issues) };
+        }
+
+        const project = await createProject(result.data);
         await logAudit({ action: 'CREATE_PROJECT', userId: session.user.id, projectId: project.id, projectName: project.name });
         revalidatePath('/projects');
         revalidatePath('/');
@@ -32,7 +46,12 @@ export async function updateProjectAction(id: string, data: Partial<ProjectFormD
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     try {
-        const project = await updateProject(id, data);
+        const result = updateProjectSchema.safeParse(data);
+        if (!result.success) {
+            return { success: false, error: getValidationErrorMessage(result.error.issues) };
+        }
+
+        const project = await updateProject(id, result.data);
         await logAudit({ action: 'UPDATE_PROJECT', userId: session.user.id, projectId: project.id, projectName: project.name });
         revalidatePath(`/projects/${id}`);
         revalidatePath(`/projects/${id}/settings`);
