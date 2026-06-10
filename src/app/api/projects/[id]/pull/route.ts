@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { pullProjectTranslations } from '@/lib/services/storage.service';
+import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     // Bearer token authentication
@@ -8,7 +8,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const expectedToken = process.env.API_ACCESS_TOKEN;
 
     if (!expectedToken || !token || token !== expectedToken) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id } = await params;
@@ -17,11 +17,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const lang = searchParams.get('lang') || undefined;
 
     if (format !== 'json' && format !== 'xml') {
-        return NextResponse.json({ error: 'Invalid format. Use "json" or "xml".' }, { status: 400 });
+        return jsonError('INVALID_FORMAT');
     }
 
     if (format === 'xml' && !lang) {
-        return NextResponse.json({ error: 'XML format requires a "lang" parameter.' }, { status: 400 });
+        return jsonError('XML_LANG_REQUIRED');
     }
 
     try {
@@ -35,10 +35,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             },
         });
     } catch (error: unknown) {
-        if (error instanceof Error && error.message === 'Project not found') {
-            return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-        }
         console.error('Pull API error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'INTERNAL_ERROR');
     }
 }

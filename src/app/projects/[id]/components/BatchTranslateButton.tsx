@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { batchTranslateAction } from '@/lib/actions/term.actions';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError } from '@/lib/api/errors';
 
 interface BatchTranslateButtonProps {
     projectId: string;
@@ -50,7 +51,7 @@ export function BatchTranslateButton({ projectId, targetLanguages, baseLanguageD
                     toast.success(t('batch.successToast'));
                 }
             } else {
-                toast.error(res.error || t('batch.failedFallback'));
+                toast.error(getLocalizedApiError(res, t, t('batch.failedFallback')));
             }
             setStep('done');
         });

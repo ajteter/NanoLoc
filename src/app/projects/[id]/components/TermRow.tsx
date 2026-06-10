@@ -18,6 +18,7 @@ import { useBaseLanguagePin } from './BaseLanguagePinContext';
 import { BASE_LANGUAGE_STICKY_CLASS } from './stickyColumnClasses';
 import { TermScreenshotCell } from './TermScreenshotCell';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
 import type { TranslationKey as I18nKey } from '@/lib/i18n/dictionaries';
 
 interface TermRowProps {
@@ -90,7 +91,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             if (res.success) {
                 if (onSuccessCb) onSuccessCb();
             } else {
-                toast.error(res.error || t('term.updateFailed'));
+                toast.error(getLocalizedApiError(res, t, t('term.updateFailed')));
             }
         });
     };
@@ -101,7 +102,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             if (res.success) {
                 toast.success(t('term.deleted'));
             } else {
-                toast.error(res.error || t('term.deleteFailed'));
+                toast.error(getLocalizedApiError(res, t, t('term.deleteFailed')));
             }
         });
     };
@@ -113,7 +114,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                 toast.success(t('term.clearSuccess'));
                 setClearConfirm(false);
             } else {
-                toast.error(res.error || t('term.clearFailed'));
+                toast.error(getLocalizedApiError(res, t, t('term.clearFailed')));
             }
         });
     };
@@ -162,11 +163,12 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     source: expectedRowLangs.current.length > 0 ? 'row' : 'single',
                 })
             });
-            const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.error || t('term.translationFailed'));
+                const data = await readApiErrorBody(res);
+                throw new Error(getLocalizedApiError(data, t, t('term.translationFailed')));
             }
 
+            const data = await res.json();
             if (data.translations && data.translations[0]) {
                 const translated = data.translations[0];
                 handleValueChange(lang, translated);

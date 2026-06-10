@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError } from '@/lib/api/errors';
 
 interface ProjectToolbarProps {
     projectId: string;
@@ -39,7 +40,7 @@ export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseL
                 if (res.success) {
                     toast.success(`${t('projectToolbar.imported')} ${t('projectToolbar.added')}: ${res.added}, ${t('projectToolbar.updated')}: ${res.updated}, ${t('projectToolbar.skipped')}: ${res.skipped}`, { id: toastId });
                 } else {
-                    toast.error(`${t('projectToolbar.importFailed')}: ${res.error}`, { id: toastId });
+                    toast.error(`${t('projectToolbar.importFailed')}: ${getLocalizedApiError(res, t, t('projectToolbar.importFailed'))}`, { id: toastId });
                 }
             });
         }

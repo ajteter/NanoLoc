@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { getProjectAIConfig } from '@/lib/ai/config';
 import { BRClient, TRANSLATION_ERROR_PLACEHOLDER } from '@/lib/ai/br-client';
 import { normalizeTranslationError, recordTranslationError, type TranslationErrorSource } from '@/lib/services/translation-error.service';
+import { AppError } from '@/lib/api/errors';
 
 const BATCH_SIZE = 10;
 
@@ -77,7 +78,7 @@ export async function batchTranslateProject(
 
     try {
         const project = await prisma.project.findUnique({ where: { id: projectId } });
-        if (!project) throw new Error('Project not found');
+        if (!project) throw new AppError('PROJECT_NOT_FOUND');
 
         const aiConfig = await getProjectAIConfig(projectId);
         const aiClient = new BRClient(aiConfig);

@@ -3,29 +3,30 @@ import { auth } from '@/auth';
 import { getProject } from '@/lib/services/project.service';
 import { importFile } from '@/lib/services/storage.service';
 import { logAudit } from '@/lib/services/audit.service';
+import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id: projectId } = await params;
 
     const project = await getProject(projectId);
-    if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!project) return jsonError('PROJECT_NOT_FOUND');
 
     const userId = session.user.id;
     if (!userId) {
-        return NextResponse.json({ error: "Session missing user ID" }, { status: 401 });
+        return jsonError('SESSION_USER_MISSING');
     }
 
     try {
         const formData = await request.formData();
         const file = formData.get('file') as File;
 
-        if (!file) {
-            return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+        if (!(file instanceof File)) {
+            return jsonError('NO_FILE_UPLOADED');
         }
 
         const fileContent = await file.text();
@@ -33,8 +34,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         logAudit({ action: 'IMPORT_FILE', userId, projectId, projectName: project.name, details: result });
         return NextResponse.json({ success: true, ...result });
     } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
         console.error("Import error:", error);
-        return NextResponse.json({ error: message || "Internal Server Error" }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'IMPORT_FAILED');
     }
 }

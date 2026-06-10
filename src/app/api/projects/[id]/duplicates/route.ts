@@ -3,17 +3,18 @@ import { auth } from '@/auth';
 import { getProject } from '@/lib/services/project.service';
 import { findDuplicateTranslationContent } from '@/lib/services/duplicate-content.service';
 import { getProjectLanguageCodes } from '@/lib/language-utils';
+import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id } = await params;
     const project = await getProject(id);
     if (!project) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+        return jsonError('PROJECT_NOT_FOUND');
     }
 
     const { searchParams } = new URL(request.url);
@@ -21,19 +22,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const ignoreCase = searchParams.get('ignoreCase') === 'true';
 
     if (!languageCode) {
-        return NextResponse.json({ error: 'Missing lang parameter' }, { status: 400 });
+        return jsonError('MISSING_LANGUAGE');
     }
 
     const { allLanguages } = getProjectLanguageCodes(project);
     if (!allLanguages.includes(languageCode)) {
-        return NextResponse.json({ error: 'Language is not configured for this project' }, { status: 400 });
+        return jsonError('LANGUAGE_NOT_CONFIGURED');
     }
 
-    const result = await findDuplicateTranslationContent({
-        projectId: id,
-        languageCode,
-        ignoreCase,
-    });
+    try {
+        const result = await findDuplicateTranslationContent({
+            projectId: id,
+            languageCode,
+            ignoreCase,
+        });
 
-    return NextResponse.json(result);
+        return NextResponse.json(result);
+    } catch (error) {
+        console.error('Duplicate check error:', error);
+        return jsonErrorFromUnknown(error, 'DUPLICATE_CHECK_FAILED');
+    }
 }

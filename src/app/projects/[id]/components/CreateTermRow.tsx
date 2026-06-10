@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { useBaseLanguagePin } from './BaseLanguagePinContext';
 import { BASE_LANGUAGE_STICKY_CLASS, SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './stickyColumnClasses';
 import { useI18n } from '@/lib/i18n/client';
+import { getLocalizedApiError } from '@/lib/api/errors';
 
 interface CreateTermRowProps {
     projectId: string;
@@ -45,7 +46,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                 toast.success(t('term.created'));
                 onSuccess();
             } else {
-                toast.error(res.error || t('term.createFailed'));
+                toast.error(getLocalizedApiError(res, t, t('term.createFailed')));
             }
         });
     };

@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { exportCsv } from '@/lib/services/storage.service';
+import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     if (!session?.user) {
-        return new NextResponse("Unauthorized", { status: 401 });
+        return jsonError('UNAUTHORIZED');
     }
 
     const { id } = await params;
@@ -21,6 +22,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         });
     } catch (error) {
         console.error("Export CSV Error:", error);
-        return new NextResponse("Failed to generate CSV", { status: 500 });
+        return jsonErrorFromUnknown(error, 'EXPORT_FAILED');
     }
 }

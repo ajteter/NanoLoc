@@ -5,30 +5,19 @@ import { revalidatePath } from 'next/cache';
 import { createProject, updateProject, deleteProject } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { createProjectSchema, updateProjectSchema } from '@/lib/validators/project.schema';
+import { AppError, toActionError, toValidationActionError } from '@/lib/api/errors';
 import type { ProjectFormData } from '@/types';
 
 type ProjectActionInput = Partial<ProjectFormData> & Pick<ProjectFormData, 'name'>;
 
-function getErrorMessage(error: unknown, fallback: string) {
-    return error instanceof Error ? error.message : fallback;
-}
-
-function getValidationErrorMessage(issues: { path: PropertyKey[]; message: string }[]) {
-    const issue = issues[0];
-    if (!issue) return 'Invalid project data';
-
-    const field = issue.path.join('.');
-    return field ? `${field}: ${issue.message}` : issue.message;
-}
-
 export async function createProjectAction(data: ProjectActionInput) {
     const session = await auth();
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    if (!session?.user?.id) return { success: false, ...toActionError(new AppError('UNAUTHORIZED'), 'UNAUTHORIZED') };
 
     try {
         const result = createProjectSchema.safeParse(data);
         if (!result.success) {
-            return { success: false, error: getValidationErrorMessage(result.error.issues) };
+            return { success: false, ...toValidationActionError(result.error.issues) };
         }
 
         const project = await createProject(result.data);
@@ -37,18 +26,18 @@ export async function createProjectAction(data: ProjectActionInput) {
         revalidatePath('/');
         return { success: true, project };
     } catch (error: unknown) {
-        return { success: false, error: getErrorMessage(error, "Failed to create project") };
+        return { success: false, ...toActionError(error, 'PROJECT_CREATE_FAILED') };
     }
 }
 
 export async function updateProjectAction(id: string, data: Partial<ProjectFormData>) {
     const session = await auth();
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    if (!session?.user?.id) return { success: false, ...toActionError(new AppError('UNAUTHORIZED'), 'UNAUTHORIZED') };
 
     try {
         const result = updateProjectSchema.safeParse(data);
         if (!result.success) {
-            return { success: false, error: getValidationErrorMessage(result.error.issues) };
+            return { success: false, ...toValidationActionError(result.error.issues) };
         }
 
         const project = await updateProject(id, result.data);
@@ -58,13 +47,13 @@ export async function updateProjectAction(id: string, data: Partial<ProjectFormD
         revalidatePath('/projects');
         return { success: true, project };
     } catch (error: unknown) {
-        return { success: false, error: getErrorMessage(error, "Failed to update project") };
+        return { success: false, ...toActionError(error, 'PROJECT_UPDATE_FAILED') };
     }
 }
 
 export async function deleteProjectAction(id: string) {
     const session = await auth();
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    if (!session?.user?.id) return { success: false, ...toActionError(new AppError('UNAUTHORIZED'), 'UNAUTHORIZED') };
 
     try {
         await deleteProject(id);
@@ -73,6 +62,6 @@ export async function deleteProjectAction(id: string) {
         revalidatePath('/');
         return { success: true };
     } catch (error: unknown) {
-        return { success: false, error: getErrorMessage(error, "Failed to delete project") };
+        return { success: false, ...toActionError(error, 'PROJECT_DELETE_FAILED') };
     }
 }

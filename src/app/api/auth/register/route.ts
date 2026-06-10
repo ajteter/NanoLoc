@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { jsonError, jsonErrorFromUnknown, jsonValidationError } from '@/lib/api/responses';
 
 const registerSchema = z.object({
     username: z.string().min(1, 'Username is required'),
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
         const result = registerSchema.safeParse(body);
 
         if (!result.success) {
-            return NextResponse.json({ error: result.error.issues }, { status: 400 });
+            return jsonValidationError(result.error.issues);
         }
 
         const { username, password, name } = result.data;
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
         });
 
         if (existingUser) {
-            return NextResponse.json({ error: "User already exists" }, { status: 400 });
+            return jsonError('USER_EXISTS');
         }
 
         // Hash password
@@ -49,6 +50,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ user }, { status: 201 });
     } catch (error) {
         console.error("Registration error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return jsonErrorFromUnknown(error, 'REGISTRATION_FAILED');
     }
 }
