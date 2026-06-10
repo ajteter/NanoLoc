@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, User as UserIcon } from "lucide-react";
 import { UserProfileDialog } from "@/components/UserProfileDialog";
+import { useI18n } from "@/lib/i18n/client";
 
 interface UserNavProps {
     showName?: boolean;
@@ -21,6 +22,7 @@ interface UserNavProps {
 
 export function UserNav({ showName }: UserNavProps) {
     const { data: session } = useSession();
+    const { t } = useI18n();
 
     if (!session?.user) return null;
 
@@ -54,11 +56,11 @@ export function UserNav({ showName }: UserNavProps) {
                     <DropdownMenuSeparator className="bg-zinc-800" />
                     <DropdownMenuItem className="cursor-pointer focus:bg-zinc-800 focus:text-white" onClick={() => document.getElementById('profile-trigger')?.click()}>
                         <UserIcon className="mr-2 h-4 w-4" />
-                        <span>Profile Settings</span>
+                        <span>{t('common.profileSettings')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem className="cursor-pointer text-red-500 focus:bg-red-500/10 focus:text-red-500" onClick={() => signOut()}>
                         <LogOut className="mr-2 h-4 w-4" />
-                        <span>Sign out</span>
+                        <span>{t('common.signOut')}</span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

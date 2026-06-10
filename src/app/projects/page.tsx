@@ -4,6 +4,7 @@ import { Plus, History } from 'lucide-react';
 import { listProjects } from '@/lib/services/project.service';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
+import { getServerTranslator } from '@/lib/i18n/server';
 
 export const metadata = {
     title: 'Projects - NanoLoc',
@@ -19,6 +20,7 @@ export default async function ProjectsPage({
         redirect('/login');
     }
 
+    const { t } = await getServerTranslator();
     const resolvedSearchParams = await searchParams;
     const search = typeof resolvedSearchParams?.search === 'string' ? resolvedSearchParams.search : '';
 
@@ -35,20 +37,20 @@ export default async function ProjectsPage({
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex items-center justify-between mb-8">
                 <h1 className="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">
-                    Projects
+                    {t('common.projects')}
                 </h1>
                 <div className="flex items-center gap-3">
                     <Link href="/activity">
                         <Button variant="secondary" className="gap-2">
                             <History className="h-4 w-4" />
-                            Activity Log
+                            {t('common.activityLog')}
                         </Button>
                     </Link>
                     <Link
                         href="/projects/create"
                         className="rounded-md bg-zinc-100 px-3.5 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
                     >
-                        New Project
+                        {t('common.newProject')}
                     </Link>
                 </div>
             </div>
@@ -56,15 +58,15 @@ export default async function ProjectsPage({
             <div className="space-y-6">
                 {!filteredProjects || filteredProjects.length === 0 ? (
                     <div className="text-center py-12">
-                        <h3 className="mt-2 text-sm font-semibold text-white">No projects found</h3>
+                        <h3 className="mt-2 text-sm font-semibold text-white">{t('projects.emptyTitle')}</h3>
                         <p className="mt-1 text-sm text-zinc-400">
-                            {search ? 'Try adjusting your search query.' : 'Get started by creating a new project.'}
+                            {search ? t('projects.emptySearch') : t('projects.emptyCreate')}
                         </p>
                         <div className="mt-6">
                             <Link href="/projects/create">
                                 <Button className="bg-zinc-100 hover:bg-white text-zinc-900">
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Create Project
+                                    {t('common.createProject')}
                                 </Button>
                             </Link>
                         </div>
@@ -84,11 +86,11 @@ export default async function ProjectsPage({
                                     </span>
                                 </div>
                                 <p className="text-sm text-zinc-400 line-clamp-2 min-h-[2.5rem]">
-                                    {project.description || "No description"}
+                                    {project.description || t('common.noDescription')}
                                 </p>
                                 <div className="mt-4 flex items-center text-xs text-zinc-500">
                                     <span>
-                                        Updated {project.updatedAt ? project.updatedAt.toLocaleDateString() : 'Never'}
+                                        {t('common.updated')} {project.updatedAt ? project.updatedAt.toLocaleDateString() : t('common.never')}
                                     </span>
                                 </div>
                             </Link>

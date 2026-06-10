@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { auth } from "@/auth";
+import { getServerLocale } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
   title: {
@@ -18,12 +19,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getServerLocale();
+
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang={locale} suppressHydrationWarning className="dark">
       <body
         className="font-sans antialiased bg-zinc-950 text-white selection:bg-zinc-400/30"
       >
-        <Providers session={await auth()}>
+        <Providers session={await auth()} locale={locale}>
           <SiteHeader />
           {children}
         </Providers>

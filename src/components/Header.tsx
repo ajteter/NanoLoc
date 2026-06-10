@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import { LogoIcon } from '@/components/LogoIcon';
+import { useI18n } from '@/lib/i18n/client';
 
 export function Header() {
+    const { t } = useI18n();
+
     return (
         <header className="bg-zinc-900 border-b border-zinc-800">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -22,7 +25,7 @@ export function Header() {
                                     href="/projects"
                                     className="bg-zinc-800 text-white rounded-md px-3 py-2 text-sm font-medium hover:bg-zinc-700 transition-colors"
                                 >
-                                    Projects
+                                    {t('common.projects')}
                                 </Link>
                             </div>
                         </div>
@@ -32,7 +35,7 @@ export function Header() {
                             onClick={() => signOut({ callbackUrl: '/login' })}
                             className="text-zinc-300 hover:bg-zinc-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium transition-colors"
                         >
-                            Sign out
+                            {t('common.signOut')}
                         </button>
                     </div>
                 </div>
