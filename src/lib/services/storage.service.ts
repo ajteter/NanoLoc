@@ -5,6 +5,19 @@ import { H5JsonParser } from '@/lib/parsers/h5-json';
 import { IOSStringsParser } from '@/lib/parsers/ios-strings';
 import { getProjectLanguageCodes } from '@/lib/language-utils';
 
+type TranslationValueRow = {
+    languageCode: string;
+    content: string | null;
+};
+
+function getTranslationValueMap(key: { values: TranslationValueRow[] }) {
+    return new Map(key.values.map((value) => [value.languageCode, value.content || '']));
+}
+
+function uniqueLanguageCodes(languageCodes: string[]) {
+    return Array.from(new Set(languageCodes));
+}
+
 /**
  * Shared upsert logic for importing parsed strings into a project.
  */
@@ -236,30 +249,36 @@ export async function exportCsv(
 ): Promise<{ csvContent: string; fileName: string }> {
     const project = await prisma.project.findUnique({
         where: { id: projectId },
-        include: {
-            keys: {
-                include: { values: true },
-                orderBy: { sortOrder: 'asc' },
-            },
-        },
+        select: { name: true, baseLanguage: true, targetLanguages: true },
     });
 
     if (!project) throw new Error('Project not found');
 
-    const { baseLanguage, targetLanguages: targetLangs } = getProjectLanguageCodes(project);
+    const { baseLanguage, targetLanguages: targetLangs, allLanguages } = getProjectLanguageCodes(project);
+
+    const keys = await prisma.translationKey.findMany({
+        where: { projectId },
+        select: {
+            stringName: true,
+            remarks: true,
+            values: {
+                where: { languageCode: { in: allLanguages } },
+                select: { languageCode: true, content: true },
+            },
+        },
+        orderBy: { sortOrder: 'asc' },
+    });
 
     const header = ['Key', 'Remarks', baseLanguage, ...targetLangs];
 
-    const rows = project.keys.map((key) => {
+    const rows = keys.map((key) => {
+        const values = getTranslationValueMap(key);
         const row: string[] = [key.stringName, key.remarks || ''];
 
-        const baseVal =
-            key.values.find((v) => v.languageCode === baseLanguage)?.content || '';
-        row.push(baseVal);
+        row.push(values.get(baseLanguage) || '');
 
         targetLangs.forEach((lang) => {
-            const val = key.values.find((v) => v.languageCode === lang)?.content || '';
-            row.push(val);
+            row.push(values.get(lang) || '');
         });
 
         return row;
@@ -297,25 +316,37 @@ export async function pullProjectTranslations(
 ): Promise<{ data: string; contentType: string }> {
     const project = await prisma.project.findUnique({
         where: { id: projectId },
-        include: {
-            keys: {
-                include: { values: true },
-                orderBy: { sortOrder: 'asc' },
-            },
-        },
+        select: { baseLanguage: true, targetLanguages: true },
     });
 
     if (!project) throw new Error('Project not found');
 
     const { baseLanguage, allLanguages } = getProjectLanguageCodes(project);
+    const targetLang = lang || baseLanguage;
+    const requestedLanguages = format === 'json' && !lang
+        ? allLanguages
+        : uniqueLanguageCodes([targetLang, baseLanguage]);
+
+    const keys = await prisma.translationKey.findMany({
+        where: { projectId },
+        select: {
+            stringName: true,
+            values: {
+                where: { languageCode: { in: requestedLanguages } },
+                select: { languageCode: true, content: true },
+            },
+        },
+        orderBy: { sortOrder: 'asc' },
+    });
 
     if (format === 'json' && !lang) {
         // Mode A: Full dump
         const result: Record<string, Record<string, string>> = {};
-        for (const key of project.keys) {
+        for (const key of keys) {
+            const values = getTranslationValueMap(key);
             const entry: Record<string, string> = {};
             for (const l of allLanguages) {
-                const val = key.values.find(v => v.languageCode === l)?.content;
+                const val = values.get(l);
                 if (val) entry[l] = val;
             }
             result[key.stringName] = entry;
@@ -326,10 +357,9 @@ export async function pullProjectTranslations(
     if (format === 'json' && lang) {
         // Mode B: Single language JSON with base fallback
         const result: Record<string, string> = {};
-        for (const key of project.keys) {
-            const val = key.values.find(v => v.languageCode === lang)?.content
-                || key.values.find(v => v.languageCode === baseLanguage)?.content
-                || '';
+        for (const key of keys) {
+            const values = getTranslationValueMap(key);
+            const val = values.get(lang) || values.get(baseLanguage) || '';
             if (val) result[key.stringName] = val;
         }
         return { data: JSON.stringify(result, null, 2), contentType: 'application/json' };
@@ -337,7 +367,6 @@ export async function pullProjectTranslations(
 
     if (format === 'xml') {
         // Mode C: Android XML
-        const targetLang = lang || baseLanguage;
         const escapeXml = (s: string) =>
             s.replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
@@ -346,10 +375,9 @@ export async function pullProjectTranslations(
                 .replace(/'/g, "\\'");
 
         let xml = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n';
-        for (const key of project.keys) {
-            const val = key.values.find(v => v.languageCode === targetLang)?.content
-                || key.values.find(v => v.languageCode === baseLanguage)?.content
-                || '';
+        for (const key of keys) {
+            const values = getTranslationValueMap(key);
+            const val = values.get(targetLang) || values.get(baseLanguage) || '';
             xml += `    <string name="${escapeXml(key.stringName)}">${escapeXml(val)}</string>\n`;
         }
         xml += '</resources>\n';
