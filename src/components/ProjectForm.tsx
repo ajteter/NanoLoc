@@ -11,17 +11,7 @@ import { LANGUAGES } from '@/lib/constants/languages';
 import { Search, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/client';
-
-interface ProjectFormData {
-    name: string;
-    description: string;
-    baseLanguage: string;
-    targetLanguages: string[];
-    aiBaseUrl: string;
-    aiApiKey: string;
-    aiModelId: string;
-    systemPrompt: string;
-}
+import type { ProjectFormData } from '@/types';
 
 interface ProjectFormProps {
     initialData?: ProjectFormData;
