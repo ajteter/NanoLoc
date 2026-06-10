@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getProject, updateTerm, deleteTerm } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
+import { updateTermSchema } from '@/lib/validators/term.schema';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string; keyId: string }> }) {
     const session = await auth();
@@ -21,14 +22,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     try {
         const body = await request.json();
+        const result = updateTermSchema.safeParse(body);
 
-        const stringName = typeof body.stringName === 'string' && body.stringName.length > 0 ? body.stringName : undefined;
-        const remarks = typeof body.remarks === 'string' ? body.remarks : (body.remarks === null ? null : undefined);
-        const values = body.values && typeof body.values === 'object' ? body.values : undefined;
+        if (!result.success) {
+            return NextResponse.json({ error: result.error.issues }, { status: 400 });
+        }
 
-        const updatedKey = await updateTerm(keyId, { stringName, remarks, values }, userId);
-        const action = values ? 'UPDATE_TRANSLATION' : 'UPDATE_TERM';
-        logAudit({ action, userId, projectId: id, projectName: project.name, keyName: updatedKey?.stringName, details: values ? { languages: Object.keys(values) } : undefined });
+        const updatedKey = await updateTerm(keyId, result.data, userId);
+        const action = result.data.values ? 'UPDATE_TRANSLATION' : 'UPDATE_TERM';
+        logAudit({
+            action,
+            userId,
+            projectId: id,
+            projectName: project.name,
+            keyName: updatedKey?.stringName,
+            details: result.data.values ? { languages: Object.keys(result.data.values) } : undefined,
+        });
         return NextResponse.json({ term: updatedKey });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error';

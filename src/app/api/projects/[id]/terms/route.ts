@@ -2,13 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { listTerms, createTerm, getProject, ConflictError } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
-import { z } from 'zod';
-
-const createTermSchema = z.object({
-    stringName: z.string().min(1),
-    values: z.record(z.string(), z.string()).optional(),
-    remarks: z.string().optional(),
-});
+import { createTermSchema } from '@/lib/validators/term.schema';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();

@@ -7,18 +7,33 @@ import { batchTranslateProject } from '@/lib/services/translate.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { importFile } from '@/lib/services/storage.service';
 import { getProjectLanguageCodes, normalizeTargetLanguages } from '@/lib/language-utils';
+import { createTermSchema, updateTermSchema } from '@/lib/validators/term.schema';
+import type { CreateTermInput, UpdateTermInput } from '@/lib/validators/term.schema';
 import type { TranslationErrorSource } from '@/lib/services/translation-error.service';
 
 export type ActionResult<T = Record<string, unknown>> =
     | ({ success: true } & T)
     | { success: false; error: string };
 
-export async function createTermAction(projectId: string, data: { stringName: string; remarks?: string; values?: Record<string, string> }): Promise<ActionResult> {
+function getValidationErrorMessage(issues: { path: PropertyKey[]; message: string }[]) {
+    const issue = issues[0];
+    if (!issue) return 'Invalid term data';
+
+    const field = issue.path.join('.');
+    return field ? `${field}: ${issue.message}` : issue.message;
+}
+
+export async function createTermAction(projectId: string, data: CreateTermInput): Promise<ActionResult> {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     try {
-        const term = await createTerm(projectId, data, session.user.id);
+        const result = createTermSchema.safeParse(data);
+        if (!result.success) {
+            return { success: false, error: getValidationErrorMessage(result.error.issues) };
+        }
+
+        const term = await createTerm(projectId, result.data, session.user.id);
         revalidatePath(`/projects/${projectId}`);
         return { success: true, term };
     } catch (error) {
@@ -27,12 +42,17 @@ export async function createTermAction(projectId: string, data: { stringName: st
     }
 }
 
-export async function updateTermAction(projectId: string, keyId: string, data: { stringName?: string; remarks?: string | null; values?: Record<string, string> }): Promise<ActionResult> {
+export async function updateTermAction(projectId: string, keyId: string, data: UpdateTermInput): Promise<ActionResult> {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     try {
-        const term = await updateTerm(keyId, data, session.user.id);
+        const result = updateTermSchema.safeParse(data);
+        if (!result.success) {
+            return { success: false, error: getValidationErrorMessage(result.error.issues) };
+        }
+
+        const term = await updateTerm(keyId, result.data, session.user.id);
         revalidatePath(`/projects/${projectId}`);
         return { success: true, term };
     } catch (error) {
