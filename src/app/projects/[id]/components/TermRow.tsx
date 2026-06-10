@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 import { useBaseLanguagePin } from './BaseLanguagePinContext';
 import { BASE_LANGUAGE_STICKY_CLASS } from './stickyColumnClasses';
 import { TermScreenshotCell } from './TermScreenshotCell';
+import { useI18n } from '@/lib/i18n/client';
+import type { TranslationKey as I18nKey } from '@/lib/i18n/dictionaries';
 
 interface TermRowProps {
     term: TranslationKey;
@@ -34,6 +36,7 @@ type TermUpdateInput = {
 };
 
 export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, targetLanguages, searchQuery }: TermRowProps) {
+    const { t } = useI18n();
     const { isBaseLanguagePinned } = useBaseLanguagePin();
     const [isEditing, setIsEditing] = useState(false);
     const [focusLang, setFocusLang] = useState<string | null>(null);
@@ -49,6 +52,14 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
     const isMatch = (text?: string | null) => {
         if (!searchQuery || !text) return false;
         return text.toLowerCase().includes(searchQuery.toLowerCase());
+    };
+
+    const formatMessage = (key: I18nKey, values: Record<string, string | number>) => {
+        let message = t(key);
+        for (const [name, value] of Object.entries(values)) {
+            message = message.replace(`{${name}}`, String(value));
+        }
+        return message;
     };
 
     const [formData, setFormData] = useState({
@@ -79,7 +90,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             if (res.success) {
                 if (onSuccessCb) onSuccessCb();
             } else {
-                toast.error(res.error || 'Update failed');
+                toast.error(res.error || t('term.updateFailed'));
             }
         });
     };
@@ -88,9 +99,9 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
         startDelete(async () => {
             const res = await deleteTermAction(projectId, term.id);
             if (res.success) {
-                toast.success('Term deleted');
+                toast.success(t('term.deleted'));
             } else {
-                toast.error(res.error || 'Delete failed');
+                toast.error(res.error || t('term.deleteFailed'));
             }
         });
     };
@@ -99,10 +110,10 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
         startClear(async () => {
             const res = await clearTermTranslationsAction(projectId, term.id, baseLanguage);
             if (res.success) {
-                toast.success('Term row cleared (kept key & base language)');
+                toast.success(t('term.clearSuccess'));
                 setClearConfirm(false);
             } else {
-                toast.error(res.error || 'Clear failed');
+                toast.error(res.error || t('term.clearFailed'));
             }
         });
     };
@@ -115,7 +126,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
         }, () => {
             setIsEditing(false);
             setFocusLang(null);
-            toast.success('Term saved');
+            toast.success(t('term.saved'));
         });
     };
 
@@ -131,7 +142,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
         const currentStringName = isEditing ? formData.stringName : term.stringName;
 
         if (!currentStringName && !currentBaseValue) {
-            toast.error("Please enter a key name or base value before translating.");
+            toast.error(t('term.sourceRequired'));
             return;
         }
 
@@ -153,7 +164,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             });
             const data = await res.json();
             if (!res.ok) {
-                throw new Error(data.error || 'Translation failed');
+                throw new Error(data.error || t('term.translationFailed'));
             }
 
             if (data.translations && data.translations[0]) {
@@ -168,7 +179,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     if (allDone) {
                         const allValues = { ...formData.values, ...pendingRowTranslations.current };
                         doUpdate({ values: allValues });
-                        toast.success(`Row translated: ${Object.keys(pendingRowTranslations.current).length} languages`);
+                        toast.success(formatMessage('term.rowTranslated', { count: Object.keys(pendingRowTranslations.current).length }));
                         pendingRowTranslations.current = {};
                         expectedRowLangs.current = [];
                     }
@@ -185,13 +196,13 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     if (populated.length > 0) {
                         doUpdate({ values: Object.fromEntries(populated) });
                     }
-                    toast.warning(`Row translate completed with errors for ${lang}`);
+                    toast.warning(formatMessage('term.rowTranslateError', { language: lang }));
                     pendingRowTranslations.current = {};
                     expectedRowLangs.current = [];
                 }
             } else {
-                const message = err instanceof Error ? err.message : 'Unknown error';
-                toast.error('Translate error: ' + message);
+                const message = err instanceof Error ? err.message : t('common.unknown');
+                toast.error(formatMessage('term.translateError', { message }));
             }
         } finally {
             setTranslating(prev => prev.filter(l => l !== lang));
@@ -205,7 +216,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
         });
 
         if (langsToTranslate.length === 0) {
-            toast.info('All languages already have translations.');
+            toast.info(t('term.allTranslated'));
             return;
         }
 
@@ -234,7 +245,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
 
     const getModifiedByDisplay = (modifiedBy?: { name: string | null; username?: string } | null) => {
         if (!modifiedBy) return null;
-        return modifiedBy.name || modifiedBy.username || 'Unknown';
+        return modifiedBy.name || modifiedBy.username || t('common.unknown');
     };
 
     const baseValue = term.values.find(v => v.languageCode === baseLanguage)?.content;
@@ -250,7 +261,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                             onClick={handleSave}
                             disabled={isPendingUpdate}
                             className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10"
-                            title="Save"
+                            title={t('term.save')}
                         >
                             <Check className="w-4 h-4" />
                         </Button>
@@ -258,7 +269,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                             variant="ghost" size="icon"
                             onClick={() => { setIsEditing(false); setFocusLang(null); }}
                             className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700"
-                            title="Cancel"
+                            title={t('common.cancel')}
                         >
                             <X className="w-4 h-4" />
                         </Button>
@@ -296,7 +307,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                         variant="ghost" size="icon"
                         onClick={handleCopyToAll}
                         className="absolute bottom-5 right-5 h-6 w-6 text-zinc-400 hover:text-white opacity-0 group-hover/base:opacity-100 transition-opacity"
-                        title="Copy to all (Overwrite)"
+                        title={t('term.copyToAll')}
                         type="button"
                     >
                         <Copy className="w-3 h-3" />
@@ -315,7 +326,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                             onClick={() => handleTranslate(lang)}
                             disabled={translating.includes(lang)}
                             className="absolute bottom-5 right-5 h-6 w-6 text-zinc-300 hover:text-zinc-200 opacity-0 group-hover/cell:opacity-100 transition-opacity disabled:opacity-50"
-                            title="AI Translate"
+                            title={t('term.aiTranslate')}
                             type="button"
                         >
                             <Wand2 className={cn("w-3 h-3 text-emerald-400", translating.includes(lang) && "animate-pulse")} />
@@ -331,13 +342,17 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[100px] min-w-[100px]">
                 {deleteConfirm ? (
                     <div className="flex flex-col gap-1 min-w-[180px]">
-                        <p className="text-xs text-red-400">Type <span className="font-mono font-bold">{term.stringName}</span> to confirm:</p>
+                        <p className="text-xs text-red-400">
+                            {t('term.deleteConfirmPrompt').split('{name}')[0]}
+                            <span className="font-mono font-bold">{term.stringName}</span>
+                            {t('term.deleteConfirmPrompt').split('{name}')[1] || ''}
+                        </p>
                         <Input
                             value={deleteInput}
                             onChange={(e) => setDeleteInput(e.target.value)}
                             className="bg-zinc-900 border-red-700 text-white h-7 text-xs"
                             autoFocus
-                            placeholder="Type key name..."
+                            placeholder={t('term.deletePlaceholder')}
                         />
                         <div className="flex gap-1">
                             <Button
@@ -346,20 +361,20 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                 disabled={deleteInput !== term.stringName || isPendingDelete}
                                 className="h-6 text-xs flex-1"
                             >
-                                {isPendingDelete ? '...' : 'Delete'}
+                                {isPendingDelete ? '...' : t('common.delete')}
                             </Button>
                             <Button
                                 variant="ghost" size="sm"
                                 onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
                                 className="h-6 text-xs text-zinc-400"
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </Button>
                         </div>
                     </div>
                 ) : clearConfirm ? (
                     <div className="flex flex-col gap-1 min-w-[180px]">
-                        <p className="text-xs text-amber-400">Clear row?</p>
+                        <p className="text-xs text-amber-400">{t('term.clearConfirm')}</p>
                         <div className="flex gap-1 mt-1">
                             <Button
                                 variant="outline" size="sm"
@@ -367,14 +382,14 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                 disabled={isPendingClear}
                                 className="h-6 text-xs flex-1 bg-amber-900/20 text-amber-400 border-amber-800 hover:bg-amber-900/50 hover:text-amber-300"
                             >
-                                {isPendingClear ? '...' : 'Clear Row'}
+                                {isPendingClear ? '...' : t('term.clearRow')}
                             </Button>
                             <Button
                                 variant="ghost" size="sm"
                                 onClick={() => setClearConfirm(false)}
                                 className="h-6 text-xs text-zinc-400"
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </Button>
                         </div>
                     </div>
@@ -384,7 +399,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                             variant="ghost" size="icon"
                             onClick={() => enterEditMode()}
                             className="text-zinc-300 hover:text-zinc-200 hover:bg-white/10"
-                            title="Edit"
+                            title={t('term.edit')}
                         >
                             <Edit2 className="w-4 h-4" />
                         </Button>
@@ -392,7 +407,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                             variant="ghost" size="icon"
                             onClick={() => setConfirmTranslate({ type: 'row' })}
                             className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
-                            title="Translate Row"
+                            title={t('term.translateRow')}
                         >
                             <Wand2 className="w-4 h-4 text-emerald-400" />
                         </Button>
@@ -401,7 +416,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                 <Button
                                     variant="ghost" size="icon"
                                     className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
-                                    title="More actions"
+                                    title={t('term.moreActions')}
                                 >
                                     <MoreHorizontal className="w-4 h-4" />
                                 </Button>
@@ -412,14 +427,14 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                     onClick={() => setClearConfirm(true)}
                                 >
                                     <Eraser className="w-4 h-4 mr-2" />
-                                    Clear Row
+                                    {t('term.clearRow')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     className="hover:bg-red-900/50 text-red-400 focus:bg-red-900/50 focus:text-red-300 cursor-pointer"
                                     onClick={() => setDeleteConfirm(true)}
                                 >
                                     <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete Term
+                                    {t('term.deleteTerm')}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -453,11 +468,11 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                             highlightClassName="bg-emerald-500/20 text-emerald-400 rounded-sm px-0.5"
                                         />
                                     ) : term.remarks
-                                ) : <span className="text-zinc-600 italic">No remarks</span>}
+                                ) : <span className="text-zinc-600 italic">{t('term.noRemarks')}</span>}
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p className="max-w-xs whitespace-pre-wrap">{term.remarks || "No remarks"}</p>
+                            <p className="max-w-xs whitespace-pre-wrap">{term.remarks || t('term.noRemarks')}</p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
@@ -486,14 +501,14 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                             highlightClassName="bg-emerald-500/20 text-emerald-400 rounded-sm px-0.5"
                                         />
                                     ) : baseValue
-                                ) : <span className="text-zinc-600 italic">Empty</span>}
+                                ) : <span className="text-zinc-600 italic">{t('term.emptyValue')}</span>}
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
                             {getModifiedByDisplay(term.values.find(v => v.languageCode === baseLanguage)?.lastModifiedBy) ? (
-                                <p>Updated by {getModifiedByDisplay(term.values.find(v => v.languageCode === baseLanguage)?.lastModifiedBy)}</p>
+                                <p>{formatMessage('term.updatedBy', { name: getModifiedByDisplay(term.values.find(v => v.languageCode === baseLanguage)?.lastModifiedBy) || '' })}</p>
                             ) : (
-                                <p>No audit info</p>
+                                <p>{t('term.noAuditInfo')}</p>
                             )}
                         </TooltipContent>
                     </Tooltip>
@@ -522,12 +537,12 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                                     highlightClassName="bg-emerald-500/20 text-emerald-400 rounded-sm px-0.5"
                                                 />
                                             ) : val
-                                        ) : <span className="text-zinc-600 italic">Empty</span>}
+                                        ) : <span className="text-zinc-600 italic">{t('term.emptyValue')}</span>}
                                     </div>
                                 </TooltipTrigger>
                                 {modBy && (
                                     <TooltipContent>
-                                        <p>Updated by {modBy}</p>
+                                        <p>{formatMessage('term.updatedBy', { name: modBy })}</p>
                                     </TooltipContent>
                                 )}
                             </Tooltip>
@@ -539,16 +554,22 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             <Dialog open={translating.length > 0} onOpenChange={() => { }}>
                 <DialogContent showCloseButton={false} className="bg-zinc-900 border-zinc-800 text-white [&>button]:hidden">
                     <DialogHeader>
-                        <DialogTitle>Translating {translating.length > 1 ? 'Row' : 'Term'}</DialogTitle>
+                        <DialogTitle>
+                            {formatMessage('term.translatingTitle', {
+                                target: translating.length > 1 ? t('term.rowLabel') : t('term.termLabel'),
+                            })}
+                        </DialogTitle>
                         <DialogDescription className="text-amber-400">
-                            ⚠️ Please do not close the browser. Translating using AI... This may take a while.
+                            {t('term.translatingWarning')}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="flex flex-col items-center justify-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin text-emerald-400 mb-4" />
                         <p className="text-sm text-zinc-400">
-                            {translating.length === 1 ? 'Translating definition into target language...' : `Translating ${translating.length} missing languages in row...`}
+                            {translating.length === 1
+                                ? t('term.translatingSingle')
+                                : formatMessage('term.translatingMultiple', { count: translating.length })}
                         </p>
                     </div>
                 </DialogContent>
@@ -557,22 +578,22 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             <Dialog open={!!confirmTranslate} onOpenChange={(val) => { if (!val) setConfirmTranslate(null); }}>
                 <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
                     <DialogHeader>
-                        <DialogTitle>Confirm Translation</DialogTitle>
+                        <DialogTitle>{t('term.confirmTranslationTitle')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            Please confirm before proceeding.
+                            {t('term.confirmTranslationDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <p className="text-emerald-400 font-medium mb-2">
-                            请检查 {baseLanguageDisplay} 的文案内容是否正确
+                            {t('batch.reviewTitle').replace('{language}', baseLanguageDisplay)}
                         </p>
                         <p className="text-sm text-zinc-400">
-                            Please review the {baseLanguageDisplay} text content before translating to ensure accuracy.
+                            {t('batch.reviewDescription').replace('{language}', baseLanguageDisplay)}
                         </p>
                     </div>
                     {/* <DialogFooter> is normally flex row, let's keep it standard */}
                     <div className="flex justify-end gap-2 mt-4">
-                        <Button variant="ghost" onClick={() => setConfirmTranslate(null)} className="text-zinc-400">Cancel</Button>
+                        <Button variant="ghost" onClick={() => setConfirmTranslate(null)} className="text-zinc-400">{t('common.cancel')}</Button>
                         <Button className="bg-emerald-600 hover:bg-emerald-500 text-white" onClick={() => {
                             if (confirmTranslate?.type === 'row') {
                                 handleTranslateRow();
@@ -580,7 +601,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                 handleTranslate(confirmTranslate.lang);
                             }
                             setConfirmTranslate(null);
-                        }}>Confirm Translate</Button>
+                        }}>{t('batch.confirmButton')}</Button>
                     </div>
                 </DialogContent>
             </Dialog>
