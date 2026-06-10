@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { AndroidXmlParser } from '@/lib/parsers/android-xml';
 import { H5JsonParser } from '@/lib/parsers/h5-json';
 import { IOSStringsParser } from '@/lib/parsers/ios-strings';
-import { getProjectLanguageCodes, parseTargetLanguages } from '@/lib/language-utils';
+import { getProjectLanguageCodes } from '@/lib/language-utils';
 
 /**
  * Shared upsert logic for importing parsed strings into a project.
@@ -248,15 +248,15 @@ export async function exportCsv(
 
     if (!project) throw new Error('Project not found');
 
-    const targetLangs = parseTargetLanguages(project.targetLanguages);
+    const { baseLanguage, targetLanguages: targetLangs } = getProjectLanguageCodes(project);
 
-    const header = ['Key', 'Remarks', project.baseLanguage, ...targetLangs];
+    const header = ['Key', 'Remarks', baseLanguage, ...targetLangs];
 
     const rows = project.keys.map((key) => {
         const row: string[] = [key.stringName, key.remarks || ''];
 
         const baseVal =
-            key.values.find((v) => v.languageCode === project.baseLanguage)?.content || '';
+            key.values.find((v) => v.languageCode === baseLanguage)?.content || '';
         row.push(baseVal);
 
         targetLangs.forEach((lang) => {

@@ -3,7 +3,7 @@ import {
     deleteProjectScreenshotDirectory,
     deleteScreenshotFileByPath,
 } from '@/lib/services/term-screenshot.service';
-import { serializeTargetLanguages } from '@/lib/language-utils';
+import { parseTargetLanguages, serializeTargetLanguages } from '@/lib/language-utils';
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ export async function createProject(data: {
     return prisma.project.create({
         data: {
             ...rest,
-            targetLanguages: serializeTargetLanguages(targetLanguages),
+            targetLanguages: serializeTargetLanguages(targetLanguages, rest.baseLanguage),
         },
     });
 }
@@ -52,8 +52,17 @@ export async function updateProject(
     }
 ) {
     const updateData: Record<string, unknown> = { ...data };
-    if (Array.isArray(updateData.targetLanguages)) {
-        updateData.targetLanguages = serializeTargetLanguages(updateData.targetLanguages);
+    if (Array.isArray(data.targetLanguages) || data.baseLanguage) {
+        const existing = await prisma.project.findUnique({
+            where: { id },
+            select: { baseLanguage: true, targetLanguages: true },
+        });
+        const baseLanguage = data.baseLanguage ?? existing?.baseLanguage;
+        const targetLanguages = Array.isArray(data.targetLanguages)
+            ? data.targetLanguages
+            : parseTargetLanguages(existing?.targetLanguages);
+
+        updateData.targetLanguages = serializeTargetLanguages(targetLanguages, baseLanguage);
     }
     return prisma.project.update({ where: { id }, data: updateData });
 }
