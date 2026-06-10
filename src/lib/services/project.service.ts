@@ -5,6 +5,7 @@ import {
 } from '@/lib/services/term-screenshot.service';
 import { parseTargetLanguages, serializeTargetLanguages } from '@/lib/language-utils';
 import type { CreateProjectInput, UpdateProjectInput } from '@/lib/validators/project.schema';
+import type { CreateTermInput, UpdateTermInput } from '@/lib/validators/term.schema';
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 
@@ -109,7 +110,7 @@ export async function listTerms(
 
 export async function createTerm(
     projectId: string,
-    data: { stringName: string; values?: Record<string, string>; remarks?: string },
+    data: CreateTermInput,
     userId: string
 ) {
     const { stringName, values, remarks } = data;
@@ -152,7 +153,7 @@ export async function createTerm(
 
 export async function updateTerm(
     keyId: string,
-    data: { stringName?: string; remarks?: string | null; values?: Record<string, string> },
+    data: UpdateTermInput,
     userId: string
 ) {
     const { stringName, remarks, values } = data;
