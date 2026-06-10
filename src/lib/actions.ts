@@ -5,6 +5,7 @@ import { AuthError } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { getServerTranslator } from '@/lib/i18n/server';
 
 export async function authenticate(
     prevState: string | undefined,
@@ -17,11 +18,12 @@ export async function authenticate(
         });
     } catch (error) {
         if (error instanceof AuthError) {
+            const { t } = await getServerTranslator();
             switch (error.type) {
                 case 'CredentialsSignin':
-                    return 'Invalid credentials.';
+                    return t('auth.invalidCredentials');
                 default:
-                    return 'Something went wrong.';
+                    return t('auth.genericError');
             }
         }
         throw error;
@@ -34,20 +36,21 @@ const RegisterSchema = z.object({
 });
 
 export async function register(prevState: string | undefined, formData: FormData) {
+    const { t } = await getServerTranslator();
     const validatedFields = RegisterSchema.safeParse({
         username: formData.get('username'),
         password: formData.get('password'),
     });
 
     if (!validatedFields.success) {
-        return 'Invalid fields. Username is required and password must be at least 6 characters.';
+        return t('auth.registrationFailed');
     }
 
     const { username, password } = validatedFields.data;
 
     try {
         const existingUser = await prisma.user.findUnique({ where: { username } });
-        if (existingUser) return 'User already exists.';
+        if (existingUser) return t('auth.userExists');
 
         const hashedPassword = await bcrypt.hash(password, 10);
         await prisma.user.create({
@@ -59,7 +62,7 @@ export async function register(prevState: string | undefined, formData: FormData
         });
     } catch (error) {
         console.error(error);
-        return 'Failed to create user.';
+        return t('auth.registrationFailed');
     }
 
     try {
@@ -71,7 +74,7 @@ export async function register(prevState: string | undefined, formData: FormData
         if (error instanceof AuthError) {
             switch (error.type) {
                 case 'CredentialsSignin':
-                    return 'Something went wrong logging in after registration.';
+                    return t('auth.loginAfterRegisterFailed');
                 default:
                     throw error;
             }
