@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createTermAction } from '@/lib/actions/term.actions';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { BASE_LANGUAGE_STICKY_CLASS, useBaseLanguagePin } from './BaseLanguagePinContext';
 
 interface CreateTermRowProps {
     projectId: string;
@@ -17,6 +19,7 @@ interface CreateTermRowProps {
 }
 
 export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCancel, onSuccess }: CreateTermRowProps) {
+    const { isBaseLanguagePinned } = useBaseLanguagePin();
     const [isPending, startTransition] = useTransition();
     const [formData, setFormData] = useState({
         stringName: '',
@@ -92,7 +95,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                     className="bg-zinc-900 border-zinc-600 text-zinc-400 min-h-[4rem]"
                 />
             </td>
-            <td className="p-4 align-top">
+            <td className={cn("p-4 align-top w-64 min-w-[16rem]", isBaseLanguagePinned && BASE_LANGUAGE_STICKY_CLASS)}>
                 <Textarea
                     value={formData.values[baseLanguage] || ''}
                     onChange={(e) => handleValueChange(baseLanguage, e.target.value)}

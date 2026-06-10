@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { updateTermAction, deleteTermAction, clearTermTranslationsAction } from '@/lib/actions/term.actions';
 import { cn } from '@/lib/utils';
+import { BASE_LANGUAGE_STICKY_CLASS, useBaseLanguagePin } from './BaseLanguagePinContext';
 
 interface TermRowProps {
     term: TranslationKey;
@@ -25,6 +26,7 @@ interface TermRowProps {
 }
 
 export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, targetLanguages, searchQuery }: TermRowProps) {
+    const { isBaseLanguagePinned } = useBaseLanguagePin();
     const [isEditing, setIsEditing] = useState(false);
     const [focusLang, setFocusLang] = useState<string | null>(null);
     const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -267,7 +269,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                         className="bg-zinc-900 border-zinc-700 text-zinc-400 min-h-[4rem] w-full"
                     />
                 </td>
-                <td className="p-4 align-top relative group/base">
+                <td className={cn("p-4 align-top group/base w-64 min-w-[16rem]", isBaseLanguagePinned ? BASE_LANGUAGE_STICKY_CLASS : "relative")}>
                     <Textarea
                         value={formData.values[baseLanguage] || ''}
                         onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
@@ -445,7 +447,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                 </TooltipProvider>
             </td>
             <td
-                className={cn("whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors", isMatch(baseValue) && "bg-emerald-500/10 hover:bg-emerald-500/20")}
+                className={cn("whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs w-64 min-w-[16rem] align-top cursor-pointer hover:bg-zinc-700/30 transition-colors", isBaseLanguagePinned && BASE_LANGUAGE_STICKY_CLASS, isMatch(baseValue) && "bg-emerald-500/10 hover:bg-emerald-500/20")}
                 onClick={() => enterEditMode(baseLanguage)}
             >
                 <TooltipProvider>

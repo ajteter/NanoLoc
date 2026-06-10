@@ -21,6 +21,7 @@ node_modules/
 .env.local
 .env.*.local
 !.env.example
+github key/
 
 # Database
 *.db

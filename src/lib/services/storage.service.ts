@@ -254,10 +254,10 @@ export async function exportCsv(
         targetLangs = [];
     }
 
-    const header = ['Key', project.baseLanguage, ...targetLangs];
+    const header = ['Key', 'Remarks', project.baseLanguage, ...targetLangs];
 
     const rows = project.keys.map((key) => {
-        const row: string[] = [key.stringName];
+        const row: string[] = [key.stringName, key.remarks || ''];
 
         const baseVal =
             key.values.find((v) => v.languageCode === project.baseLanguage)?.content || '';

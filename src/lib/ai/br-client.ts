@@ -51,6 +51,21 @@ export class BRClient {
     }
 
     /**
+     * Remove protocol delimiters only when they appear as standalone residue.
+     */
+    private cleanTranslationText(text: string): string {
+        let cleaned = text.trim();
+
+        cleaned = cleaned.replace(/^\[?\d+\]?\.?\s*/, '').trim();
+        cleaned = cleaned.replace(/^`+/, '').replace(/`+$/, '').trim();
+        cleaned = cleaned.replace(/^(?:###|\|\|\|)\s*(?:\r?\n)+/, '').trim();
+        cleaned = cleaned.replace(/(?:\r?\n)+\s*(?:###|\|\|\|)$/, '').trim();
+        cleaned = cleaned.replace(/\s+(?:###|\|\|\|)$/, '').trim();
+
+        return cleaned;
+    }
+
+    /**
      * Parse AI response using anchor markers <<N>>.
      * Returns a map of anchor index -> translated text.
      */
@@ -63,13 +78,7 @@ export class BRClient {
 
         while ((match = anchorRegex.exec(content)) !== null) {
             const index = parseInt(match[1], 10);
-            let text = match[2].trim();
-
-            // Clean up any residual formatting on individual items
-            text = text.replace(/^\[?\d+\]?\.?\s*/, '').trim();
-            text = text.replace(/^`+/, '').replace(/`+$/, '').trim();
-            // Remove trailing ### separators if AI still added them
-            text = text.replace(/\s*###\s*$/, '').trim();
+            const text = this.cleanTranslationText(match[2]);
 
             if (index >= 1 && index <= count && text.length > 0) {
                 result.set(index, text);
@@ -84,13 +93,11 @@ export class BRClient {
      * Returns ordered array of translated parts.
      */
     private parseBySeparator(content: string): string[] {
-        let parts = content.split('###').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
-
-        // Cleanup indices like "[1] " or "1. "
-        parts = parts.map((t: string) => t.replace(/^\[?\d+\]?\.?\s*/, '').trim());
-
-        // Remove any remaining backtick wrapping
-        parts = parts.map((t: string) => t.replace(/^`+/, '').replace(/`+$/, '').trim());
+        const parts = content
+            .split(content.includes('###') ? '###' : /(?:^|\r?\n)\s*\|\|\|\s*(?=\r?\n|$)/)
+            .map((t: string) => t.trim())
+            .filter((t: string) => t.length > 0)
+            .map((t: string) => this.cleanTranslationText(t));
 
         return parts;
     }
@@ -125,7 +132,7 @@ export class BRClient {
 
         // Basic cleanup
         result = result.replace(/^```[\w]*\n?/gm, '').replace(/\n?```$/gm, '');
-        result = result.replace(/^`+/, '').replace(/`+$/, '').trim();
+        result = this.cleanTranslationText(result);
 
         return result;
     }
@@ -205,7 +212,7 @@ export class BRClient {
                 }
             } else {
                 // Fallback: split by ### separator (legacy)
-                console.warn('No anchor markers found in AI response, falling back to ### separator parsing');
+                console.warn('No anchor markers found in AI response, falling back to separator parsing');
                 const parts = this.parseBySeparator(content);
 
                 let partIndex = 0;

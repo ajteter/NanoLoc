@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     try {
         const { csvContent, fileName } = await exportCsv(id);
 
-        return new NextResponse(csvContent, {
+        return new NextResponse(new TextEncoder().encode(csvContent), {
             headers: {
                 'Content-Type': 'text/csv; charset=utf-8',
                 'Content-Disposition': `attachment; filename="${fileName}"`,

@@ -13,6 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TermRow } from './components/TermRow';
 import { CreateTermRowWrapper } from './components/CreateTermRowWrapper';
 import { TranslateColumnHead } from './components/TranslateColumnHead';
+import { BaseLanguageColumnHead } from './components/BaseLanguageColumnHead';
+import { BaseLanguagePinProvider } from './components/BaseLanguagePinContext';
 import { LANGUAGES } from '@/lib/constants/languages';
 
 const getLangDisplayStr = (code: string) => {
@@ -106,56 +108,56 @@ async function TermsTable({ projectId, page, limit, search, isCreating, project,
 
             <div className="rounded-md border border-zinc-700 bg-zinc-900/50 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader className="bg-zinc-800">
-                            <TableRow className="border-zinc-700 hover:bg-zinc-800">
-                                <TableHead className="w-[100px] min-w-[100px] bg-zinc-900 border-r border-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Actions</TableHead>
-                                <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[100px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Key</TableHead>
-                                <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[300px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Remarks</TableHead>
-                                <TableHead className="text-zinc-300 w-64 min-w-[16rem]">
-                                    {getLangDisplayStr(project.baseLanguage || 'en-US')}
-                                </TableHead>
-                                {targetLangs.map((lang: string) => (
-                                    <TranslateColumnHead
-                                        key={lang}
-                                        projectId={projectId}
-                                        lang={lang}
-                                        displayStr={getLangDisplayStr(lang)}
-                                        baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
-                                    />
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isCreating && (
-                                <CreateTermRowWrapper
-                                    projectId={projectId}
-                                    baseLanguage={project.baseLanguage || 'en-US'}
-                                    targetLanguages={targetLangs}
-                                />
-                            )}
-
-                            {termsData.data.length === 0 && !isCreating ? (
-                                <TableRow>
-                                    <TableCell colSpan={10} className="h-24 text-center text-zinc-400">
-                                        No terms found
-                                    </TableCell>
+                    <BaseLanguagePinProvider projectId={projectId}>
+                        <Table>
+                            <TableHeader className="bg-zinc-800">
+                                <TableRow className="border-zinc-700 hover:bg-zinc-800">
+                                    <TableHead className="w-[100px] min-w-[100px] bg-zinc-900 border-r border-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">Actions</TableHead>
+                                    <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[100px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Key</TableHead>
+                                    <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[300px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">Remarks</TableHead>
+                                    <BaseLanguageColumnHead displayStr={getLangDisplayStr(project.baseLanguage || 'en-US')} />
+                                    {targetLangs.map((lang: string) => (
+                                        <TranslateColumnHead
+                                            key={lang}
+                                            projectId={projectId}
+                                            lang={lang}
+                                            displayStr={getLangDisplayStr(lang)}
+                                            baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
+                                        />
+                                    ))}
                                 </TableRow>
-                            ) : (
-                                termsData.data.map((term: any) => (
-                                    <TermRow
-                                        key={term.id}
-                                        term={term}
+                            </TableHeader>
+                            <TableBody>
+                                {isCreating && (
+                                    <CreateTermRowWrapper
                                         projectId={projectId}
                                         baseLanguage={project.baseLanguage || 'en-US'}
-                                        baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
                                         targetLanguages={targetLangs}
-                                        searchQuery={search}
                                     />
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                )}
+
+                                {termsData.data.length === 0 && !isCreating ? (
+                                    <TableRow>
+                                        <TableCell colSpan={10} className="h-24 text-center text-zinc-400">
+                                            No terms found
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    termsData.data.map((term: any) => (
+                                        <TermRow
+                                            key={term.id}
+                                            term={term}
+                                            projectId={projectId}
+                                            baseLanguage={project.baseLanguage || 'en-US'}
+                                            baseLanguageDisplay={getLangDisplayStr(project.baseLanguage || 'en-US')}
+                                            targetLanguages={targetLangs}
+                                            searchQuery={search}
+                                        />
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </BaseLanguagePinProvider>
                 </div>
             </div>
 
