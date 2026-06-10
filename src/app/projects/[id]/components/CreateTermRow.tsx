@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useBaseLanguagePin } from './BaseLanguagePinContext';
 import { BASE_LANGUAGE_STICKY_CLASS, SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './stickyColumnClasses';
+import { useI18n } from '@/lib/i18n/client';
 
 interface CreateTermRowProps {
     projectId: string;
@@ -20,6 +21,7 @@ interface CreateTermRowProps {
 }
 
 export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCancel, onSuccess }: CreateTermRowProps) {
+    const { t } = useI18n();
     const { isBaseLanguagePinned } = useBaseLanguagePin();
     const [isPending, startTransition] = useTransition();
     const [formData, setFormData] = useState({
@@ -30,7 +32,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
 
     const handleSave = () => {
         if (!formData.stringName) {
-            toast.error("Key name is required");
+            toast.error(t('term.keyRequired'));
             return;
         }
         startTransition(async () => {
@@ -40,10 +42,10 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                 values: formData.values
             });
             if (res.success) {
-                toast.success('Term created');
+                toast.success(t('term.created'));
                 onSuccess();
             } else {
-                toast.error(res.error || 'Create failed');
+                toast.error(res.error || t('term.createFailed'));
             }
         });
     };
@@ -64,7 +66,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                         onClick={handleSave}
                         disabled={isPending}
                         className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10"
-                        title="Create"
+                        title={t('term.create')}
                     >
                         <Check className="w-4 h-4" />
                     </Button>
@@ -72,7 +74,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                         variant="ghost" size="icon"
                         onClick={onCancel}
                         className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700"
-                        title="Cancel"
+                        title={t('common.cancel')}
                     >
                         <X className="w-4 h-4" />
                     </Button>
@@ -83,7 +85,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                     type="text"
                     value={formData.stringName}
                     onChange={(e) => setFormData(p => ({ ...p, stringName: e.target.value }))}
-                    placeholder="Key Name"
+                    placeholder={t('term.keyNamePlaceholder')}
                     className="bg-zinc-900 border-zinc-600 text-white h-auto py-2"
                     autoFocus
                 />
@@ -92,7 +94,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                 <Textarea
                     value={formData.remarks}
                     onChange={(e) => setFormData(p => ({ ...p, remarks: e.target.value }))}
-                    placeholder="Remarks"
+                    placeholder={t('common.remarks')}
                     className="bg-zinc-900 border-zinc-600 text-zinc-400 min-h-[4rem]"
                 />
             </td>
@@ -103,7 +105,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                 <Textarea
                     value={formData.values[baseLanguage] || ''}
                     onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
-                    placeholder="Base Value"
+                    placeholder={t('term.baseValuePlaceholder')}
                     className="bg-zinc-900 border-zinc-600 text-white min-h-[4rem]"
                 />
             </td>

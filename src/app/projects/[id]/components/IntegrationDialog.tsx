@@ -11,6 +11,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { useI18n } from '@/lib/i18n/client';
 
 interface IntegrationDialogProps {
     projectId: string;
@@ -20,6 +21,7 @@ interface IntegrationDialogProps {
 }
 
 function CopyButton({ text }: { text: string }) {
+    const { t } = useI18n();
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -34,7 +36,7 @@ function CopyButton({ text }: { text: string }) {
             size="icon"
             onClick={handleCopy}
             className="h-6 w-6 text-zinc-400 hover:text-white shrink-0"
-            title="Copy"
+            title={t('common.copy')}
         >
             {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
         </Button>
@@ -42,7 +44,10 @@ function CopyButton({ text }: { text: string }) {
 }
 
 export function IntegrationDialog({ projectId, projectName, baseLanguage, targetLanguages }: IntegrationDialogProps) {
+    const { t } = useI18n();
     const host = typeof window !== 'undefined' ? window.location.origin : 'https://YOUR_HOST';
+    const [authBeforeToken, authAfterToken = ''] = t('integration.authDescription').split('{token}');
+    const [authBetweenTokenEnv, authAfterEnv = ''] = authAfterToken.split('{env}');
 
     const curlJsonAll = `curl -H "Authorization: Bearer YOUR_API_TOKEN" \\
      "${host}/api/projects/${projectId}/pull?format=json" \\
@@ -71,17 +76,17 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
                 <DialogHeader>
                     <DialogTitle className="text-white flex items-center gap-2">
                         <Code className="h-5 w-5 text-zinc-300" />
-                        Developer API — {projectName}
+                        {t('integration.title').replace('{name}', projectName)}
                     </DialogTitle>
                     <DialogDescription className="text-zinc-400">
-                        Use these commands in your CI/CD pipeline or build scripts to pull translations directly.
+                        {t('integration.description')}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-5 mt-2">
                     {/* Project ID */}
                     <div>
-                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Project ID</label>
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">{t('integration.projectId')}</label>
                         <div className="mt-1 flex items-center gap-2 bg-zinc-800 rounded-md px-3 py-2 border border-zinc-700">
                             <code className="text-sm text-zinc-200 font-mono flex-1 select-all">{projectId}</code>
                             <CopyButton text={projectId} />
@@ -91,14 +96,19 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
                     {/* Auth Note */}
                     <div className="bg-amber-950/30 border border-amber-800/50 rounded-md px-3 py-2">
                         <p className="text-xs text-amber-300">
-                            <strong>Authentication:</strong> Replace <code className="text-amber-200">YOUR_API_TOKEN</code> with the <code className="text-amber-200">API_ACCESS_TOKEN</code> from the server&apos;s <code className="text-amber-200">.env</code> file. Ask your admin if you don&apos;t have it.
+                            <strong>{t('integration.authPrefix')}</strong>{' '}
+                            {authBeforeToken}
+                            <code className="text-amber-200">YOUR_API_TOKEN</code>
+                            {authBetweenTokenEnv}
+                            <code className="text-amber-200">API_ACCESS_TOKEN</code>
+                            {authAfterEnv}
                         </p>
                     </div>
 
                     {/* Full JSON Dump */}
                     <div>
                         <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                            Full JSON Dump (all languages)
+                            {t('integration.fullJson')}
                         </label>
                         <div className="mt-1 relative">
                             <pre className="bg-zinc-800 rounded-md px-3 py-2 border border-zinc-700 text-xs text-zinc-300 font-mono overflow-x-auto whitespace-pre-wrap">{curlJsonAll}</pre>
@@ -111,7 +121,7 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
                     {/* Single Language JSON */}
                     <div>
                         <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                            Single Language (JSON)
+                            {t('integration.singleJson')}
                         </label>
                         <div className="mt-1 relative">
                             <pre className="bg-zinc-800 rounded-md px-3 py-2 border border-zinc-700 text-xs text-zinc-300 font-mono overflow-x-auto whitespace-pre-wrap">{curlJsonLang}</pre>
@@ -124,7 +134,7 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
                     {/* Android XML */}
                     <div>
                         <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                            Android XML
+                            {t('integration.androidXml')}
                         </label>
                         <div className="mt-1 relative">
                             <pre className="bg-zinc-800 rounded-md px-3 py-2 border border-zinc-700 text-xs text-zinc-300 font-mono overflow-x-auto whitespace-pre-wrap">{curlXml}</pre>
@@ -136,9 +146,9 @@ export function IntegrationDialog({ projectId, projectName, baseLanguage, target
 
                     {/* Available Languages */}
                     <div>
-                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Available Languages</label>
+                        <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">{t('integration.availableLanguages')}</label>
                         <div className="mt-1 flex flex-wrap gap-1.5">
-                            <span className="px-2 py-0.5 bg-zinc-100/30 text-zinc-200 rounded text-xs font-mono">{baseLanguage} (base)</span>
+                            <span className="px-2 py-0.5 bg-zinc-100/30 text-zinc-200 rounded text-xs font-mono">{baseLanguage} ({t('integration.baseBadge')})</span>
                             {targetLanguages.map(l => (
                                 <span key={l} className="px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded text-xs font-mono border border-zinc-700">{l}</span>
                             ))}

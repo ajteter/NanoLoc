@@ -6,12 +6,14 @@ import { TableHead } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { useBaseLanguagePin } from './BaseLanguagePinContext';
 import { BASE_LANGUAGE_STICKY_CLASS } from './stickyColumnClasses';
+import { useI18n } from '@/lib/i18n/client';
 
 interface BaseLanguageColumnHeadProps {
     displayStr: string;
 }
 
 export function BaseLanguageColumnHead({ displayStr }: BaseLanguageColumnHeadProps) {
+    const { t } = useI18n();
     const { isBaseLanguagePinned, toggleBaseLanguagePin } = useBaseLanguagePin();
     const Icon = isBaseLanguagePinned ? PinOff : Pin;
 
@@ -31,7 +33,7 @@ export function BaseLanguageColumnHead({ displayStr }: BaseLanguageColumnHeadPro
                     aria-pressed={isBaseLanguagePinned}
                     onClick={toggleBaseLanguagePin}
                     className="h-7 w-7 shrink-0 text-zinc-400 hover:text-white hover:bg-zinc-700"
-                    title={isBaseLanguagePinned ? 'Unpin base language column' : 'Pin base language column'}
+                    title={isBaseLanguagePinned ? t('projectDetail.unpinBaseLanguage') : t('projectDetail.pinBaseLanguage')}
                 >
                     <Icon className="h-3.5 w-3.5" />
                 </Button>

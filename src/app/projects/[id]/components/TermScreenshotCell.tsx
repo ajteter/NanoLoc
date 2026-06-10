@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './stickyColumnClasses';
+import { useI18n } from '@/lib/i18n/client';
 
 interface TermScreenshotCellProps {
     projectId: string;
@@ -24,6 +25,7 @@ export function TermScreenshotCell({
     hasScreenshot,
     screenshotUpdatedAt,
 }: TermScreenshotCellProps) {
+    const { t } = useI18n();
     const router = useRouter();
     const inputRef = useRef<HTMLInputElement>(null);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -55,14 +57,14 @@ export function TermScreenshotCell({
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Upload failed');
+                throw new Error(data.error || t('screenshot.uploadFailed'));
             }
 
-            toast.success('Screenshot updated');
+            toast.success(t('screenshot.updated'));
             setIsPreviewOpen(false);
             router.refresh();
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Upload failed';
+            const message = error instanceof Error ? error.message : t('screenshot.uploadFailed');
             toast.error(message);
         } finally {
             setIsUploading(false);
@@ -71,7 +73,7 @@ export function TermScreenshotCell({
 
     const handleDelete = async () => {
         if (!hasScreenshot || isBusy) return;
-        if (!window.confirm('Delete this screenshot?')) return;
+        if (!window.confirm(t('screenshot.deleteConfirm'))) return;
 
         setIsDeleting(true);
         try {
@@ -81,14 +83,14 @@ export function TermScreenshotCell({
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Delete failed');
+                throw new Error(data.error || t('screenshot.deleteFailed'));
             }
 
-            toast.success('Screenshot deleted');
+            toast.success(t('screenshot.deleted'));
             setIsPreviewOpen(false);
             router.refresh();
         } catch (error) {
-            const message = error instanceof Error ? error.message : 'Delete failed';
+            const message = error instanceof Error ? error.message : t('screenshot.deleteFailed');
             toast.error(message);
         } finally {
             setIsDeleting(false);
@@ -114,7 +116,7 @@ export function TermScreenshotCell({
                     'h-8 w-8 text-zinc-400 hover:bg-zinc-800',
                     hasScreenshot ? 'hover:text-emerald-300' : 'hover:text-zinc-200'
                 )}
-                title={hasScreenshot ? 'Preview screenshot' : 'Upload screenshot'}
+                title={hasScreenshot ? t('screenshot.preview') : t('screenshot.upload')}
             >
                 {isUploading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -128,7 +130,7 @@ export function TermScreenshotCell({
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-3xl bg-zinc-950 border-zinc-800 text-white">
                     <DialogHeader>
-                        <DialogTitle>Term screenshot</DialogTitle>
+                        <DialogTitle>{t('projectDetail.termScreenshot')}</DialogTitle>
                         <DialogDescription className="text-zinc-400">
                             {termName}
                         </DialogDescription>
@@ -137,7 +139,7 @@ export function TermScreenshotCell({
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={imageUrl}
-                            alt={`Screenshot for ${termName}`}
+                            alt={t('screenshot.alt').replace('{name}', termName)}
                             className="max-h-[70vh] w-full object-contain"
                         />
                     </div>
@@ -150,7 +152,7 @@ export function TermScreenshotCell({
                             className="border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 hover:text-white"
                         >
                             <Upload className="mr-2 h-4 w-4" />
-                            Replace
+                            {t('common.replace')}
                         </Button>
                         <Button
                             type="button"
@@ -160,7 +162,7 @@ export function TermScreenshotCell({
                             className="border-red-900/70 bg-red-950/30 text-red-300 hover:bg-red-950 hover:text-red-200"
                         >
                             {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                            Delete
+                            {t('common.delete')}
                         </Button>
                     </div>
                 </DialogContent>
