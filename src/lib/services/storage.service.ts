@@ -5,6 +5,7 @@ import { H5JsonParser } from '@/lib/parsers/h5-json';
 import { IOSStringsParser } from '@/lib/parsers/ios-strings';
 import { getProjectLanguageCodes } from '@/lib/language-utils';
 import { AppError } from '@/lib/api/errors';
+import { buildTermSearchWhere, normalizeTermSearch } from '@/lib/services/translation-key-search';
 
 type TranslationValueRow = {
     languageCode: string;
@@ -23,6 +24,11 @@ type CsvExportScope = {
     baseLanguage: string;
     targetLangs: string[];
     allLanguages: string[];
+    search: string;
+};
+
+type CsvExportOptions = {
+    search?: string | null;
 };
 
 type PullExportKeyRow = {
@@ -71,9 +77,17 @@ function escapeXml(s: string) {
         .replace(/'/g, "\\'");
 }
 
-function toSafeExportFileName(projectName: string) {
-    const safeName = projectName.replace(/[^a-z0-9 \-_.]/gi, '_').trim();
-    return `${safeName || 'project'}_export.csv`;
+function toSafeExportFileNamePart(value: string, fallback: string, maxLength = 60) {
+    const safeName = value.replace(/[^a-z0-9 \-_.]/gi, '_').trim();
+    return (safeName || fallback).slice(0, maxLength);
+}
+
+function toSafeExportFileName(projectName: string, search?: string) {
+    const safeProjectName = toSafeExportFileNamePart(projectName, 'project');
+    const safeSearch = search ? toSafeExportFileNamePart(search, 'query', 40) : '';
+    return safeSearch
+        ? `${safeProjectName}_search_${safeSearch}_export.csv`
+        : `${safeProjectName}_export.csv`;
 }
 
 function buildCsvRow(key: CsvExportKeyRow, baseLanguage: string, targetLangs: string[]) {
@@ -87,7 +101,7 @@ function buildCsvRow(key: CsvExportKeyRow, baseLanguage: string, targetLangs: st
     return row.map(escapeCsv).join(',') + '\n';
 }
 
-async function getCsvExportScope(projectId: string): Promise<CsvExportScope> {
+async function getCsvExportScope(projectId: string, options: CsvExportOptions = {}): Promise<CsvExportScope> {
     const project = await prisma.project.findUnique({
         where: { id: projectId },
         select: { name: true, baseLanguage: true, targetLanguages: true },
@@ -96,25 +110,31 @@ async function getCsvExportScope(projectId: string): Promise<CsvExportScope> {
     if (!project) throw new AppError('PROJECT_NOT_FOUND');
 
     const { baseLanguage, targetLanguages: targetLangs, allLanguages } = getProjectLanguageCodes(project);
+    const search = normalizeTermSearch(options.search);
 
     return {
-        fileName: toSafeExportFileName(project.name),
+        fileName: toSafeExportFileName(project.name, search),
         baseLanguage,
         targetLangs,
         allLanguages,
+        search,
     };
 }
 
 async function* generateCsvChunks(projectId: string, scope: CsvExportScope) {
-    const { baseLanguage, targetLangs, allLanguages } = scope;
+    const { baseLanguage, targetLangs, allLanguages, search } = scope;
     const header = ['Key', 'Remarks', baseLanguage, ...targetLangs];
     yield '\uFEFF' + header.map(escapeCsv).join(',') + '\n';
 
     let cursor: string | undefined;
+    const whereClause: Prisma.TranslationKeyWhereInput = {
+        projectId,
+        ...buildTermSearchWhere(search, allLanguages),
+    };
 
     while (true) {
         const keys: CsvExportKeyRow[] = await prisma.translationKey.findMany({
-            where: { projectId },
+            where: whereClause,
             select: {
                 id: true,
                 stringName: true,
@@ -141,9 +161,10 @@ async function* generateCsvChunks(projectId: string, scope: CsvExportScope) {
 }
 
 export async function createCsvExportStream(
-    projectId: string
+    projectId: string,
+    options: CsvExportOptions = {}
 ): Promise<{ stream: ReadableStream<Uint8Array>; fileName: string }> {
-    const scope = await getCsvExportScope(projectId);
+    const scope = await getCsvExportScope(projectId, options);
     const encoder = new TextEncoder();
     const iterator = generateCsvChunks(projectId, scope)[Symbol.asyncIterator]();
 
@@ -562,9 +583,10 @@ export async function importFile(
  * Export a project's translations as a CSV string.
  */
 export async function exportCsv(
-    projectId: string
+    projectId: string,
+    options: CsvExportOptions = {}
 ): Promise<{ csvContent: string; fileName: string }> {
-    const scope = await getCsvExportScope(projectId);
+    const scope = await getCsvExportScope(projectId, options);
     let csvContent = '';
 
     for await (const chunk of generateCsvChunks(projectId, scope)) {

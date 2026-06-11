@@ -339,6 +339,10 @@ const en = {
     'projects.emptyCreate': 'Get started by creating a new project.',
     'search.placeholder': 'Search keys, values, or remarks...',
     'search.clear': 'Clear search',
+    'search.exportResults': 'Export results',
+    'search.exportResultsTooltip': 'Export all rows matching the current search.',
+    'search.exportDisabledNoQuery': 'Enter a search query before exporting results.',
+    'search.exportDisabledNoResults': 'No search results to export.',
 };
 
 export type TranslationKey = keyof typeof en;
@@ -679,6 +683,10 @@ const zhCN: Dictionary = {
     'projects.emptyCreate': '创建一个新项目开始使用。',
     'search.placeholder': '搜索键名、内容或备注...',
     'search.clear': '清空搜索',
+    'search.exportResults': '导出搜索结果',
+    'search.exportResultsTooltip': '导出当前搜索命中的全部行。',
+    'search.exportDisabledNoQuery': '请输入搜索条件后再导出搜索结果。',
+    'search.exportDisabledNoResults': '没有可导出的搜索结果。',
 };
 
 export const dictionaries: Record<Locale, Dictionary> = {
