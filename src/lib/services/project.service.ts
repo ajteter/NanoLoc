@@ -10,6 +10,38 @@ import { buildTermSearchWhere } from '@/lib/services/translation-key-search';
 import type { CreateProjectInput, UpdateProjectInput } from '@/lib/validators/project.schema';
 import type { CreateTermInput, UpdateTermInput } from '@/lib/validators/term.schema';
 
+const termValueSelect = {
+    id: true,
+    languageCode: true,
+    content: true,
+    lastModifiedBy: { select: { name: true, username: true } },
+} satisfies Prisma.TranslationValueSelect;
+
+const termDetailSelect = {
+    id: true,
+    stringName: true,
+    remarks: true,
+    screenshotPath: true,
+    screenshotMimeType: true,
+    screenshotSize: true,
+    screenshotUpdatedAt: true,
+    createdAt: true,
+    updatedAt: true,
+    values: { select: termValueSelect },
+    lastModifiedBy: { select: { name: true, username: true } },
+} satisfies Prisma.TranslationKeySelect;
+
+const termClearSelect = {
+    id: true,
+    stringName: true,
+    values: {
+        select: {
+            id: true,
+            languageCode: true,
+        },
+    },
+} satisfies Prisma.TranslationKeySelect;
+
 // ─── Projects ────────────────────────────────────────────────────────────────
 
 export async function listProjects() {
@@ -115,18 +147,6 @@ export async function listTerms(
     };
 }
 
-export async function countTerms(
-    projectId: string,
-    options: { search?: string; searchLanguages?: string[] } = {}
-) {
-    const whereClause: Prisma.TranslationKeyWhereInput = {
-        projectId,
-        ...buildTermSearchWhere(options.search, options.searchLanguages),
-    };
-
-    return prisma.translationKey.count({ where: whereClause });
-}
-
 export async function createTerm(
     projectId: string,
     data: CreateTermInput,
@@ -166,7 +186,7 @@ export async function createTerm(
                     : [],
             },
         },
-        include: { values: true },
+        select: termDetailSelect,
     });
 }
 
@@ -212,7 +232,7 @@ export async function updateTerm(
 
     return prisma.translationKey.findUnique({
         where: { id: keyId },
-        include: { values: true },
+        select: termDetailSelect,
     });
 }
 
@@ -233,7 +253,7 @@ export async function clearTermTranslations(keyId: string, baseLanguage: string,
     return prisma.$transaction(async (tx) => {
         const term = await tx.translationKey.findUnique({
             where: { id: keyId },
-            include: { values: true },
+            select: termClearSelect,
         });
 
         if (!term) throw new AppError('TERM_NOT_FOUND');
@@ -255,7 +275,7 @@ export async function clearTermTranslations(keyId: string, baseLanguage: string,
 
         return tx.translationKey.findUnique({
             where: { id: keyId },
-            include: { values: true },
+            select: termDetailSelect,
         });
     });
 }

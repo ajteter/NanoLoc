@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { countTerms, getProject, listTerms } from '@/lib/services/project.service';
+import { getProject, listTerms } from '@/lib/services/project.service';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Home, ImageIcon, Settings, Loader2 } from 'lucide-react';
@@ -83,22 +83,8 @@ export default async function ProjectDetailPage({
                 />
             </div>
 
-            <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">
-                <Suspense key={`search-controls-${search}`} fallback={<SearchControlsSkeleton />}>
-                    <SearchControls
-                        projectId={id}
-                        search={search}
-                        searchLanguages={searchLanguages}
-                    />
-                </Suspense>
-                <LanguageColumnSelector
-                    targetLanguages={allTargetLangs}
-                    visibleTargetLanguages={visibleTargetLangs}
-                />
-            </div>
-
             <Suspense key={`${page}-${search}-${isCreating}-${visibleTargetLangs.join(',')}`} fallback={<TableLoadingSkeleton />}>
-                <TermsTable
+                <ProjectTermsWorkspace
                     projectId={id}
                     page={page}
                     limit={limit}
@@ -106,10 +92,72 @@ export default async function ProjectDetailPage({
                     searchLanguages={searchLanguages}
                     isCreating={isCreating}
                     baseLanguage={baseLanguage}
-                    targetLangs={visibleTargetLangs}
+                    allTargetLangs={allTargetLangs}
+                    visibleTargetLangs={visibleTargetLangs}
                 />
             </Suspense>
         </main>
+    );
+}
+
+type TermsData = Awaited<ReturnType<typeof listTerms>>;
+
+interface ProjectTermsWorkspaceProps {
+    projectId: string;
+    page: number;
+    limit: number;
+    search: string;
+    searchLanguages: string[];
+    isCreating: boolean;
+    baseLanguage: string;
+    allTargetLangs: string[];
+    visibleTargetLangs: string[];
+}
+
+async function ProjectTermsWorkspace({
+    projectId,
+    page,
+    limit,
+    search,
+    searchLanguages,
+    isCreating,
+    baseLanguage,
+    allTargetLangs,
+    visibleTargetLangs,
+}: ProjectTermsWorkspaceProps) {
+    const termsData = await listTerms(projectId, {
+        page,
+        limit,
+        search,
+        displayLanguages: [baseLanguage, ...visibleTargetLangs],
+        searchLanguages,
+    });
+
+    return (
+        <>
+            <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">
+                <SearchControls
+                    projectId={projectId}
+                    search={search}
+                    resultCount={termsData.meta.total}
+                />
+                <LanguageColumnSelector
+                    targetLanguages={allTargetLangs}
+                    visibleTargetLanguages={visibleTargetLangs}
+                />
+            </div>
+
+            <TermsTable
+                projectId={projectId}
+                page={page}
+                limit={limit}
+                search={search}
+                isCreating={isCreating}
+                baseLanguage={baseLanguage}
+                targetLangs={visibleTargetLangs}
+                termsData={termsData}
+            />
+        </>
     );
 }
 
@@ -118,21 +166,14 @@ interface TermsTableProps {
     page: number;
     limit: number;
     search: string;
-    searchLanguages: string[];
     isCreating: boolean;
     baseLanguage: string;
     targetLangs: string[];
+    termsData: TermsData;
 }
 
-async function TermsTable({ projectId, page, limit, search, searchLanguages, isCreating, baseLanguage, targetLangs }: TermsTableProps) {
+async function TermsTable({ projectId, page, limit, search, isCreating, baseLanguage, targetLangs, termsData }: TermsTableProps) {
     const { t } = await getServerTranslator();
-    const termsData = await listTerms(projectId, {
-        page,
-        limit,
-        search,
-        displayLanguages: [baseLanguage, ...targetLangs],
-        searchLanguages,
-    });
 
     return (
         <>
@@ -211,14 +252,10 @@ async function TermsTable({ projectId, page, limit, search, searchLanguages, isC
 interface SearchControlsProps {
     projectId: string;
     search: string;
-    searchLanguages: string[];
+    resultCount: number;
 }
 
-async function SearchControls({ projectId, search, searchLanguages }: SearchControlsProps) {
-    const resultCount = search.trim()
-        ? await countTerms(projectId, { search, searchLanguages })
-        : 0;
-
+function SearchControls({ projectId, search, resultCount }: SearchControlsProps) {
     return (
         <div className="flex w-full flex-col gap-3 sm:max-w-2xl sm:flex-row sm:items-center">
             <SearchFilter initialSearch={search} />
@@ -242,9 +279,15 @@ function SearchControlsSkeleton() {
 
 function TableLoadingSkeleton() {
     return (
-        <div className="rounded-md border border-zinc-700 bg-zinc-900/50 overflow-hidden animate-pulse">
-            <div className="h-[400px] flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">
+                <SearchControlsSkeleton />
+                <div className="h-9 w-full animate-pulse rounded-md bg-zinc-800 sm:w-48" />
+            </div>
+            <div className="rounded-md border border-zinc-700 bg-zinc-900/50 overflow-hidden animate-pulse">
+                <div className="h-[400px] flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+                </div>
             </div>
         </div>
     );

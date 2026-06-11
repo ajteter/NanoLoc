@@ -6,6 +6,14 @@ import { IOSStringsParser } from '@/lib/parsers/ios-strings';
 import { getProjectLanguageCodes } from '@/lib/language-utils';
 import { AppError } from '@/lib/api/errors';
 import { buildTermSearchWhere, normalizeTermSearch } from '@/lib/services/translation-key-search';
+import {
+    buildCsvHeader,
+    buildCsvRow,
+    formatFullJsonPullEntry,
+    formatSingleJsonPullEntry,
+    formatXmlStringResource,
+    getTranslationValueMap,
+} from '@/lib/storage-format-contract';
 
 type TranslationValueRow = {
     languageCode: string;
@@ -52,29 +60,8 @@ type PullExportScope = {
 const CSV_EXPORT_BATCH_SIZE = 500;
 const PULL_EXPORT_BATCH_SIZE = 500;
 
-function getTranslationValueMap(key: { values: TranslationValueRow[] }) {
-    return new Map(key.values.map((value) => [value.languageCode, value.content || '']));
-}
-
 function uniqueLanguageCodes(languageCodes: string[]) {
     return Array.from(new Set(languageCodes));
-}
-
-function escapeCsv(str: string | null | undefined) {
-    if (str === null || str === undefined) return '';
-    const s = String(str);
-    if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
-        return `"${s.replace(/"/g, '""')}"`;
-    }
-    return s;
-}
-
-function escapeXml(s: string) {
-    return s.replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, "\\'");
 }
 
 function toSafeExportFileNamePart(value: string, fallback: string, maxLength = 60) {
@@ -88,17 +75,6 @@ function toSafeExportFileName(projectName: string, search?: string) {
     return safeSearch
         ? `${safeProjectName}_search_${safeSearch}_export.csv`
         : `${safeProjectName}_export.csv`;
-}
-
-function buildCsvRow(key: CsvExportKeyRow, baseLanguage: string, targetLangs: string[]) {
-    const values = getTranslationValueMap(key);
-    const row: string[] = [key.stringName, key.remarks || '', values.get(baseLanguage) || ''];
-
-    targetLangs.forEach((lang) => {
-        row.push(values.get(lang) || '');
-    });
-
-    return row.map(escapeCsv).join(',') + '\n';
 }
 
 async function getCsvExportScope(projectId: string, options: CsvExportOptions = {}): Promise<CsvExportScope> {
@@ -123,8 +99,7 @@ async function getCsvExportScope(projectId: string, options: CsvExportOptions = 
 
 async function* generateCsvChunks(projectId: string, scope: CsvExportScope) {
     const { baseLanguage, targetLangs, allLanguages, search } = scope;
-    const header = ['Key', 'Remarks', baseLanguage, ...targetLangs];
-    yield '\uFEFF' + header.map(escapeCsv).join(',') + '\n';
+    yield '\uFEFF' + buildCsvHeader(baseLanguage, targetLangs) + '\n';
 
     let cursor: string | undefined;
     const whereClause: Prisma.TranslationKeyWhereInput = {
@@ -250,34 +225,6 @@ async function* generatePullKeyRows(projectId: string, requestedLanguages: strin
     }
 }
 
-function formatFullJsonPullEntry(key: PullExportKeyRow, allLanguages: string[]) {
-    const values = getTranslationValueMap(key);
-    const entries = allLanguages
-        .map((languageCode) => {
-            const value = values.get(languageCode);
-            return value ? [languageCode, value] as const : null;
-        })
-        .filter((entry): entry is readonly [string, string] => Boolean(entry));
-
-    if (entries.length === 0) {
-        return `  ${JSON.stringify(key.stringName)}: {}`;
-    }
-
-    const fields = entries
-        .map(([languageCode, value]) => `    ${JSON.stringify(languageCode)}: ${JSON.stringify(value)}`)
-        .join(',\n');
-
-    return `  ${JSON.stringify(key.stringName)}: {\n${fields}\n  }`;
-}
-
-function formatSingleJsonPullEntry(key: PullExportKeyRow, targetLang: string, baseLanguage: string) {
-    const values = getTranslationValueMap(key);
-    const value = values.get(targetLang) || values.get(baseLanguage) || '';
-    if (!value) return null;
-
-    return `  ${JSON.stringify(key.stringName)}: ${JSON.stringify(value)}`;
-}
-
 async function* generatePullProjectChunks(projectId: string, scope: PullExportScope) {
     if (scope.format === 'xml') {
         yield '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n';
@@ -285,7 +232,7 @@ async function* generatePullProjectChunks(projectId: string, scope: PullExportSc
         for await (const key of generatePullKeyRows(projectId, scope.requestedLanguages)) {
             const values = getTranslationValueMap(key);
             const value = values.get(scope.targetLang) || values.get(scope.baseLanguage) || '';
-            yield `    <string name="${escapeXml(key.stringName)}">${escapeXml(value)}</string>\n`;
+            yield formatXmlStringResource(key.stringName, value) + '\n';
         }
 
         yield '</resources>\n';
