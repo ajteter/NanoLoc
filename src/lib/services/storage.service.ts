@@ -339,11 +339,22 @@ async function importParsedStrings(
         throw new AppError('USER_NOT_FOUND');
     }
 
-    const stringNames = parsedStrings.map((s) => s.name);
+    const stringNames = Array.from(new Set(parsedStrings.map((s) => s.name)));
 
     const existingKeys = await prisma.translationKey.findMany({
         where: { projectId, stringName: { in: stringNames } },
-        include: { values: true },
+        select: {
+            id: true,
+            stringName: true,
+            remarks: true,
+            values: {
+                where: { languageCode: baseLanguage },
+                select: {
+                    languageCode: true,
+                    content: true,
+                },
+            },
+        },
     });
 
     const existingMap = new Map(existingKeys.map((k) => [k.stringName, k]));
