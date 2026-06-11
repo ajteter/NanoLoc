@@ -11,7 +11,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
 
     try {
-        const { stream, fileName } = await createCsvExportStream(id);
+        const url = new URL(request.url);
+        const search = url.searchParams.get('search');
+        const { stream, fileName } = await createCsvExportStream(id, { search });
 
         return new Response(stream, {
             headers: {

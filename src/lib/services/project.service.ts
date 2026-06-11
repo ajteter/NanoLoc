@@ -1,10 +1,12 @@
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import {
     deleteProjectScreenshotDirectory,
     deleteScreenshotFileByPath,
 } from '@/lib/services/term-screenshot.service';
 import { AppError } from '@/lib/api/errors';
 import { parseTargetLanguages, serializeTargetLanguages } from '@/lib/language-utils';
+import { buildTermSearchWhere } from '@/lib/services/translation-key-search';
 import type { CreateProjectInput, UpdateProjectInput } from '@/lib/validators/project.schema';
 import type { CreateTermInput, UpdateTermInput } from '@/lib/validators/term.schema';
 
@@ -59,30 +61,20 @@ export async function deleteProject(id: string) {
 
 export async function listTerms(
     projectId: string,
-    options: { page: number; limit: number; search: string; displayLanguages?: string[] }
-) {
-    const { page, limit, search, displayLanguages } = options;
-
-    const whereClause: Record<string, unknown> = { projectId };
-
-    if (search) {
-        const valueSearchClause = displayLanguages?.length
-            ? {
-                values: {
-                    some: {
-                        languageCode: { in: displayLanguages },
-                        content: { contains: search },
-                    },
-                },
-            }
-            : { values: { some: { content: { contains: search } } } };
-
-        whereClause.OR = [
-            { stringName: { contains: search } },
-            { remarks: { contains: search } },
-            valueSearchClause,
-        ];
+    options: {
+        page: number;
+        limit: number;
+        search: string;
+        displayLanguages?: string[];
+        searchLanguages?: string[];
     }
+) {
+    const { page, limit, search, displayLanguages, searchLanguages } = options;
+
+    const whereClause: Prisma.TranslationKeyWhereInput = {
+        projectId,
+        ...buildTermSearchWhere(search, searchLanguages ?? displayLanguages),
+    };
 
     const [total, keys] = await prisma.$transaction([
         prisma.translationKey.count({ where: whereClause }),
@@ -121,6 +113,18 @@ export async function listTerms(
         data: keys,
         meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+}
+
+export async function countTerms(
+    projectId: string,
+    options: { search?: string; searchLanguages?: string[] } = {}
+) {
+    const whereClause: Prisma.TranslationKeyWhereInput = {
+        projectId,
+        ...buildTermSearchWhere(options.search, options.searchLanguages),
+    };
+
+    return prisma.translationKey.count({ where: whereClause });
 }
 
 export async function createTerm(

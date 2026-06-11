@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { getProject, listTerms } from '@/lib/services/project.service';
+import { countTerms, getProject, listTerms } from '@/lib/services/project.service';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Home, ImageIcon, Settings, Loader2 } from 'lucide-react';
@@ -16,6 +16,7 @@ import { TranslateColumnHead } from './components/TranslateColumnHead';
 import { BaseLanguageColumnHead } from './components/BaseLanguageColumnHead';
 import { BaseLanguagePinProvider } from './components/BaseLanguagePinContext';
 import { LanguageColumnSelector } from './components/LanguageColumnSelector';
+import { SearchResultsExportButton } from './components/SearchResultsExportButton';
 import { SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './components/stickyColumnClasses';
 import { getLanguageDisplayName, getProjectLanguageCodes, parseVisibleTargetLanguages } from '@/lib/language-utils';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,7 @@ export default async function ProjectDetailPage({
     const { t } = await getServerTranslator();
     const { baseLanguage, targetLanguages: allTargetLangs } = getProjectLanguageCodes(project);
     const visibleTargetLangs = parseVisibleTargetLanguages(resolvedParams?.langs, allTargetLangs);
+    const searchLanguages = [baseLanguage, ...allTargetLangs];
 
     return (
         <main className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8 py-8 relative">
@@ -82,7 +84,13 @@ export default async function ProjectDetailPage({
             </div>
 
             <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-end sm:items-center">
-                <SearchFilter initialSearch={search} />
+                <Suspense key={`search-controls-${search}`} fallback={<SearchControlsSkeleton />}>
+                    <SearchControls
+                        projectId={id}
+                        search={search}
+                        searchLanguages={searchLanguages}
+                    />
+                </Suspense>
                 <LanguageColumnSelector
                     targetLanguages={allTargetLangs}
                     visibleTargetLanguages={visibleTargetLangs}
@@ -95,6 +103,7 @@ export default async function ProjectDetailPage({
                     page={page}
                     limit={limit}
                     search={search}
+                    searchLanguages={searchLanguages}
                     isCreating={isCreating}
                     baseLanguage={baseLanguage}
                     targetLangs={visibleTargetLangs}
@@ -109,18 +118,20 @@ interface TermsTableProps {
     page: number;
     limit: number;
     search: string;
+    searchLanguages: string[];
     isCreating: boolean;
     baseLanguage: string;
     targetLangs: string[];
 }
 
-async function TermsTable({ projectId, page, limit, search, isCreating, baseLanguage, targetLangs }: TermsTableProps) {
+async function TermsTable({ projectId, page, limit, search, searchLanguages, isCreating, baseLanguage, targetLangs }: TermsTableProps) {
     const { t } = await getServerTranslator();
     const termsData = await listTerms(projectId, {
         page,
         limit,
         search,
         displayLanguages: [baseLanguage, ...targetLangs],
+        searchLanguages,
     });
 
     return (
@@ -194,6 +205,38 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
                 <PaginationControls total={termsData.meta.total} page={page} limit={limit} totalPages={termsData.meta.totalPages} />
             </div>
         </>
+    );
+}
+
+interface SearchControlsProps {
+    projectId: string;
+    search: string;
+    searchLanguages: string[];
+}
+
+async function SearchControls({ projectId, search, searchLanguages }: SearchControlsProps) {
+    const resultCount = search.trim()
+        ? await countTerms(projectId, { search, searchLanguages })
+        : 0;
+
+    return (
+        <div className="flex w-full flex-col gap-3 sm:max-w-2xl sm:flex-row sm:items-center">
+            <SearchFilter initialSearch={search} />
+            <SearchResultsExportButton
+                projectId={projectId}
+                search={search}
+                resultCount={resultCount}
+            />
+        </div>
+    );
+}
+
+function SearchControlsSkeleton() {
+    return (
+        <div className="flex w-full flex-col gap-3 sm:max-w-2xl sm:flex-row sm:items-center">
+            <div className="h-9 w-full max-w-sm animate-pulse rounded-md bg-zinc-800" />
+            <div className="h-9 w-full animate-pulse rounded-md bg-zinc-800 sm:w-32" />
+        </div>
     );
 }
 
