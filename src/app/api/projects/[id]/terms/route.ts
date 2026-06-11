@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { listTerms, createTerm, getProject, ConflictError } from '@/lib/services/project.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { createTermSchema } from '@/lib/validators/term.schema';
+import { getProjectLanguageCodes } from '@/lib/language-utils';
 import { jsonError, jsonErrorFromUnknown, jsonValidationError } from '@/lib/api/responses';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +23,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const search = searchParams.get('search') || '';
 
     try {
-        const result = await listTerms(id, { page, limit, search });
+        const { allLanguages } = getProjectLanguageCodes(project);
+        const result = await listTerms(id, {
+            page,
+            limit,
+            search,
+            displayLanguages: allLanguages,
+            searchLanguages: allLanguages,
+        });
         return NextResponse.json(result);
     } catch (error) {
         console.error("Fetch terms error:", error);
