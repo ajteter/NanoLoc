@@ -11,12 +11,135 @@ type TranslationValueRow = {
     content: string | null;
 };
 
+type CsvExportKeyRow = {
+    id: string;
+    stringName: string;
+    remarks: string | null;
+    values: TranslationValueRow[];
+};
+
+type CsvExportScope = {
+    fileName: string;
+    baseLanguage: string;
+    targetLangs: string[];
+    allLanguages: string[];
+};
+
+const CSV_EXPORT_BATCH_SIZE = 500;
+
 function getTranslationValueMap(key: { values: TranslationValueRow[] }) {
     return new Map(key.values.map((value) => [value.languageCode, value.content || '']));
 }
 
 function uniqueLanguageCodes(languageCodes: string[]) {
     return Array.from(new Set(languageCodes));
+}
+
+function escapeCsv(str: string | null | undefined) {
+    if (str === null || str === undefined) return '';
+    const s = String(str);
+    if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+        return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+}
+
+function toSafeExportFileName(projectName: string) {
+    const safeName = projectName.replace(/[^a-z0-9 \-_.]/gi, '_').trim();
+    return `${safeName || 'project'}_export.csv`;
+}
+
+function buildCsvRow(key: CsvExportKeyRow, baseLanguage: string, targetLangs: string[]) {
+    const values = getTranslationValueMap(key);
+    const row: string[] = [key.stringName, key.remarks || '', values.get(baseLanguage) || ''];
+
+    targetLangs.forEach((lang) => {
+        row.push(values.get(lang) || '');
+    });
+
+    return row.map(escapeCsv).join(',') + '\n';
+}
+
+async function getCsvExportScope(projectId: string): Promise<CsvExportScope> {
+    const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { name: true, baseLanguage: true, targetLanguages: true },
+    });
+
+    if (!project) throw new AppError('PROJECT_NOT_FOUND');
+
+    const { baseLanguage, targetLanguages: targetLangs, allLanguages } = getProjectLanguageCodes(project);
+
+    return {
+        fileName: toSafeExportFileName(project.name),
+        baseLanguage,
+        targetLangs,
+        allLanguages,
+    };
+}
+
+async function* generateCsvChunks(projectId: string, scope: CsvExportScope) {
+    const { baseLanguage, targetLangs, allLanguages } = scope;
+    const header = ['Key', 'Remarks', baseLanguage, ...targetLangs];
+    yield '\uFEFF' + header.map(escapeCsv).join(',') + '\n';
+
+    let cursor: string | undefined;
+
+    while (true) {
+        const keys: CsvExportKeyRow[] = await prisma.translationKey.findMany({
+            where: { projectId },
+            select: {
+                id: true,
+                stringName: true,
+                remarks: true,
+                values: {
+                    where: { languageCode: { in: allLanguages } },
+                    select: { languageCode: true, content: true },
+                },
+            },
+            orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+            take: CSV_EXPORT_BATCH_SIZE,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        });
+
+        if (keys.length === 0) break;
+
+        for (const key of keys) {
+            yield buildCsvRow(key, baseLanguage, targetLangs);
+        }
+
+        cursor = keys[keys.length - 1]?.id;
+        if (keys.length < CSV_EXPORT_BATCH_SIZE) break;
+    }
+}
+
+export async function createCsvExportStream(
+    projectId: string
+): Promise<{ stream: ReadableStream<Uint8Array>; fileName: string }> {
+    const scope = await getCsvExportScope(projectId);
+    const encoder = new TextEncoder();
+    const iterator = generateCsvChunks(projectId, scope)[Symbol.asyncIterator]();
+
+    const stream = new ReadableStream<Uint8Array>({
+        async pull(controller) {
+            try {
+                const next = await iterator.next();
+                if (next.done) {
+                    controller.close();
+                    return;
+                }
+
+                controller.enqueue(encoder.encode(next.value));
+            } catch (error) {
+                controller.error(error);
+            }
+        },
+        async cancel() {
+            await iterator.return?.();
+        },
+    });
+
+    return { stream, fileName: scope.fileName };
 }
 
 /**
@@ -248,60 +371,14 @@ export async function importFile(
 export async function exportCsv(
     projectId: string
 ): Promise<{ csvContent: string; fileName: string }> {
-    const project = await prisma.project.findUnique({
-        where: { id: projectId },
-        select: { name: true, baseLanguage: true, targetLanguages: true },
-    });
+    const scope = await getCsvExportScope(projectId);
+    let csvContent = '';
 
-    if (!project) throw new AppError('PROJECT_NOT_FOUND');
+    for await (const chunk of generateCsvChunks(projectId, scope)) {
+        csvContent += chunk;
+    }
 
-    const { baseLanguage, targetLanguages: targetLangs, allLanguages } = getProjectLanguageCodes(project);
-
-    const keys = await prisma.translationKey.findMany({
-        where: { projectId },
-        select: {
-            stringName: true,
-            remarks: true,
-            values: {
-                where: { languageCode: { in: allLanguages } },
-                select: { languageCode: true, content: true },
-            },
-        },
-        orderBy: { sortOrder: 'asc' },
-    });
-
-    const header = ['Key', 'Remarks', baseLanguage, ...targetLangs];
-
-    const rows = keys.map((key) => {
-        const values = getTranslationValueMap(key);
-        const row: string[] = [key.stringName, key.remarks || ''];
-
-        row.push(values.get(baseLanguage) || '');
-
-        targetLangs.forEach((lang) => {
-            row.push(values.get(lang) || '');
-        });
-
-        return row;
-    });
-
-    const escapeCsv = (str: string) => {
-        if (str === null || str === undefined) return '';
-        const s = String(str);
-        if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
-            return `"${s.replace(/"/g, '""')}"`;
-        }
-        return s;
-    };
-
-    let csvContent = '\uFEFF' + header.map(escapeCsv).join(',') + '\n';
-    rows.forEach((r) => {
-        csvContent += r.map(escapeCsv).join(',') + '\n';
-    });
-
-    const safeName = project.name.replace(/[^a-z0-9 \-_.]/gi, '_').trim();
-
-    return { csvContent, fileName: `${safeName}_export.csv` };
+    return { csvContent, fileName: scope.fileName };
 }
 
 /**
