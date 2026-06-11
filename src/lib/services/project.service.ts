@@ -88,12 +88,26 @@ export async function listTerms(
         prisma.translationKey.count({ where: whereClause }),
         prisma.translationKey.findMany({
             where: whereClause,
-            include: {
+            select: {
+                id: true,
+                stringName: true,
+                remarks: true,
+                screenshotPath: true,
+                screenshotMimeType: true,
+                screenshotSize: true,
+                screenshotUpdatedAt: true,
+                createdAt: true,
+                updatedAt: true,
                 values: {
                     ...(displayLanguages?.length
                         ? { where: { languageCode: { in: displayLanguages } } }
                         : {}),
-                    include: { lastModifiedBy: { select: { name: true, username: true } } },
+                    select: {
+                        id: true,
+                        languageCode: true,
+                        content: true,
+                        lastModifiedBy: { select: { name: true, username: true } },
+                    },
                 },
                 lastModifiedBy: { select: { name: true, username: true } },
             },
