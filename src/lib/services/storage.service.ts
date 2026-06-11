@@ -25,7 +25,26 @@ type CsvExportScope = {
     allLanguages: string[];
 };
 
+type PullExportKeyRow = {
+    id: string;
+    stringName: string;
+    values: TranslationValueRow[];
+};
+
+type PullProjectFormat = 'json' | 'xml';
+
+type PullExportScope = {
+    format: PullProjectFormat;
+    isFullJson: boolean;
+    baseLanguage: string;
+    targetLang: string;
+    allLanguages: string[];
+    requestedLanguages: string[];
+    contentType: string;
+};
+
 const CSV_EXPORT_BATCH_SIZE = 500;
+const PULL_EXPORT_BATCH_SIZE = 500;
 
 function getTranslationValueMap(key: { values: TranslationValueRow[] }) {
     return new Map(key.values.map((value) => [value.languageCode, value.content || '']));
@@ -42,6 +61,14 @@ function escapeCsv(str: string | null | undefined) {
         return `"${s.replace(/"/g, '""')}"`;
     }
     return s;
+}
+
+function escapeXml(s: string) {
+    return s.replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, "\\'");
 }
 
 function toSafeExportFileName(projectName: string) {
@@ -140,6 +167,161 @@ export async function createCsvExportStream(
     });
 
     return { stream, fileName: scope.fileName };
+}
+
+async function getPullExportScope(
+    projectId: string,
+    format: PullProjectFormat,
+    lang?: string
+): Promise<PullExportScope> {
+    const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { baseLanguage: true, targetLanguages: true },
+    });
+
+    if (!project) throw new AppError('PROJECT_NOT_FOUND');
+
+    const { baseLanguage, allLanguages } = getProjectLanguageCodes(project);
+    const targetLang = lang || baseLanguage;
+    const isFullJson = format === 'json' && !lang;
+    const requestedLanguages = isFullJson
+        ? allLanguages
+        : uniqueLanguageCodes([targetLang, baseLanguage]);
+
+    return {
+        format,
+        isFullJson,
+        baseLanguage,
+        targetLang,
+        allLanguages,
+        requestedLanguages,
+        contentType: format === 'xml' ? 'application/xml' : 'application/json',
+    };
+}
+
+async function* generatePullKeyRows(projectId: string, requestedLanguages: string[]) {
+    let cursor: string | undefined;
+
+    while (true) {
+        const keys: PullExportKeyRow[] = await prisma.translationKey.findMany({
+            where: { projectId },
+            select: {
+                id: true,
+                stringName: true,
+                values: {
+                    where: { languageCode: { in: requestedLanguages } },
+                    select: { languageCode: true, content: true },
+                },
+            },
+            orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+            take: PULL_EXPORT_BATCH_SIZE,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        });
+
+        if (keys.length === 0) break;
+
+        for (const key of keys) {
+            yield key;
+        }
+
+        cursor = keys[keys.length - 1]?.id;
+        if (keys.length < PULL_EXPORT_BATCH_SIZE) break;
+    }
+}
+
+function formatFullJsonPullEntry(key: PullExportKeyRow, allLanguages: string[]) {
+    const values = getTranslationValueMap(key);
+    const entries = allLanguages
+        .map((languageCode) => {
+            const value = values.get(languageCode);
+            return value ? [languageCode, value] as const : null;
+        })
+        .filter((entry): entry is readonly [string, string] => Boolean(entry));
+
+    if (entries.length === 0) {
+        return `  ${JSON.stringify(key.stringName)}: {}`;
+    }
+
+    const fields = entries
+        .map(([languageCode, value]) => `    ${JSON.stringify(languageCode)}: ${JSON.stringify(value)}`)
+        .join(',\n');
+
+    return `  ${JSON.stringify(key.stringName)}: {\n${fields}\n  }`;
+}
+
+function formatSingleJsonPullEntry(key: PullExportKeyRow, targetLang: string, baseLanguage: string) {
+    const values = getTranslationValueMap(key);
+    const value = values.get(targetLang) || values.get(baseLanguage) || '';
+    if (!value) return null;
+
+    return `  ${JSON.stringify(key.stringName)}: ${JSON.stringify(value)}`;
+}
+
+async function* generatePullProjectChunks(projectId: string, scope: PullExportScope) {
+    if (scope.format === 'xml') {
+        yield '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n';
+
+        for await (const key of generatePullKeyRows(projectId, scope.requestedLanguages)) {
+            const values = getTranslationValueMap(key);
+            const value = values.get(scope.targetLang) || values.get(scope.baseLanguage) || '';
+            yield `    <string name="${escapeXml(key.stringName)}">${escapeXml(value)}</string>\n`;
+        }
+
+        yield '</resources>\n';
+        return;
+    }
+
+    let hasEntries = false;
+
+    for await (const key of generatePullKeyRows(projectId, scope.requestedLanguages)) {
+        const entry = scope.isFullJson
+            ? formatFullJsonPullEntry(key, scope.allLanguages)
+            : formatSingleJsonPullEntry(key, scope.targetLang, scope.baseLanguage);
+
+        if (!entry) continue;
+
+        if (!hasEntries) {
+            yield '{\n';
+            hasEntries = true;
+        } else {
+            yield ',\n';
+        }
+
+        yield entry;
+    }
+
+    yield hasEntries ? '\n}' : '{}';
+}
+
+export async function createPullProjectTranslationsStream(
+    projectId: string,
+    format: PullProjectFormat,
+    lang?: string
+): Promise<{ stream: ReadableStream<Uint8Array>; contentType: string }> {
+    const scope = await getPullExportScope(projectId, format, lang);
+    const encoder = new TextEncoder();
+    const iterator = generatePullProjectChunks(projectId, scope)[Symbol.asyncIterator]();
+
+    const stream = new ReadableStream<Uint8Array>({
+        async pull(controller) {
+            try {
+                const next = await iterator.next();
+                if (next.done) {
+                    controller.close();
+                    return;
+                }
+
+                controller.enqueue(encoder.encode(next.value));
+            } catch (error) {
+                controller.error(error);
+            }
+        },
+        async cancel() {
+            await iterator.return?.();
+        },
+    });
+
+    return { stream, contentType: scope.contentType };
 }
 
 /**
@@ -392,75 +574,12 @@ export async function pullProjectTranslations(
     format: 'json' | 'xml',
     lang?: string
 ): Promise<{ data: string; contentType: string }> {
-    const project = await prisma.project.findUnique({
-        where: { id: projectId },
-        select: { baseLanguage: true, targetLanguages: true },
-    });
+    const scope = await getPullExportScope(projectId, format, lang);
+    let data = '';
 
-    if (!project) throw new AppError('PROJECT_NOT_FOUND');
-
-    const { baseLanguage, allLanguages } = getProjectLanguageCodes(project);
-    const targetLang = lang || baseLanguage;
-    const requestedLanguages = format === 'json' && !lang
-        ? allLanguages
-        : uniqueLanguageCodes([targetLang, baseLanguage]);
-
-    const keys = await prisma.translationKey.findMany({
-        where: { projectId },
-        select: {
-            stringName: true,
-            values: {
-                where: { languageCode: { in: requestedLanguages } },
-                select: { languageCode: true, content: true },
-            },
-        },
-        orderBy: { sortOrder: 'asc' },
-    });
-
-    if (format === 'json' && !lang) {
-        // Mode A: Full dump
-        const result: Record<string, Record<string, string>> = {};
-        for (const key of keys) {
-            const values = getTranslationValueMap(key);
-            const entry: Record<string, string> = {};
-            for (const l of allLanguages) {
-                const val = values.get(l);
-                if (val) entry[l] = val;
-            }
-            result[key.stringName] = entry;
-        }
-        return { data: JSON.stringify(result, null, 2), contentType: 'application/json' };
+    for await (const chunk of generatePullProjectChunks(projectId, scope)) {
+        data += chunk;
     }
 
-    if (format === 'json' && lang) {
-        // Mode B: Single language JSON with base fallback
-        const result: Record<string, string> = {};
-        for (const key of keys) {
-            const values = getTranslationValueMap(key);
-            const val = values.get(lang) || values.get(baseLanguage) || '';
-            if (val) result[key.stringName] = val;
-        }
-        return { data: JSON.stringify(result, null, 2), contentType: 'application/json' };
-    }
-
-    if (format === 'xml') {
-        // Mode C: Android XML
-        const escapeXml = (s: string) =>
-            s.replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, "\\'");
-
-        let xml = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n';
-        for (const key of keys) {
-            const values = getTranslationValueMap(key);
-            const val = values.get(targetLang) || values.get(baseLanguage) || '';
-            xml += `    <string name="${escapeXml(key.stringName)}">${escapeXml(val)}</string>\n`;
-        }
-        xml += '</resources>\n';
-        return { data: xml, contentType: 'application/xml' };
-    }
-
-    throw new Error('Invalid format');
+    return { data, contentType: scope.contentType };
 }
