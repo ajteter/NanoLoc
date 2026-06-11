@@ -1,4 +1,4 @@
-import { pullProjectTranslations } from '@/lib/services/storage.service';
+import { createPullProjectTranslationsStream } from '@/lib/services/storage.service';
 import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -25,9 +25,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     try {
-        const { data, contentType } = await pullProjectTranslations(id, format, lang);
+        const { stream, contentType } = await createPullProjectTranslationsStream(id, format, lang);
 
-        return new Response(data, {
+        return new Response(stream, {
             status: 200,
             headers: {
                 'Content-Type': contentType,
