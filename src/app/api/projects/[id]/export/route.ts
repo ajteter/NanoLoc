@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { exportCsv } from '@/lib/services/storage.service';
+import { createCsvExportStream } from '@/lib/services/storage.service';
 import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -12,12 +11,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
 
     try {
-        const { csvContent, fileName } = await exportCsv(id);
+        const { stream, fileName } = await createCsvExportStream(id);
 
-        return new NextResponse(new TextEncoder().encode(csvContent), {
+        return new Response(stream, {
             headers: {
                 'Content-Type': 'text/csv; charset=utf-8',
                 'Content-Disposition': `attachment; filename="${fileName}"`,
+                'Cache-Control': 'no-store',
             },
         });
     } catch (error) {
