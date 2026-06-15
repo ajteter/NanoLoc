@@ -251,6 +251,12 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
     };
 
     const baseValue = term.values.find(v => v.languageCode === baseLanguage)?.content;
+    const baseValueMatchesSearch = isMatch(baseValue);
+    const baseLanguageCellClassName = cn(
+        "whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs w-64 min-w-[16rem] align-top cursor-pointer transition-colors",
+        isBaseLanguagePinned ? [BASE_LANGUAGE_STICKY_CLASS, "hover:bg-zinc-800"] : "hover:bg-zinc-700/30",
+        baseValueMatchesSearch && (isBaseLanguagePinned ? "bg-emerald-950 hover:bg-emerald-900" : "bg-emerald-500/10 hover:bg-emerald-500/20")
+    );
     const lastUpdated = term.updatedAt ? new Date(term.updatedAt).toLocaleString() : '';
 
     if (isEditing) {
@@ -487,7 +493,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                 screenshotUpdatedAt={term.screenshotUpdatedAt}
             />
             <td
-                className={cn("whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs w-64 min-w-[16rem] align-top cursor-pointer hover:bg-zinc-700/30 transition-colors", isBaseLanguagePinned && BASE_LANGUAGE_STICKY_CLASS, isMatch(baseValue) && "bg-emerald-500/10 hover:bg-emerald-500/20")}
+                className={baseLanguageCellClassName}
                 onClick={() => enterEditMode(baseLanguage)}
             >
                 <TooltipProvider>
