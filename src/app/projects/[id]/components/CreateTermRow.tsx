@@ -9,7 +9,17 @@ import { createTermAction } from '@/lib/actions/term.actions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useBaseLanguagePin } from './BaseLanguagePinContext';
-import { BASE_LANGUAGE_STICKY_CLASS, SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './stickyColumnClasses';
+import {
+    ACTIONS_COLUMN_WIDTH_CLASS,
+    ACTIONS_STICKY_CLASS,
+    BASE_LANGUAGE_STICKY_CLASS,
+    KEY_COLUMN_WIDTH_CLASS,
+    KEY_STICKY_CLASS,
+    REMARKS_COLUMN_WIDTH_CLASS,
+    REMARKS_STICKY_CLASS,
+    SCREENSHOT_COLUMN_WIDTH_CLASS,
+    SCREENSHOT_STICKY_CLASS,
+} from './stickyColumnClasses';
 import { useI18n } from '@/lib/i18n/client';
 import { getLocalizedApiError } from '@/lib/api/errors';
 
@@ -60,7 +70,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
 
     return (
         <tr className="bg-zinc-900 border-b border-zinc-400/30">
-            <td className="p-4 align-top border-r border-zinc-800 bg-zinc-900 sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+            <td className={cn("p-4 align-top", ACTIONS_COLUMN_WIDTH_CLASS, ACTIONS_STICKY_CLASS)}>
                 <div className="flex gap-1 opacity-100">
                     <Button
                         variant="ghost" size="icon"
@@ -81,7 +91,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                     </Button>
                 </div>
             </td>
-            <td className="p-4 align-top border-r border-zinc-800 bg-zinc-900 sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+            <td className={cn("p-4 align-top", KEY_COLUMN_WIDTH_CLASS, KEY_STICKY_CLASS)}>
                 <Input
                     type="text"
                     value={formData.stringName}
@@ -91,7 +101,7 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                     autoFocus
                 />
             </td>
-            <td className="p-4 align-top border-r border-zinc-800 bg-zinc-900 sticky left-[300px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+            <td className={cn("p-4 align-top", REMARKS_COLUMN_WIDTH_CLASS, REMARKS_STICKY_CLASS)}>
                 <Textarea
                     value={formData.remarks}
                     onChange={(e) => setFormData(p => ({ ...p, remarks: e.target.value }))}

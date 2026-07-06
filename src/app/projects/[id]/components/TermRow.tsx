@@ -15,7 +15,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { updateTermAction, deleteTermAction, clearTermTranslationsAction } from '@/lib/actions/term.actions';
 import { cn } from '@/lib/utils';
 import { useBaseLanguagePin } from './BaseLanguagePinContext';
-import { BASE_LANGUAGE_STICKY_CLASS } from './stickyColumnClasses';
+import {
+    ACTIONS_COLUMN_WIDTH_CLASS,
+    ACTIONS_STICKY_CLASS,
+    BASE_LANGUAGE_STICKY_CLASS,
+    KEY_COLUMN_WIDTH_CLASS,
+    KEY_STICKY_CLASS,
+    REMARKS_COLUMN_WIDTH_CLASS,
+    REMARKS_STICKY_CLASS,
+    STICKY_SEARCH_MATCH_CLASS,
+} from './stickyColumnClasses';
 import { TermScreenshotCell } from './TermScreenshotCell';
 import { useI18n } from '@/lib/i18n/client';
 import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
@@ -255,14 +264,14 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
     const baseLanguageCellClassName = cn(
         "whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs w-64 min-w-[16rem] align-top cursor-pointer transition-colors",
         isBaseLanguagePinned ? [BASE_LANGUAGE_STICKY_CLASS, "hover:bg-zinc-800"] : "hover:bg-zinc-700/30",
-        baseValueMatchesSearch && (isBaseLanguagePinned ? "bg-emerald-950 hover:bg-emerald-900" : "bg-emerald-500/10 hover:bg-emerald-500/20")
+        baseValueMatchesSearch && (isBaseLanguagePinned ? STICKY_SEARCH_MATCH_CLASS : "bg-emerald-500/10 hover:bg-emerald-500/20")
     );
     const lastUpdated = term.updatedAt ? new Date(term.updatedAt).toLocaleString() : '';
 
     if (isEditing) {
         return (
             <tr className="bg-zinc-800/50 hover:bg-zinc-800/70 transition-colors">
-                <td className="p-4 align-top border-r border-zinc-800 bg-zinc-900 sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                <td className={cn("p-4 align-top", ACTIONS_COLUMN_WIDTH_CLASS, ACTIONS_STICKY_CLASS)}>
                     <div className="flex gap-1">
                         <Button
                             variant="ghost" size="icon"
@@ -283,14 +292,14 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                         </Button>
                     </div>
                 </td>
-                <td className="p-4 align-top border-r border-zinc-800 bg-zinc-900 sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                <td className={cn("p-4 align-top", KEY_COLUMN_WIDTH_CLASS, KEY_STICKY_CLASS)}>
                     <Input
                         value={formData.stringName}
                         onChange={(e) => setFormData(p => ({ ...p, stringName: e.target.value }))}
                         className="bg-zinc-900 border-zinc-700 text-white h-auto py-2 w-full"
                     />
                 </td>
-                <td className="p-4 align-top border-r border-zinc-800 bg-zinc-900 sticky left-[300px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">
+                <td className={cn("p-4 align-top", REMARKS_COLUMN_WIDTH_CLASS, REMARKS_STICKY_CLASS)}>
                     <Textarea
                         value={formData.remarks}
                         onChange={(e) => setFormData(p => ({ ...p, remarks: e.target.value }))}
@@ -347,7 +356,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
 
     return (
         <tr className="hover:bg-zinc-800/50 transition-colors group border-b border-zinc-800 last:border-0 relative">
-            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[100px] min-w-[100px]">
+            <td className={cn("relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 align-top group-hover:bg-zinc-800 transition-colors", ACTIONS_COLUMN_WIDTH_CLASS, ACTIONS_STICKY_CLASS)}>
                 {deleteConfirm ? (
                     <div className="flex flex-col gap-1 min-w-[180px]">
                         <p className="text-xs text-red-400">
@@ -449,7 +458,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     </div>
                 )}
             </td>
-            <td className={cn("whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6 max-w-xs break-all truncate align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]", isMatch(term.stringName) && "bg-emerald-500/10 group-hover:bg-emerald-500/20")}>
+            <td className={cn("whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6 break-all truncate align-top group-hover:bg-zinc-800 transition-colors", KEY_COLUMN_WIDTH_CLASS, KEY_STICKY_CLASS, isMatch(term.stringName) && STICKY_SEARCH_MATCH_CLASS)}>
                 <div className="truncate" title={term.stringName}>
                     {searchQuery ? (
                         <Highlighter
@@ -462,7 +471,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                 </div>
                 <div className="text-xs text-zinc-600 mt-1 font-mono">{lastUpdated}</div>
             </td>
-            <td className={cn("px-3 py-4 text-sm text-zinc-400 max-w-xs truncate align-top border-r border-zinc-800 bg-zinc-900 group-hover:bg-zinc-800 transition-colors sticky left-[300px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] w-[200px] min-w-[200px]", isMatch(term.remarks) && "bg-emerald-500/10 group-hover:bg-emerald-500/20")}>
+            <td className={cn("px-3 py-4 text-sm text-zinc-400 truncate align-top group-hover:bg-zinc-800 transition-colors", REMARKS_COLUMN_WIDTH_CLASS, REMARKS_STICKY_CLASS, isMatch(term.remarks) && STICKY_SEARCH_MATCH_CLASS)}>
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>

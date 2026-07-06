@@ -17,7 +17,16 @@ import { BaseLanguageColumnHead } from './components/BaseLanguageColumnHead';
 import { BaseLanguagePinProvider } from './components/BaseLanguagePinContext';
 import { LanguageColumnSelector } from './components/LanguageColumnSelector';
 import { SearchResultsExportButton } from './components/SearchResultsExportButton';
-import { SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS } from './components/stickyColumnClasses';
+import {
+    ACTIONS_COLUMN_WIDTH_CLASS,
+    ACTIONS_STICKY_CLASS,
+    KEY_COLUMN_WIDTH_CLASS,
+    KEY_STICKY_CLASS,
+    REMARKS_COLUMN_WIDTH_CLASS,
+    REMARKS_STICKY_CLASS,
+    SCREENSHOT_COLUMN_WIDTH_CLASS,
+    SCREENSHOT_STICKY_CLASS,
+} from './components/stickyColumnClasses';
 import { getLanguageDisplayName, getProjectLanguageCodes, parseVisibleTargetLanguages } from '@/lib/language-utils';
 import { cn } from '@/lib/utils';
 import { getServerTranslator } from '@/lib/i18n/server';
@@ -185,11 +194,21 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
                 <div className="overflow-x-auto">
                     <BaseLanguagePinProvider projectId={projectId}>
                         <Table>
+                            <colgroup>
+                                <col style={{ width: 100 }} />
+                                <col style={{ width: 200 }} />
+                                <col style={{ width: 200 }} />
+                                <col style={{ width: 64 }} />
+                                <col style={{ width: 256 }} />
+                                {targetLangs.map((lang: string) => (
+                                    <col key={lang} style={{ width: 256 }} />
+                                ))}
+                            </colgroup>
                             <TableHeader className="bg-zinc-800">
                                 <TableRow className="border-zinc-700 hover:bg-zinc-800">
-                                    <TableHead className="w-[100px] min-w-[100px] bg-zinc-900 border-r border-zinc-800 sticky left-0 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">{t('common.actions')}</TableHead>
-                                    <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[100px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">{t('common.key')}</TableHead>
-                                    <TableHead className="w-[200px] min-w-[200px] bg-zinc-900 border-r border-zinc-800 sticky left-[300px] z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] text-zinc-300">{t('common.remarks')}</TableHead>
+                                    <TableHead className={cn(ACTIONS_COLUMN_WIDTH_CLASS, ACTIONS_STICKY_CLASS.replace('z-20', 'z-30'))}>{t('common.actions')}</TableHead>
+                                    <TableHead className={cn(KEY_COLUMN_WIDTH_CLASS, KEY_STICKY_CLASS.replace('z-20', 'z-30'), 'text-zinc-300')}>{t('common.key')}</TableHead>
+                                    <TableHead className={cn(REMARKS_COLUMN_WIDTH_CLASS, REMARKS_STICKY_CLASS.replace('z-20', 'z-30'), 'text-zinc-300')}>{t('common.remarks')}</TableHead>
                                     <TableHead
                                         className={cn('text-zinc-400', SCREENSHOT_COLUMN_WIDTH_CLASS, SCREENSHOT_STICKY_CLASS.replace('z-20', 'z-30'))}
                                         aria-label={t('projectDetail.termScreenshot')}
