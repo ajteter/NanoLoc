@@ -110,6 +110,8 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             const res = await deleteTermAction(projectId, term.id);
             if (res.success) {
                 toast.success(t('term.deleted'));
+                setDeleteConfirm(false);
+                setDeleteInput('');
             } else {
                 toast.error(getLocalizedApiError(res, t, t('term.deleteFailed')));
             }
@@ -357,106 +359,54 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
     return (
         <tr className="hover:bg-zinc-800/50 transition-colors group border-b border-zinc-800 last:border-0 relative">
             <td className={cn("relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 align-top group-hover:bg-zinc-800 transition-colors", ACTIONS_COLUMN_WIDTH_CLASS, ACTIONS_STICKY_CLASS)}>
-                {deleteConfirm ? (
-                    <div className="flex flex-col gap-1 min-w-[180px]">
-                        <p className="text-xs text-red-400">
-                            {t('term.deleteConfirmPrompt').split('{name}')[0]}
-                            <span className="font-mono font-bold">{term.stringName}</span>
-                            {t('term.deleteConfirmPrompt').split('{name}')[1] || ''}
-                        </p>
-                        <Input
-                            value={deleteInput}
-                            onChange={(e) => setDeleteInput(e.target.value)}
-                            className="bg-zinc-900 border-red-700 text-white h-7 text-xs"
-                            autoFocus
-                            placeholder={t('term.deletePlaceholder')}
-                        />
-                        <div className="flex gap-1">
+                <div className="flex gap-1 opacity-100 transition-opacity">
+                    <Button
+                        variant="ghost" size="icon"
+                        onClick={() => enterEditMode()}
+                        className="text-zinc-300 hover:text-zinc-200 hover:bg-white/10"
+                        title={t('term.edit')}
+                    >
+                        <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                        variant="ghost" size="icon"
+                        onClick={() => setConfirmTranslate({ type: 'row' })}
+                        className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
+                        title={t('term.translateRow')}
+                    >
+                        <Wand2 className="w-4 h-4 text-emerald-400" />
+                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                             <Button
-                                variant="destructive" size="sm"
-                                onClick={doDelete}
-                                disabled={deleteInput !== term.stringName || isPendingDelete}
-                                className="h-6 text-xs flex-1"
+                                variant="ghost" size="icon"
+                                className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
+                                title={t('term.moreActions')}
                             >
-                                {isPendingDelete ? '...' : t('common.delete')}
+                                <MoreHorizontal className="w-4 h-4" />
                             </Button>
-                            <Button
-                                variant="ghost" size="sm"
-                                onClick={() => { setDeleteConfirm(false); setDeleteInput(''); }}
-                                className="h-6 text-xs text-zinc-400"
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-300">
+                            <DropdownMenuItem
+                                className="hover:bg-zinc-800 focus:bg-zinc-800 focus:text-white cursor-pointer"
+                                onClick={() => setClearConfirm(true)}
                             >
-                                {t('common.cancel')}
-                            </Button>
-                        </div>
-                    </div>
-                ) : clearConfirm ? (
-                    <div className="flex flex-col gap-1 min-w-[180px]">
-                        <p className="text-xs text-amber-400">{t('term.clearConfirm')}</p>
-                        <div className="flex gap-1 mt-1">
-                            <Button
-                                variant="outline" size="sm"
-                                onClick={doClear}
-                                disabled={isPendingClear}
-                                className="h-6 text-xs flex-1 bg-amber-900/20 text-amber-400 border-amber-800 hover:bg-amber-900/50 hover:text-amber-300"
+                                <Eraser className="w-4 h-4 mr-2" />
+                                {t('term.clearRow')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="hover:bg-red-900/50 text-red-400 focus:bg-red-900/50 focus:text-red-300 cursor-pointer"
+                                onClick={() => {
+                                    setDeleteInput('');
+                                    setDeleteConfirm(true);
+                                }}
                             >
-                                {isPendingClear ? '...' : t('term.clearRow')}
-                            </Button>
-                            <Button
-                                variant="ghost" size="sm"
-                                onClick={() => setClearConfirm(false)}
-                                className="h-6 text-xs text-zinc-400"
-                            >
-                                {t('common.cancel')}
-                            </Button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="flex gap-1 opacity-100 transition-opacity">
-                        <Button
-                            variant="ghost" size="icon"
-                            onClick={() => enterEditMode()}
-                            className="text-zinc-300 hover:text-zinc-200 hover:bg-white/10"
-                            title={t('term.edit')}
-                        >
-                            <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                            variant="ghost" size="icon"
-                            onClick={() => setConfirmTranslate({ type: 'row' })}
-                            className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
-                            title={t('term.translateRow')}
-                        >
-                            <Wand2 className="w-4 h-4 text-emerald-400" />
-                        </Button>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="ghost" size="icon"
-                                    className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
-                                    title={t('term.moreActions')}
-                                >
-                                    <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-300">
-                                <DropdownMenuItem
-                                    className="hover:bg-zinc-800 focus:bg-zinc-800 focus:text-white cursor-pointer"
-                                    onClick={() => setClearConfirm(true)}
-                                >
-                                    <Eraser className="w-4 h-4 mr-2" />
-                                    {t('term.clearRow')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    className="hover:bg-red-900/50 text-red-400 focus:bg-red-900/50 focus:text-red-300 cursor-pointer"
-                                    onClick={() => setDeleteConfirm(true)}
-                                >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    {t('term.deleteTerm')}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                )}
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                {t('term.deleteTerm')}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </td>
             <td className={cn("whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6 break-all truncate align-top group-hover:bg-zinc-800 transition-colors", KEY_COLUMN_WIDTH_CLASS, KEY_STICKY_CLASS, isMatch(term.stringName) && STICKY_SEARCH_MATCH_CLASS)}>
                 <div className="truncate" title={term.stringName}>
@@ -567,6 +517,90 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     </td>
                 );
             })}
+
+            <Dialog open={clearConfirm} onOpenChange={setClearConfirm}>
+                <DialogContent closeLabel={t('common.close')} className="bg-zinc-900 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-amber-300">{t('term.clearConfirm')}</DialogTitle>
+                        <DialogDescription className="space-y-2 text-zinc-400">
+                            <span className="block">{t('term.clearConfirmDescription')}</span>
+                            <span className="block font-mono text-zinc-200">{term.stringName}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setClearConfirm(false)}
+                            disabled={isPendingClear}
+                            className="text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                        >
+                            {t('common.cancel')}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={doClear}
+                            disabled={isPendingClear}
+                            className="border-amber-800 bg-amber-950/30 text-amber-300 hover:bg-amber-950 hover:text-amber-200"
+                        >
+                            {isPendingClear ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eraser className="mr-2 h-4 w-4" />}
+                            {t('term.clearRow')}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+                <DialogContent closeLabel={t('common.close')} className="bg-zinc-900 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-300">{t('term.deleteTerm')}</DialogTitle>
+                        <DialogDescription className="space-y-2 text-zinc-400">
+                            <span className="block">{t('term.deleteConfirmDescription')}</span>
+                            <span className="block font-mono text-zinc-200">{term.stringName}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <p className="text-sm text-red-300">
+                                {t('term.deleteConfirmPrompt').split('{name}')[0]}
+                                <span className="font-mono font-bold">{term.stringName}</span>
+                                {t('term.deleteConfirmPrompt').split('{name}')[1] || ''}
+                            </p>
+                            <Input
+                                value={deleteInput}
+                                onChange={(e) => setDeleteInput(e.target.value)}
+                                className="bg-zinc-950 border-red-900/70 text-white"
+                                placeholder={t('term.deletePlaceholder')}
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => {
+                                    setDeleteConfirm(false);
+                                    setDeleteInput('');
+                                }}
+                                disabled={isPendingDelete}
+                                className="text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                            >
+                                {t('common.cancel')}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={doDelete}
+                                disabled={deleteInput !== term.stringName || isPendingDelete}
+                                className="bg-red-800 text-red-50 hover:bg-red-700"
+                            >
+                                {isPendingDelete ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                {t('common.delete')}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={translating.length > 0} onOpenChange={() => { }}>
                 <DialogContent showCloseButton={false} className="bg-zinc-900 border-zinc-800 text-white [&>button]:hidden">
