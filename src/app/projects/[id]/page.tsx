@@ -195,7 +195,7 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
                     <BaseLanguagePinProvider projectId={projectId}>
                         <Table>
                             <colgroup>
-                                <col style={{ width: 100 }} />
+                                <col style={{ width: 160 }} />
                                 <col style={{ width: 200 }} />
                                 <col style={{ width: 200 }} />
                                 <col style={{ width: 64 }} />
