@@ -1,6 +1,7 @@
 import { LANGUAGES } from '@/lib/constants/languages';
 
 const DEFAULT_BASE_LANGUAGE = 'en-US';
+const RTL_LANGUAGE_CODES = new Set(['ar', 'fa', 'he', 'ug', 'ur']);
 
 function normalizeLanguageCodes(value: unknown): string[] {
     if (!Array.isArray(value)) return [];
@@ -56,6 +57,10 @@ export function serializeTargetLanguages(value?: string[] | null, baseLanguage?:
 export function getLanguageDisplayName(code: string): string {
     const lang = LANGUAGES.find((item) => item.code === code);
     return lang ? `${lang.name} (${lang.localName}) - ${code}` : code;
+}
+
+export function isRtlLanguage(code: string): boolean {
+    return RTL_LANGUAGE_CODES.has(code.trim().toLowerCase().split('-')[0]);
 }
 
 export function getProjectLanguageCodes(project: {

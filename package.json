@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "verify:contracts": "jiti scripts/verify-storage-contracts.ts",
+    "verify:placeholders": "jiti scripts/verify-placeholder-contracts.ts",
+    "audit:placeholders": "jiti scripts/audit-placeholders.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

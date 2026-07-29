@@ -22,6 +22,8 @@ import {
 } from './stickyColumnClasses';
 import { useI18n } from '@/lib/i18n/client';
 import { getLocalizedApiError } from '@/lib/api/errors';
+import { isRtlLanguage } from '@/lib/language-utils';
+import { BidiSafeText } from './BidiSafeText';
 
 interface CreateTermRowProps {
     projectId: string;
@@ -117,8 +119,19 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                     value={formData.values[baseLanguage] || ''}
                     onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
                     placeholder={t('term.baseValuePlaceholder')}
-                    className="bg-zinc-900 border-zinc-600 text-white min-h-[4rem]"
+                    dir={isRtlLanguage(baseLanguage) ? 'rtl' : 'ltr'}
+                    className={cn(
+                        "bg-zinc-900 border-zinc-600 text-white min-h-[4rem]",
+                        isRtlLanguage(baseLanguage) && 'text-right'
+                    )}
                 />
+                {isRtlLanguage(baseLanguage) && formData.values[baseLanguage] ? (
+                    <BidiSafeText
+                        text={formData.values[baseLanguage]}
+                        languageCode={baseLanguage}
+                        className="mt-2 rounded border border-zinc-700/70 bg-zinc-950/60 px-2 py-1.5 text-xs text-zinc-300"
+                    />
+                ) : null}
             </td>
             {targetLanguages.map(lang => (
                 <td key={lang} className="p-4 align-top">
@@ -126,8 +139,19 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                         value={formData.values[lang] || ''}
                         onChange={(e) => handleValueChange(lang, e.target.value)}
                         placeholder={lang}
-                        className="bg-zinc-900 border-zinc-600 text-white min-h-[4rem]"
+                        dir={isRtlLanguage(lang) ? 'rtl' : 'ltr'}
+                        className={cn(
+                            "bg-zinc-900 border-zinc-600 text-white min-h-[4rem]",
+                            isRtlLanguage(lang) && 'text-right'
+                        )}
                     />
+                    {isRtlLanguage(lang) && formData.values[lang] ? (
+                        <BidiSafeText
+                            text={formData.values[lang]}
+                            languageCode={lang}
+                            className="mt-2 rounded border border-zinc-700/70 bg-zinc-950/60 px-2 py-1.5 text-xs text-zinc-300"
+                        />
+                    ) : null}
                 </td>
             ))}
         </tr>

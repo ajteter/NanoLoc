@@ -9,7 +9,7 @@ import { ProjectToolbar } from './components/ProjectToolbar';
 import { ErrorLogButton } from './components/ErrorLogButton';
 import { SearchFilter } from '@/components/SearchFilter';
 import { PaginationControls } from './components/PaginationControls';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TermRow } from './components/TermRow';
 import { CreateTermRowWrapper } from './components/CreateTermRowWrapper';
 import { TranslateColumnHead } from './components/TranslateColumnHead';
@@ -31,6 +31,7 @@ import { getLanguageDisplayName, getProjectLanguageCodes, parseVisibleTargetLang
 import { cn } from '@/lib/utils';
 import { getServerTranslator } from '@/lib/i18n/server';
 import type { TranslationKey } from '@/types';
+import { SynchronizedStickyTable } from './components/SynchronizedStickyTable';
 
 export default async function ProjectDetailPage({
     params,
@@ -183,6 +184,19 @@ interface TermsTableProps {
 
 async function TermsTable({ projectId, page, limit, search, isCreating, baseLanguage, targetLangs, termsData }: TermsTableProps) {
     const { t } = await getServerTranslator();
+    const tableClassName = 'w-max min-w-full table-fixed caption-bottom text-sm';
+    const columnWidths = (
+        <colgroup>
+            <col style={{ width: 128 }} />
+            <col style={{ width: 200 }} />
+            <col style={{ width: 200 }} />
+            <col style={{ width: 64 }} />
+            <col style={{ width: 256 }} />
+            {targetLangs.map((lang: string) => (
+                <col key={lang} style={{ width: 256 }} />
+            ))}
+        </colgroup>
+    );
 
     return (
         <>
@@ -190,20 +204,11 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
                 <PaginationControls total={termsData.meta.total} page={page} limit={limit} totalPages={termsData.meta.totalPages} />
             </div>
 
-            <div className="rounded-md border border-zinc-700 bg-zinc-900/50 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <BaseLanguagePinProvider projectId={projectId}>
-                        <Table>
-                            <colgroup>
-                                <col style={{ width: 128 }} />
-                                <col style={{ width: 200 }} />
-                                <col style={{ width: 200 }} />
-                                <col style={{ width: 64 }} />
-                                <col style={{ width: 256 }} />
-                                {targetLangs.map((lang: string) => (
-                                    <col key={lang} style={{ width: 256 }} />
-                                ))}
-                            </colgroup>
+            <BaseLanguagePinProvider projectId={projectId}>
+                <SynchronizedStickyTable
+                    header={(
+                        <table className={tableClassName}>
+                            {columnWidths}
                             <TableHeader className="bg-zinc-800">
                                 <TableRow className="border-zinc-700 hover:bg-zinc-800">
                                     <TableHead className={cn(ACTIONS_COLUMN_WIDTH_CLASS, ACTIONS_STICKY_CLASS.replace('z-20', 'z-30'))}>{t('common.actions')}</TableHead>
@@ -227,6 +232,11 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
                                     ))}
                                 </TableRow>
                             </TableHeader>
+                        </table>
+                    )}
+                    body={(
+                        <table className={tableClassName}>
+                            {columnWidths}
                             <TableBody>
                                 {isCreating && (
                                     <CreateTermRowWrapper
@@ -256,10 +266,10 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
                                     ))
                                 )}
                             </TableBody>
-                        </Table>
-                    </BaseLanguagePinProvider>
-                </div>
-            </div>
+                        </table>
+                    )}
+                />
+            </BaseLanguagePinProvider>
 
             <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 mt-4">
                 <PaginationControls total={termsData.meta.total} page={page} limit={limit} totalPages={termsData.meta.totalPages} />

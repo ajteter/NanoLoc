@@ -1,3 +1,5 @@
+import { comparePlaceholders } from '@/lib/placeholder-utils';
+
 export interface AIConfig {
     baseUrl: string;
     apiKey: string;
@@ -7,6 +9,17 @@ export interface AIConfig {
 
 export const TRANSLATION_ERROR_PLACEHOLDER = "[Translation Error]";
 
+const MANDATORY_SYSTEM_PROMPT = `你是一个专业的多语言翻译专家。在处理翻译时必须遵守以下规则：
+1. 每个文本都必须翻译，保持原有顺序
+2. 所有占位符必须逐字保留，包括数量、大小写、编号和格式，例如 {name}、{{name}}、\${name}、%s、%1$s、%02d、%@
+3. 不得翻译、删除、增加、拆分或重排占位符中的任何字符
+4. 保持原有换行符(\\n)
+5. 标点符号要符合目标语言的使用习惯和位置
+6. 保持简洁准确，不要添加任何额外的解释或标记
+7. 批量翻译时，每个翻译结果前必须带上对应的锚点标记 <<数字>>，如 <<1>> 翻译内容
+8. 只输出翻译后的文本，不要添加 markdown 格式、代码块、反引号、前言、解释、对话或任何额外内容
+9. 不要重复源文本或语言名称`;
+
 export class BRClient {
     private config: AIConfig;
 
@@ -15,14 +28,10 @@ export class BRClient {
     }
 
     private get defaultSystemPrompt() {
-        return this.config.systemPrompt || `你是一个专业的多语言翻译专家。在处理批量翻译时请注意：
-1. 每个文本都必须翻译，保持原有顺序
-2. 占位符（如 {name}, %s, %1$s 等）和换行符(\\n)保持原样不翻译
-3. 标点符号要符合目标语言的使用习惯和位置
-4. 保持简洁准确，不要添加任何额外的解释或标记
-5. 每个翻译结果前必须带上对应的锚点标记 <<数字>>，如 <<1>> 翻译内容
-6. 只输出翻译后的文本，不要添加 markdown 格式、代码块、反引号、前言、解释、对话或任何额外内容
-7. 不要重复源文本或语言名称`;
+        const projectPrompt = this.config.systemPrompt?.trim();
+        if (!projectPrompt) return MANDATORY_SYSTEM_PROMPT;
+
+        return `${MANDATORY_SYSTEM_PROMPT}\n\n项目专用补充要求（不得覆盖以上强制规则）：\n${projectPrompt}`;
     }
 
     /**
@@ -106,7 +115,7 @@ export class BRClient {
      * Translate a single text (used for retry fallback).
      */
     private async translateSingle(text: string, targetLang: string): Promise<string> {
-        const prompt = `请将以下文本翻译成${targetLang}，只输出翻译结果，不要添加任何额外内容：\n\n${text}`;
+        const prompt = `请将以下文本翻译成${targetLang}。所有占位符必须逐字保持不变，只输出翻译结果，不要添加任何额外内容：\n\n${text}`;
 
         const response = await fetch(`${this.config.baseUrl}/v1/chat/completions`, {
             method: 'POST',
@@ -241,6 +250,24 @@ export class BRClient {
                         console.error(`Single retry failed for "${item.text}":`, err);
                         results[item.index] = TRANSLATION_ERROR_PLACEHOLDER;
                     }
+                }
+            }
+
+            // A malformed placeholder is retried once, but the service layer still
+            // performs the final validation before any database write.
+            for (const item of nonEmptyItems) {
+                const translated = results[item.index];
+                if (!translated || translated === TRANSLATION_ERROR_PLACEHOLDER) continue;
+                if (comparePlaceholders(item.text, translated).valid) continue;
+
+                console.warn(`Placeholder mismatch for item ${item.index}, retrying individually...`);
+                try {
+                    const retryResult = await this.translateSingle(item.text, targetLang);
+                    if (retryResult) {
+                        results[item.index] = retryResult;
+                    }
+                } catch (err) {
+                    console.error(`Placeholder retry failed for "${item.text}":`, err);
                 }
             }
 

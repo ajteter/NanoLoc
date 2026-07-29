@@ -3,6 +3,7 @@ import { getProjectAIConfig } from '@/lib/ai/config';
 import { BRClient, TRANSLATION_ERROR_PLACEHOLDER } from '@/lib/ai/br-client';
 import { normalizeTranslationError, recordTranslationError, type TranslationErrorSource } from '@/lib/services/translation-error.service';
 import { AppError } from '@/lib/api/errors';
+import { comparePlaceholders, type PlaceholderComparison } from '@/lib/placeholder-utils';
 
 const BATCH_SIZE = 10;
 
@@ -30,6 +31,43 @@ type BatchTranslationCandidate = {
     sourceText: string;
     valuesByLanguage: Map<string, string>;
 };
+
+type PlaceholderMismatch = PlaceholderComparison & {
+    index: number;
+    sourceText: string;
+    translatedText: string;
+};
+
+class PlaceholderMismatchError extends Error {
+    mismatches: PlaceholderMismatch[];
+
+    constructor(mismatches: PlaceholderMismatch[]) {
+        super('AI translation changed one or more placeholders.');
+        this.name = 'PLACEHOLDER_MISMATCH';
+        this.mismatches = mismatches;
+    }
+}
+
+function findPlaceholderMismatches(sourceTexts: string[], translatedTexts: string[]) {
+    const mismatches: PlaceholderMismatch[] = [];
+
+    sourceTexts.forEach((sourceText, index) => {
+        if (!sourceText?.trim()) return;
+
+        const translatedText = translatedTexts[index] || '';
+        const comparison = comparePlaceholders(sourceText, translatedText);
+        if (!comparison.valid) {
+            mismatches.push({
+                index,
+                sourceText,
+                translatedText,
+                ...comparison,
+            });
+        }
+    });
+
+    return mismatches;
+}
 
 function uniqueLanguageCodes(languageCodes: string[]) {
     return Array.from(new Set(languageCodes));
@@ -85,6 +123,11 @@ export async function translateTexts(
             throw resultError;
         }
 
+        const placeholderMismatches = findPlaceholderMismatches(texts, results);
+        if (placeholderMismatches.length > 0) {
+            throw new PlaceholderMismatchError(placeholderMismatches);
+        }
+
         return results;
     } catch (error) {
         const normalized = normalizeTranslationError(error);
@@ -99,6 +142,19 @@ export async function translateTexts(
             details: {
                 textCount: texts.length,
                 texts,
+                ...(error instanceof PlaceholderMismatchError
+                    ? {
+                        placeholderMismatches: error.mismatches.map((mismatch) => ({
+                            index: mismatch.index,
+                            sourceText: mismatch.sourceText,
+                            translatedText: mismatch.translatedText,
+                            sourceTokens: mismatch.source,
+                            translatedTokens: mismatch.translated,
+                            missingTokens: mismatch.missing,
+                            extraTokens: mismatch.extra,
+                        })),
+                    }
+                    : {}),
             },
         });
         throw error;
@@ -165,11 +221,12 @@ export async function batchTranslateProject(
 
                 try {
                     const translatedTexts = await aiClient.translateBatch(sourceTexts, lang);
+                    const errorLogs: Parameters<typeof recordTranslationError>[0][] = [];
                     const operations = batch
                         .map((item, index) => {
                             const translatedText = translatedTexts[index];
                             if (!translatedText || translatedText === TRANSLATION_ERROR_PLACEHOLDER) {
-                                void recordTranslationError({
+                                errorLogs.push({
                                     projectId,
                                     translationKeyId: item.keyId,
                                     keyName: keyNameMap.get(item.keyId),
@@ -179,6 +236,30 @@ export async function batchTranslateProject(
                                     source,
                                     details: {
                                         sourceText: item.sourceText,
+                                        batchStartIndex: i,
+                                    },
+                                });
+                                failedCount++;
+                                return null;
+                            }
+
+                            const placeholderComparison = comparePlaceholders(item.sourceText, translatedText);
+                            if (!placeholderComparison.valid) {
+                                errorLogs.push({
+                                    projectId,
+                                    translationKeyId: item.keyId,
+                                    keyName: keyNameMap.get(item.keyId),
+                                    languageCode: lang,
+                                    errorCode: 'PLACEHOLDER_MISMATCH',
+                                    errorMessage: 'AI translation changed one or more placeholders.',
+                                    source,
+                                    details: {
+                                        sourceText: item.sourceText,
+                                        translatedText,
+                                        sourceTokens: placeholderComparison.source,
+                                        translatedTokens: placeholderComparison.translated,
+                                        missingTokens: placeholderComparison.missing,
+                                        extraTokens: placeholderComparison.extra,
                                         batchStartIndex: i,
                                     },
                                 });
@@ -203,6 +284,10 @@ export async function batchTranslateProject(
                             });
                         })
                         .filter((p): p is NonNullable<typeof p> => p !== null);
+
+                    if (errorLogs.length > 0) {
+                        await Promise.all(errorLogs.map((input) => recordTranslationError(input)));
+                    }
 
                     if (operations.length > 0) {
                         await prisma.$transaction(operations);

@@ -29,6 +29,8 @@ import { TermScreenshotCell } from './TermScreenshotCell';
 import { useI18n } from '@/lib/i18n/client';
 import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
 import type { TranslationKey as I18nKey } from '@/lib/i18n/dictionaries';
+import { isRtlLanguage } from '@/lib/language-utils';
+import { BidiSafeText } from './BidiSafeText';
 
 interface TermRowProps {
     term: TranslationKey;
@@ -316,40 +318,66 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     screenshotUpdatedAt={term.screenshotUpdatedAt}
                 />
                 <td className={cn("p-4 align-top group/base w-64 min-w-[16rem]", isBaseLanguagePinned ? BASE_LANGUAGE_STICKY_CLASS : "relative")}>
-                    <Textarea
-                        value={formData.values[baseLanguage] || ''}
-                        onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
-                        className="bg-zinc-900 border-zinc-700 text-white min-h-[4rem]"
-                        autoFocus={focusLang === baseLanguage}
-                    />
-                    <Button
-                        variant="ghost" size="icon"
-                        onClick={handleCopyToAll}
-                        className="absolute bottom-5 right-5 h-6 w-6 text-zinc-400 hover:text-white opacity-0 group-hover/base:opacity-100 transition-opacity"
-                        title={t('term.copyToAll')}
-                        type="button"
-                    >
-                        <Copy className="w-3 h-3" />
-                    </Button>
-                </td>
-                {targetLanguages.map(lang => (
-                    <td key={lang} className="p-4 align-top relative group/cell">
+                    <div className="relative">
                         <Textarea
-                            value={formData.values[lang] || ''}
-                            onChange={(e) => handleValueChange(lang, e.target.value)}
-                            className="bg-zinc-900 border-zinc-700 text-white min-h-[4rem]"
-                            autoFocus={focusLang === lang}
+                            value={formData.values[baseLanguage] || ''}
+                            onChange={(e) => handleValueChange(baseLanguage, e.target.value)}
+                            dir={isRtlLanguage(baseLanguage) ? 'rtl' : 'ltr'}
+                            className={cn(
+                                "bg-zinc-900 border-zinc-700 text-white min-h-[4rem]",
+                                isRtlLanguage(baseLanguage) && 'text-right'
+                            )}
+                            autoFocus={focusLang === baseLanguage}
                         />
                         <Button
                             variant="ghost" size="icon"
-                            onClick={() => handleTranslate(lang)}
-                            disabled={translating.includes(lang)}
-                            className="absolute bottom-5 right-5 h-6 w-6 text-zinc-300 hover:text-zinc-200 opacity-0 group-hover/cell:opacity-100 transition-opacity disabled:opacity-50"
-                            title={t('term.aiTranslate')}
+                            onClick={handleCopyToAll}
+                            className="absolute bottom-2 right-2 h-6 w-6 text-zinc-400 hover:text-white opacity-0 group-hover/base:opacity-100 transition-opacity"
+                            title={t('term.copyToAll')}
                             type="button"
                         >
-                            <Wand2 className={cn("w-3 h-3 text-emerald-400", translating.includes(lang) && "animate-pulse")} />
+                            <Copy className="w-3 h-3" />
                         </Button>
+                    </div>
+                    {isRtlLanguage(baseLanguage) && formData.values[baseLanguage] ? (
+                        <BidiSafeText
+                            text={formData.values[baseLanguage]}
+                            languageCode={baseLanguage}
+                            className="mt-2 rounded border border-zinc-700/70 bg-zinc-950/60 px-2 py-1.5 text-xs text-zinc-300"
+                        />
+                    ) : null}
+                </td>
+                {targetLanguages.map(lang => (
+                    <td key={lang} className="p-4 align-top relative group/cell">
+                        <div className="relative">
+                            <Textarea
+                                value={formData.values[lang] || ''}
+                                onChange={(e) => handleValueChange(lang, e.target.value)}
+                                dir={isRtlLanguage(lang) ? 'rtl' : 'ltr'}
+                                className={cn(
+                                    "bg-zinc-900 border-zinc-700 text-white min-h-[4rem]",
+                                    isRtlLanguage(lang) && 'text-right'
+                                )}
+                                autoFocus={focusLang === lang}
+                            />
+                            <Button
+                                variant="ghost" size="icon"
+                                onClick={() => handleTranslate(lang)}
+                                disabled={translating.includes(lang)}
+                                className="absolute bottom-2 right-2 h-6 w-6 text-zinc-300 hover:text-zinc-200 opacity-0 group-hover/cell:opacity-100 transition-opacity disabled:opacity-50"
+                                title={t('term.aiTranslate')}
+                                type="button"
+                            >
+                                <Wand2 className={cn("w-3 h-3 text-emerald-400", translating.includes(lang) && "animate-pulse")} />
+                            </Button>
+                        </div>
+                        {isRtlLanguage(lang) && formData.values[lang] ? (
+                            <BidiSafeText
+                                text={formData.values[lang]}
+                                languageCode={lang}
+                                className="mt-2 rounded border border-zinc-700/70 bg-zinc-950/60 px-2 py-1.5 text-xs text-zinc-300"
+                            />
+                        ) : null}
                     </td>
                 ))}
             </tr>
@@ -460,14 +488,11 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                         <TooltipTrigger asChild>
                             <div className="cursor-help decoration-dashed decoration-zinc-600 underline-offset-4">
                                 {baseValue ? (
-                                    searchQuery ? (
-                                        <Highlighter
-                                            searchWords={[searchQuery]}
-                                            autoEscape={true}
-                                            textToHighlight={baseValue}
-                                            highlightClassName="bg-emerald-500/20 text-emerald-400 rounded-sm px-0.5"
-                                        />
-                                    ) : baseValue
+                                    <BidiSafeText
+                                        text={baseValue}
+                                        languageCode={baseLanguage}
+                                        searchQuery={searchQuery}
+                                    />
                                 ) : <span className="text-zinc-600 italic">{t('term.emptyValue')}</span>}
                             </div>
                         </TooltipTrigger>
@@ -496,14 +521,11 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                 <TooltipTrigger asChild>
                                     <div className="cursor-help">
                                         {val ? (
-                                            searchQuery ? (
-                                                <Highlighter
-                                                    searchWords={[searchQuery]}
-                                                    autoEscape={true}
-                                                    textToHighlight={val}
-                                                    highlightClassName="bg-emerald-500/20 text-emerald-400 rounded-sm px-0.5"
-                                                />
-                                            ) : val
+                                            <BidiSafeText
+                                                text={val}
+                                                languageCode={lang}
+                                                searchQuery={searchQuery}
+                                            />
                                         ) : <span className="text-zinc-600 italic">{t('term.emptyValue')}</span>}
                                     </div>
                                 </TooltipTrigger>
