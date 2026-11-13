@@ -1,6 +1,10 @@
 'use client';
 
-import { useRef, useTransition } from 'react';
+import { useState, useTransition } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { importMetadataSchema } from '@/lib/validators/term.schema';
 import { Button } from "@/components/ui/button";
 import { Upload, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -21,30 +25,39 @@ interface ProjectToolbarProps {
 }
 
 export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseLanguageDisplay }: ProjectToolbarProps) {
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [importOpen, setImportOpen] = useState(false);
+    const [file, setFile] = useState<File | null>(null);
+    const [developerOwner, setDeveloperOwner] = useState('');
+    const [requestNote, setRequestNote] = useState('');
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const searchParams = useSearchParams();
     const { t } = useI18n();
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const formData = new FormData();
-            formData.append('file', file);
-
-            startTransition(async () => {
-                const toastId = toast.loading(t('projectToolbar.importing'));
-                const res = await importFileAction(projectId, formData);
-
-                if (res.success) {
-                    toast.success(`${t('projectToolbar.imported')} ${t('projectToolbar.added')}: ${res.added}, ${t('projectToolbar.updated')}: ${res.updated}, ${t('projectToolbar.skipped')}: ${res.skipped}`, { id: toastId });
-                } else {
-                    toast.error(`${t('projectToolbar.importFailed')}: ${getLocalizedApiError(res, t, t('projectToolbar.importFailed'))}`, { id: toastId });
-                }
-            });
+    const handleFileUpload = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!file) return;
+        const metadata = importMetadataSchema.safeParse({ developerOwner, requestNote });
+        if (!metadata.success) {
+            toast.error(t('term.ownerRequired'));
+            return;
         }
-        if (fileInputRef.current) fileInputRef.current.value = '';
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('developerOwner', metadata.data.developerOwner);
+        formData.append('requestNote', metadata.data.requestNote || '');
+
+        startTransition(async () => {
+            const toastId = toast.loading(t('projectToolbar.importing'));
+            const res = await importFileAction(projectId, formData);
+            if (res.success) {
+                toast.success(`${t('projectToolbar.imported')} ${t('projectToolbar.added')}: ${res.added}, ${t('projectToolbar.updated')}: ${res.updated}, ${t('projectToolbar.skipped')}: ${res.skipped}`, { id: toastId });
+                setImportOpen(false);
+                setFile(null);
+            } else {
+                toast.error(`${t('projectToolbar.importFailed')}: ${getLocalizedApiError(res, t, t('projectToolbar.importFailed'))}`, { id: toastId });
+            }
+        });
     };
 
     const handleNewTerm = () => {
@@ -54,21 +67,45 @@ export function ProjectToolbar({ projectId, baseLanguage, targetLanguages, baseL
     };
 
     return (
-        <div className="flex gap-3 items-center">
-            <input
-                type="file"
-                accept=".xml,.json,.strings"
-                hidden
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-            />
+        <div className="flex flex-wrap gap-3 items-center">
+            <Dialog open={importOpen} onOpenChange={(open) => { if (!isPending) setImportOpen(open); }}>
+                <DialogContent closeLabel={t('common.close')} className="bg-zinc-900 border-zinc-700 text-white">
+                    <DialogHeader>
+                        <DialogTitle>{t('import.title')}</DialogTitle>
+                        <DialogDescription>{t('import.description')}</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleFileUpload} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="import-file">{t('import.file')}</Label>
+                            <Input id="import-file" type="file" accept=".xml,.json,.strings" required disabled={isPending}
+                                onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="import-owner">{t('term.developerOwner')}</Label>
+                            <Input id="import-owner" value={developerOwner} required disabled={isPending}
+                                onChange={(event) => setDeveloperOwner(event.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="import-request">{t('term.requestNote')}</Label>
+                            <Input id="import-request" value={requestNote} disabled={isPending}
+                                onChange={(event) => setRequestNote(event.target.value)} />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button type="button" variant="ghost" disabled={isPending} onClick={() => setImportOpen(false)}>{t('common.cancel')}</Button>
+                            <Button type="submit" disabled={isPending || !file || !developerOwner.trim()}>
+                                {isPending ? t('projectToolbar.importing') : t('projectToolbar.import')}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
                             variant="secondary"
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => { setFile(null); setImportOpen(true); }}
                             disabled={isPending}
                         >
                             <Upload className="h-4 w-4 mr-2" />

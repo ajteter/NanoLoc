@@ -58,7 +58,7 @@ export default async function ProjectDetailPage({
 
     return (
         <main className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8 py-8 relative">
-            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
                         <Link href="/" className="text-zinc-400 hover:text-white transition-colors">
@@ -67,7 +67,7 @@ export default async function ProjectDetailPage({
                         <span className="text-zinc-600">/</span>
                         <span className="text-zinc-200 text-sm font-medium">{project.name}</span>
                     </div>
-                    <div className="flex items-baseline gap-4">
+                    <div className="flex flex-wrap items-baseline gap-4">
                         <h1 className="text-3xl font-bold tracking-tight text-white">
                             {project.name}
                         </h1>
@@ -184,7 +184,10 @@ interface TermsTableProps {
 
 async function TermsTable({ projectId, page, limit, search, isCreating, baseLanguage, targetLangs, termsData }: TermsTableProps) {
     const { t } = await getServerTranslator();
-    const tableClassName = 'w-max min-w-full table-fixed caption-bottom text-sm';
+    // Both tables need a definite, identical width. Intrinsic/max-content sizing
+    // lets the header and body calculate different column widths independently.
+    const tableClassName = 'table-fixed caption-bottom text-sm';
+    const tableStyle = { width: 128 + 200 + 200 + 64 + 256 * (1 + targetLangs.length) };
     const columnWidths = (
         <colgroup>
             <col style={{ width: 128 }} />
@@ -207,7 +210,7 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
             <BaseLanguagePinProvider projectId={projectId}>
                 <SynchronizedStickyTable
                     header={(
-                        <table className={tableClassName}>
+                        <table className={tableClassName} style={tableStyle}>
                             {columnWidths}
                             <TableHeader className="bg-zinc-800">
                                 <TableRow className="border-zinc-700 hover:bg-zinc-800">
@@ -235,7 +238,7 @@ async function TermsTable({ projectId, page, limit, search, isCreating, baseLang
                         </table>
                     )}
                     body={(
-                        <table className={tableClassName}>
+                        <table className={tableClassName} style={tableStyle}>
                             {columnWidths}
                             <TableBody>
                                 {isCreating && (

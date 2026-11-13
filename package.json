@@ -11,7 +11,8 @@
     "verify:contracts": "jiti scripts/verify-storage-contracts.ts",
     "verify:placeholders": "jiti scripts/verify-placeholder-contracts.ts",
     "audit:placeholders": "jiti scripts/audit-placeholders.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "verify:feedback": "jiti scripts/verify-feedback-contracts.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

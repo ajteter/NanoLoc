@@ -34,6 +34,7 @@ export interface TranslationValue {
     id: string;
     languageCode: string;
     content: string | null;
+    isManual: boolean;
     lastModifiedBy?: {
         name: string | null;
         username?: string;
@@ -44,6 +45,8 @@ export interface TranslationKey {
     id: string;
     stringName: string;
     remarks: string | null;
+    developerOwner: string | null;
+    requestNote: string | null;
     screenshotPath?: string | null;
     screenshotMimeType?: string | null;
     screenshotSize?: number | null;

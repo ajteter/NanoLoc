@@ -65,7 +65,6 @@ export class BRClient {
     private cleanTranslationText(text: string): string {
         let cleaned = text.trim();
 
-        cleaned = cleaned.replace(/^\[?\d+\]?\.?\s*/, '').trim();
         cleaned = cleaned.replace(/^`+/, '').replace(/`+$/, '').trim();
         cleaned = cleaned.replace(/^(?:###|\|\|\|)\s*(?:\r?\n)+/, '').trim();
         cleaned = cleaned.replace(/(?:\r?\n)+\s*(?:###|\|\|\|)$/, '').trim();

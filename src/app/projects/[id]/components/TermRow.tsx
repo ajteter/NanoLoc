@@ -31,6 +31,7 @@ import { getLocalizedApiError, readApiErrorBody } from '@/lib/api/errors';
 import type { TranslationKey as I18nKey } from '@/lib/i18n/dictionaries';
 import { isRtlLanguage } from '@/lib/language-utils';
 import { BidiSafeText } from './BidiSafeText';
+import type { UpdateTermInput } from '@/lib/validators/term.schema';
 
 interface TermRowProps {
     term: TranslationKey;
@@ -41,11 +42,7 @@ interface TermRowProps {
     searchQuery?: string;
 }
 
-type TermUpdateInput = {
-    stringName?: string;
-    remarks?: string | null;
-    values?: Record<string, string>;
-};
+type TermUpdateInput = UpdateTermInput;
 
 export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, targetLanguages, searchQuery }: TermRowProps) {
     const { t } = useI18n();
@@ -77,8 +74,12 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
     const [formData, setFormData] = useState({
         stringName: term.stringName,
         remarks: term.remarks || '',
+        developerOwner: term.developerOwner || '',
+        requestNote: term.requestNote || '',
         values: term.values.reduce((acc, v) => ({ ...acc, [v.languageCode]: v.content || '' }), {} as Record<string, string>),
     });
+    const editBaseline = useRef(formData);
+    const valueSources = useRef<Record<string, 'manual' | 'machine' | 'copied'>>({});
     const [translating, setTranslating] = useState<string[]>([]);
 
     // Track pending row translations for batch save
@@ -88,9 +89,12 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
     // Reset form data when term changes (e.g. after save/refetch)
     useEffect(() => {
         if (!isEditing) {
+            valueSources.current = {};
             setFormData({
                 stringName: term.stringName,
                 remarks: term.remarks || '',
+                developerOwner: term.developerOwner || '',
+                requestNote: term.requestNote || '',
                 values: term.values.reduce((acc, v) => ({ ...acc, [v.languageCode]: v.content || '' }), {} as Record<string, string>),
             });
         }
@@ -122,7 +126,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
 
     const doClear = () => {
         startClear(async () => {
-            const res = await clearTermTranslationsAction(projectId, term.id, baseLanguage);
+            const res = await clearTermTranslationsAction(projectId, term.id);
             if (res.success) {
                 toast.success(t('term.clearSuccess'));
                 setClearConfirm(false);
@@ -133,10 +137,20 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
     };
 
     const handleSave = () => {
+        const baseline = editBaseline.current;
+        if (formData.developerOwner !== baseline.developerOwner && !formData.developerOwner.trim()) {
+            toast.error(t('term.ownerRequired'));
+            return;
+        }
         doUpdate({
-            stringName: formData.stringName,
-            remarks: formData.remarks,
-            values: formData.values
+            ...(formData.stringName !== baseline.stringName ? { stringName: formData.stringName } : {}),
+            ...(formData.remarks !== baseline.remarks ? { remarks: formData.remarks } : {}),
+            ...(formData.developerOwner !== baseline.developerOwner ? { developerOwner: formData.developerOwner.trim() } : {}),
+            ...(formData.requestNote !== baseline.requestNote ? { requestNote: formData.requestNote } : {}),
+            values: Object.fromEntries(Object.entries(formData.values).filter(([lang, value]) =>
+                lang in valueSources.current && value !== (baseline.values[lang] || '')
+            )),
+            valueSources: valueSources.current,
         }, () => {
             setIsEditing(false);
             setFocusLang(null);
@@ -144,7 +158,8 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
         });
     };
 
-    const handleValueChange = (lang: string, val: string) => {
+    const handleValueChange = (lang: string, val: string, source: 'manual' | 'machine' | 'copied' = 'manual') => {
+        valueSources.current[lang] = source;
         setFormData(prev => ({
             ...prev,
             values: { ...prev.values, [lang]: val }
@@ -184,7 +199,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
             const data = await res.json();
             if (data.translations && data.translations[0]) {
                 const translated = data.translations[0];
-                handleValueChange(lang, translated);
+                handleValueChange(lang, translated, 'machine');
 
                 if (isEditing) {
                     // user saves manually
@@ -192,14 +207,14 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     pendingRowTranslations.current[lang] = translated;
                     const allDone = expectedRowLangs.current.every(l => l in pendingRowTranslations.current);
                     if (allDone) {
-                        const allValues = { ...formData.values, ...pendingRowTranslations.current };
-                        doUpdate({ values: allValues });
+                        const allValues = Object.fromEntries(Object.entries(pendingRowTranslations.current).filter(([, value]) => value.trim()));
+                        doUpdate({ values: allValues, valueSources: Object.fromEntries(Object.keys(allValues).map(code => [code, 'machine' as const])) });
                         toast.success(formatMessage('term.rowTranslated', { count: Object.keys(pendingRowTranslations.current).length }));
                         pendingRowTranslations.current = {};
                         expectedRowLangs.current = [];
                     }
                 } else {
-                    doUpdate({ values: { ...formData.values, [lang]: translated } });
+                    doUpdate({ values: { [lang]: translated }, valueSources: { [lang]: 'machine' } });
                 }
             }
         } catch (err: unknown) {
@@ -209,7 +224,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                 if (allDone) {
                     const populated = Object.entries(pendingRowTranslations.current).filter(([, v]) => v);
                     if (populated.length > 0) {
-                        doUpdate({ values: Object.fromEntries(populated) });
+                        doUpdate({ values: Object.fromEntries(populated), valueSources: Object.fromEntries(populated.map(([code]) => [code, 'machine' as const])) });
                     }
                     toast.warning(formatMessage('term.rowTranslateError', { language: lang }));
                     pendingRowTranslations.current = {};
@@ -226,8 +241,8 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
 
     const handleTranslateRow = () => {
         const langsToTranslate = targetLanguages.filter(lang => {
-            const val = term.values.find(v => v.languageCode === lang)?.content;
-            return !val || !val.trim();
+            const value = term.values.find(v => v.languageCode === lang);
+            return !value?.isManual && !value?.content?.trim();
         });
 
         if (langsToTranslate.length === 0) {
@@ -248,12 +263,16 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
 
         const newValues = { ...formData.values };
         targetLanguages.forEach(lang => {
+            if (term.values.find(value => value.languageCode === lang)?.isManual || valueSources.current[lang] === 'manual') return;
             newValues[lang] = base;
+            valueSources.current[lang] = 'copied';
         });
         setFormData(p => ({ ...p, values: newValues }));
     };
 
     const enterEditMode = (lang?: string) => {
+        editBaseline.current = formData;
+        valueSources.current = {};
         setFocusLang(lang || null);
         setIsEditing(true);
     };
@@ -268,7 +287,8 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
     const baseLanguageCellClassName = cn(
         "whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs w-64 min-w-[16rem] align-top cursor-pointer transition-colors",
         isBaseLanguagePinned ? [BASE_LANGUAGE_STICKY_CLASS, "hover:bg-zinc-800"] : "hover:bg-zinc-700/30",
-        baseValueMatchesSearch && (isBaseLanguagePinned ? STICKY_SEARCH_MATCH_CLASS : "bg-emerald-500/10 hover:bg-emerald-500/20")
+        baseValueMatchesSearch && (isBaseLanguagePinned ? STICKY_SEARCH_MATCH_CLASS : "bg-emerald-500/10 hover:bg-emerald-500/20"),
+        !baseValue?.trim() && "bg-red-950/30"
     );
     const lastUpdated = term.updatedAt ? new Date(term.updatedAt).toLocaleString() : '';
 
@@ -304,6 +324,18 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     />
                 </td>
                 <td className={cn("p-4 align-top", REMARKS_COLUMN_WIDTH_CLASS, REMARKS_STICKY_CLASS)}>
+                    <label className="mb-2 block text-xs text-zinc-300">
+                        {t('term.developerOwner')}
+                        <Input value={formData.developerOwner}
+                            onChange={(event) => setFormData(prev => ({ ...prev, developerOwner: event.target.value }))}
+                            className="mt-1 bg-zinc-900 border-zinc-700 text-white" />
+                    </label>
+                    <label className="mb-2 block text-xs text-zinc-300">
+                        {t('term.requestNote')}
+                        <Input value={formData.requestNote}
+                            onChange={(event) => setFormData(prev => ({ ...prev, requestNote: event.target.value }))}
+                            className="mt-1 bg-zinc-900 border-zinc-700 text-white" />
+                    </label>
                     <Textarea
                         value={formData.remarks}
                         onChange={(e) => setFormData(p => ({ ...p, remarks: e.target.value }))}
@@ -356,7 +388,8 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                                 dir={isRtlLanguage(lang) ? 'rtl' : 'ltr'}
                                 className={cn(
                                     "bg-zinc-900 border-zinc-700 text-white min-h-[4rem]",
-                                    isRtlLanguage(lang) && 'text-right'
+                                    isRtlLanguage(lang) && 'text-right',
+                                    !formData.values[lang]?.trim() && 'border-red-700'
                                 )}
                                 autoFocus={focusLang === lang}
                             />
@@ -386,12 +419,12 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
 
     return (
         <tr className="hover:bg-zinc-800/50 transition-colors group border-b border-zinc-800 last:border-0 relative">
-            <td className={cn("relative whitespace-nowrap py-4 pl-3 pr-4 text-left text-sm font-medium sm:pr-6 align-top group-hover:bg-zinc-800 transition-colors", ACTIONS_COLUMN_WIDTH_CLASS, ACTIONS_STICKY_CLASS)}>
+            <td className={cn("relative whitespace-nowrap py-4 px-2 text-left text-sm font-medium align-top group-hover:bg-zinc-800 transition-colors", ACTIONS_COLUMN_WIDTH_CLASS, ACTIONS_STICKY_CLASS)}>
                 <div className="flex gap-1 opacity-100 transition-opacity">
                     <Button
                         variant="ghost" size="icon"
                         onClick={() => enterEditMode()}
-                        className="text-zinc-300 hover:text-zinc-200 hover:bg-white/10"
+                        className="h-8 w-8 text-zinc-300 hover:text-zinc-200 hover:bg-white/10"
                         title={t('term.edit')}
                     >
                         <Edit2 className="w-4 h-4" />
@@ -399,7 +432,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     <Button
                         variant="ghost" size="icon"
                         onClick={() => setConfirmTranslate({ type: 'row' })}
-                        className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
+                        className="h-8 w-8 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
                         title={t('term.translateRow')}
                     >
                         <Wand2 className="w-4 h-4 text-emerald-400" />
@@ -408,7 +441,7 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="ghost" size="icon"
-                                className="text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
+                                className="h-8 w-8 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800"
                                 title={t('term.moreActions')}
                             >
                                 <MoreHorizontal className="w-4 h-4" />
@@ -447,7 +480,11 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                         />
                     ) : term.stringName}
                 </div>
-                <div className="text-xs text-zinc-600 mt-1 font-mono">{lastUpdated}</div>
+                <time
+                    dateTime={new Date(term.updatedAt).toISOString()}
+                    suppressHydrationWarning
+                    className="block text-xs text-zinc-600 mt-1 font-mono"
+                >{lastUpdated}</time>
             </td>
             <td className={cn("px-3 py-4 text-sm text-zinc-400 truncate align-top group-hover:bg-zinc-800 transition-colors", REMARKS_COLUMN_WIDTH_CLASS, REMARKS_STICKY_CLASS, isMatch(term.remarks) && STICKY_SEARCH_MATCH_CLASS)}>
                 <TooltipProvider>
@@ -487,13 +524,13 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <div className="cursor-help decoration-dashed decoration-zinc-600 underline-offset-4">
-                                {baseValue ? (
+                                {baseValue?.trim() ? (
                                     <BidiSafeText
                                         text={baseValue}
                                         languageCode={baseLanguage}
                                         searchQuery={searchQuery}
                                     />
-                                ) : <span className="text-zinc-600 italic">{t('term.emptyValue')}</span>}
+                                ) : <span className="text-red-400 italic">{t('term.emptyValue')}</span>}
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -513,20 +550,21 @@ export function TermRow({ term, projectId, baseLanguage, baseLanguageDisplay, ta
                 return (
                     <td
                         key={lang}
-                        className={cn("whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors", isMatch(val) && "bg-emerald-500/10 hover:bg-emerald-500/20")}
+                        className={cn("whitespace-pre-wrap px-3 py-4 text-sm text-zinc-300 max-w-xs align-top cursor-pointer hover:bg-zinc-700/30 transition-colors", isMatch(val) && "bg-emerald-500/10 hover:bg-emerald-500/20", !val?.trim() && "bg-red-950/30")}
                         onClick={() => enterEditMode(lang)}
                     >
+                        {valObj?.isManual && <span className="mb-1 inline-block rounded border border-amber-700/50 bg-amber-950/40 px-1.5 py-0.5 text-[10px] text-amber-300">{t('term.manual')}</span>}
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div className="cursor-help">
-                                        {val ? (
+                                        {val?.trim() ? (
                                             <BidiSafeText
                                                 text={val}
                                                 languageCode={lang}
                                                 searchQuery={searchQuery}
                                             />
-                                        ) : <span className="text-zinc-600 italic">{t('term.emptyValue')}</span>}
+                                        ) : <span className="text-red-400 italic">{t('term.emptyValue')}</span>}
                                     </div>
                                 </TooltipTrigger>
                                 {modBy && (

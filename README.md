@@ -14,7 +14,10 @@ NanoLoc is a lightweight localization (i18n) management platform with AI-powered
 - **Audit Trail**: Tracks "Last Modified By" for every translation entry
 - **Modern SaaS UI**: Monochrome dark mode (Zinc & Emerald) with high data density, sticky columns, instant search, and real-time translation status
 - **Action Grouping**: Destructive actions (Delete, Clear Row) are grouped under a "More Actions" menu for a cleaner interface
-- **Clear Row**: Quickly remove all target translations for a term while preserving the key, Source (en-US), and Remarks
+- **Term Metadata**: Require a free-text developer owner on import or creation; append optional request/issue notes to remarks and fill only missing metadata on reimport
+- **Manual Translations**: Mark edited cells as Manual; Clear Row preserves manual translations, the key, base language, remarks, and screenshot
+- **Missing Translations**: Highlight missing, empty, and whitespace-only cells in red
+- **Screenshots**: Paste an image with Ctrl/Cmd+V in a term's screenshot dialog to upload or replace it
 - **Smart Navigation**: Dual pagination (Top & Bottom on project pages) and streamlined dashboard navigation
 - **Security**: NextAuth.js username-based authentication
 - **Concurrency Safe**: SQLite WAL mode, busy timeout, process-level batch translation locks, chunked import transactions

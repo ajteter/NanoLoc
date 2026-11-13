@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getProject } from '@/lib/services/project.service';
 import { importFile } from '@/lib/services/storage.service';
+import { importMetadataSchema } from '@/lib/validators/term.schema';
 import { logAudit } from '@/lib/services/audit.service';
-import { jsonError, jsonErrorFromUnknown } from '@/lib/api/responses';
+import { jsonError, jsonErrorFromUnknown, jsonValidationError } from '@/lib/api/responses';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
@@ -29,9 +30,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             return jsonError('NO_FILE_UPLOADED');
         }
 
+        const metadata = importMetadataSchema.safeParse({
+            developerOwner: formData.get('developerOwner'),
+            requestNote: formData.get('requestNote') ?? undefined,
+        });
+        if (!metadata.success) return jsonValidationError(metadata.error.issues);
+
         const fileContent = await file.text();
-        const result = await importFile(projectId, fileContent, file.name, project.baseLanguage, userId);
-        logAudit({ action: 'IMPORT_FILE', userId, projectId, projectName: project.name, details: result });
+        const result = await importFile(projectId, fileContent, file.name, project.baseLanguage, userId, metadata.data);
+        logAudit({ action: 'IMPORT_FILE', userId, projectId, projectName: project.name, details: { ...result, ...metadata.data, fileName: file.name } });
         return NextResponse.json({ success: true, ...result });
     } catch (error: unknown) {
         console.error("Import error:", error);

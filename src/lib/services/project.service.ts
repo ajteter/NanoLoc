@@ -8,12 +8,14 @@ import { AppError } from '@/lib/api/errors';
 import { parseTargetLanguages, serializeTargetLanguages } from '@/lib/language-utils';
 import { buildTermSearchWhere } from '@/lib/services/translation-key-search';
 import type { CreateProjectInput, UpdateProjectInput } from '@/lib/validators/project.schema';
-import type { CreateTermInput, UpdateTermInput } from '@/lib/validators/term.schema';
+import { createTermSchema, type CreateTermInput, type UpdateTermInput } from '@/lib/validators/term.schema';
+import { appendRemarks, metadataRemarks } from '@/lib/term-metadata';
 
 const termValueSelect = {
     id: true,
     languageCode: true,
     content: true,
+    isManual: true,
     lastModifiedBy: { select: { name: true, username: true } },
 } satisfies Prisma.TranslationValueSelect;
 
@@ -21,6 +23,8 @@ const termDetailSelect = {
     id: true,
     stringName: true,
     remarks: true,
+    developerOwner: true,
+    requestNote: true,
     screenshotPath: true,
     screenshotMimeType: true,
     screenshotSize: true,
@@ -38,6 +42,7 @@ const termClearSelect = {
         select: {
             id: true,
             languageCode: true,
+            isManual: true,
         },
     },
 } satisfies Prisma.TranslationKeySelect;
@@ -116,6 +121,8 @@ export async function listTerms(
                 id: true,
                 stringName: true,
                 remarks: true,
+                developerOwner: true,
+                requestNote: true,
                 screenshotPath: true,
                 screenshotMimeType: true,
                 screenshotSize: true,
@@ -130,6 +137,7 @@ export async function listTerms(
                         id: true,
                         languageCode: true,
                         content: true,
+                        isManual: true,
                         lastModifiedBy: { select: { name: true, username: true } },
                     },
                 },
@@ -152,7 +160,9 @@ export async function createTerm(
     data: CreateTermInput,
     userId: string
 ) {
-    const { stringName, values, remarks } = data;
+    const validated = createTermSchema.safeParse(data);
+    if (!validated.success) throw new AppError('VALIDATION_ERROR', { details: validated.error.issues });
+    const { stringName, values, remarks, developerOwner, requestNote } = validated.data;
 
     // Check uniqueness
     const existing = await prisma.translationKey.findUnique({
@@ -173,7 +183,9 @@ export async function createTerm(
         data: {
             projectId,
             stringName,
-            remarks,
+            remarks: appendRemarks(remarks, metadataRemarks({ developerOwner, requestNote })),
+            developerOwner,
+            requestNote: requestNote || null,
             sortOrder: nextOrder,
             lastModifiedById: userId,
             values: {
@@ -181,6 +193,7 @@ export async function createTerm(
                     ? Object.entries(values).map(([code, content]) => ({
                         languageCode: code,
                         content,
+                        isManual: Boolean(content.trim()),
                         lastModifiedById: userId,
                     }))
                     : [],
@@ -195,15 +208,23 @@ export async function updateTerm(
     data: UpdateTermInput,
     userId: string
 ) {
-    const { stringName, remarks, values } = data;
+    const { stringName, remarks, values, valueSources, developerOwner, requestNote } = data;
 
     await prisma.$transaction(async (tx) => {
-        if (stringName || remarks !== undefined) {
+        if (stringName || remarks !== undefined || developerOwner !== undefined || requestNote !== undefined) {
+            const current = await tx.translationKey.findUniqueOrThrow({ where: { id: keyId } });
+            const nextOwner = developerOwner ?? current.developerOwner;
+            const nextRequest = requestNote ?? current.requestNote;
+            const nextRemarks = developerOwner !== undefined || requestNote !== undefined
+                ? appendRemarks(remarks !== undefined ? remarks : current.remarks, nextOwner ? metadataRemarks({ developerOwner: nextOwner, requestNote: nextRequest ?? undefined }) : [])
+                : remarks;
             await tx.translationKey.update({
                 where: { id: keyId },
                 data: {
                     ...(stringName ? { stringName } : {}),
-                    ...(remarks !== undefined ? { remarks } : {}),
+                    ...(nextRemarks !== undefined ? { remarks: nextRemarks } : {}),
+                    ...(developerOwner !== undefined ? { developerOwner } : {}),
+                    ...(requestNote !== undefined ? { requestNote: requestNote || null } : {}),
                     lastModifiedById: userId,
                 },
             });
@@ -211,6 +232,11 @@ export async function updateTerm(
 
         if (values) {
             for (const [lang, content] of Object.entries(values)) {
+                const current = await tx.translationValue.findUnique({
+                    where: { translationKeyId_languageCode: { translationKeyId: keyId, languageCode: lang } },
+                });
+                if (current?.content === content) continue;
+                const isManual = (valueSources?.[lang] ?? 'manual') === 'manual';
                 await tx.translationValue.upsert({
                     where: {
                         translationKeyId_languageCode: {
@@ -218,11 +244,12 @@ export async function updateTerm(
                             languageCode: lang,
                         },
                     },
-                    update: { content, lastModifiedById: userId },
+                    update: { content, isManual, lastModifiedById: userId },
                     create: {
                         translationKeyId: keyId,
                         languageCode: lang,
                         content,
+                        isManual,
                         lastModifiedById: userId,
                     },
                 });
@@ -258,12 +285,13 @@ export async function clearTermTranslations(keyId: string, baseLanguage: string,
 
         if (!term) throw new AppError('TERM_NOT_FOUND');
 
-        const valuesToDelete = term.values.filter(v => v.languageCode !== baseLanguage);
+        const valuesToDelete = term.values.filter(v => v.languageCode !== baseLanguage && !v.isManual);
 
         if (valuesToDelete.length > 0) {
             await tx.translationValue.deleteMany({
                 where: {
-                    id: { in: valuesToDelete.map(v => v.id) }
+                    id: { in: valuesToDelete.map(v => v.id) },
+                    isManual: false
                 }
             });
         }

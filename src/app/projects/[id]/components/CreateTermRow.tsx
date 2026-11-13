@@ -40,6 +40,8 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
     const [formData, setFormData] = useState({
         stringName: '',
         remarks: '',
+        developerOwner: '',
+        requestNote: '',
         values: {} as Record<string, string>,
     });
 
@@ -48,10 +50,16 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
             toast.error(t('term.keyRequired'));
             return;
         }
+        if (!formData.developerOwner.trim()) {
+            toast.error(t('term.ownerRequired'));
+            return;
+        }
         startTransition(async () => {
             const res = await createTermAction(projectId, {
                 stringName: formData.stringName,
                 remarks: formData.remarks,
+                developerOwner: formData.developerOwner,
+                requestNote: formData.requestNote,
                 values: formData.values
             });
             if (res.success) {
@@ -104,6 +112,23 @@ export function CreateTermRow({ projectId, baseLanguage, targetLanguages, onCanc
                 />
             </td>
             <td className={cn("p-4 align-top", REMARKS_COLUMN_WIDTH_CLASS, REMARKS_STICKY_CLASS)}>
+                <label className="mb-2 block text-xs text-zinc-300">
+                    {t('term.developerOwner')}
+                    <Input
+                        value={formData.developerOwner}
+                        onChange={(e) => setFormData(p => ({ ...p, developerOwner: e.target.value }))}
+                        required
+                        className="mt-1 bg-zinc-900 border-zinc-600 text-white"
+                    />
+                </label>
+                <label className="mb-2 block text-xs text-zinc-300">
+                    {t('term.requestNote')}
+                    <Input
+                        value={formData.requestNote}
+                        onChange={(e) => setFormData(p => ({ ...p, requestNote: e.target.value }))}
+                        className="mt-1 bg-zinc-900 border-zinc-600 text-white"
+                    />
+                </label>
                 <Textarea
                     value={formData.remarks}
                     onChange={(e) => setFormData(p => ({ ...p, remarks: e.target.value }))}

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode, UIEvent } from 'react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface SynchronizedStickyTableProps {
@@ -13,6 +13,30 @@ interface SynchronizedStickyTableProps {
 export function SynchronizedStickyTable({ header, body, className }: SynchronizedStickyTableProps) {
     const headerViewportRef = useRef<HTMLDivElement>(null);
     const bodyViewportRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const headerViewport = headerViewportRef.current;
+        const bodyViewport = bodyViewportRef.current;
+        if (!headerViewport || !bodyViewport) return;
+
+        // A language selection or window resize can clamp scrollLeft without a
+        // matching user scroll. Keep both viewports aligned in that case too.
+        const synchronize = () => {
+            const scrollLeft = Math.min(
+                bodyViewport.scrollLeft,
+                headerViewport.scrollWidth - headerViewport.clientWidth,
+            );
+            bodyViewport.scrollLeft = Math.max(0, scrollLeft);
+            headerViewport.scrollLeft = bodyViewport.scrollLeft;
+        };
+        const observer = new ResizeObserver(synchronize);
+        observer.observe(bodyViewport);
+        const table = bodyViewport.querySelector('table');
+        if (table) observer.observe(table);
+        synchronize();
+
+        return () => observer.disconnect();
+    }, [header, body]);
 
     const syncHorizontalScroll = (
         event: UIEvent<HTMLDivElement>,

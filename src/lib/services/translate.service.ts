@@ -22,6 +22,7 @@ type BatchTranslationKey = {
     values: {
         languageCode: string;
         content: string | null;
+        isManual: boolean;
     }[];
 };
 
@@ -30,6 +31,7 @@ type BatchTranslationCandidate = {
     keyName: string;
     sourceText: string;
     valuesByLanguage: Map<string, string>;
+    manualLanguages: Set<string>;
 };
 
 type PlaceholderMismatch = PlaceholderComparison & {
@@ -92,6 +94,7 @@ function buildBatchTranslationCandidates(
             keyName: key.stringName,
             sourceText,
             valuesByLanguage,
+            manualLanguages: new Set(key.values.filter(value => value.isManual).map(value => value.languageCode)),
         });
     }
 
@@ -195,6 +198,7 @@ export async function batchTranslateProject(
                     select: {
                         languageCode: true,
                         content: true,
+                        isManual: true,
                     },
                 },
             },
@@ -204,7 +208,7 @@ export async function batchTranslateProject(
 
         for (const lang of targetLanguages) {
             const missingItems = candidates
-                .filter((key) => !key.valuesByLanguage.get(lang)?.trim())
+                .filter((key) => !key.manualLanguages.has(lang) && !key.valuesByLanguage.get(lang)?.trim())
                 .map((key) => ({ keyId: key.keyId, sourceText: key.sourceText }));
 
             if (missingItems.length === 0) {
@@ -267,21 +271,7 @@ export async function batchTranslateProject(
                                 return null;
                             }
 
-                            return prisma.translationValue.upsert({
-                                where: {
-                                    translationKeyId_languageCode: {
-                                        translationKeyId: item.keyId,
-                                        languageCode: lang,
-                                    },
-                                },
-                                update: { content: translatedText, lastModifiedById: userId },
-                                create: {
-                                    translationKeyId: item.keyId,
-                                    languageCode: lang,
-                                    content: translatedText,
-                                    lastModifiedById: userId,
-                                },
-                            });
+                            return { keyId: item.keyId, translatedText };
                         })
                         .filter((p): p is NonNullable<typeof p> => p !== null);
 
@@ -290,9 +280,25 @@ export async function batchTranslateProject(
                     }
 
                     if (operations.length > 0) {
-                        await prisma.$transaction(operations);
+                        processedCount += await prisma.$transaction(async (tx) => {
+                            let saved = 0;
+                            for (const item of operations) {
+                                const identity = { translationKeyId: item.keyId, languageCode: lang };
+                                const current = await tx.translationValue.findUnique({
+                                    where: { translationKeyId_languageCode: identity },
+                                });
+                                // A user may have edited this cell while the AI request was running.
+                                if (current?.isManual || current?.content?.trim()) continue;
+                                await tx.translationValue.upsert({
+                                    where: { translationKeyId_languageCode: identity },
+                                    update: { content: item.translatedText, isManual: false, lastModifiedById: userId },
+                                    create: { ...identity, content: item.translatedText, isManual: false, lastModifiedById: userId },
+                                });
+                                saved++;
+                            }
+                            return saved;
+                        });
                     }
-                    processedCount += operations.length;
                 } catch (err) {
                     const normalized = normalizeTranslationError(err);
                     failedCount += batch.length;

@@ -51,6 +51,8 @@ model TranslationKey {
   id            String   @id @default(cuid())
   stringName    String   
   remarks       String?  
+  developerOwner String?
+  requestNote    String?
   screenshotPath      String?
   screenshotMimeType  String?
   screenshotSize      Int?
@@ -79,6 +81,7 @@ model TranslationValue {
   id               String         @id @default(cuid())
   languageCode     String         
   content          String?
+  isManual         Boolean        @default(false)
   
   translationKeyId String
   translationKey   TranslationKey @relation(fields: [translationKeyId], references: [id], onDelete: Cascade)

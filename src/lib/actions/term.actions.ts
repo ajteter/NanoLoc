@@ -7,7 +7,7 @@ import { batchTranslateProject } from '@/lib/services/translate.service';
 import { logAudit } from '@/lib/services/audit.service';
 import { importFile } from '@/lib/services/storage.service';
 import { getProjectLanguageCodes, normalizeTargetLanguages } from '@/lib/language-utils';
-import { createTermSchema, updateTermSchema } from '@/lib/validators/term.schema';
+import { createTermSchema, updateTermSchema, importMetadataSchema } from '@/lib/validators/term.schema';
 import { AppError, toActionError, toValidationActionError, type ApiErrorCode } from '@/lib/api/errors';
 import type { CreateTermInput, UpdateTermInput } from '@/lib/validators/term.schema';
 import type { TranslationErrorSource } from '@/lib/services/translation-error.service';
@@ -107,10 +107,16 @@ export async function importFileAction(
         const file = formData.get('file');
         if (!(file instanceof File)) throw new AppError('NO_FILE_UPLOADED');
 
-        const fileContent = await file.text();
-        const result = await importFile(projectId, fileContent, file.name, project.baseLanguage || 'en-US', session.user.id);
+        const metadata = importMetadataSchema.safeParse({
+            developerOwner: formData.get('developerOwner'),
+            requestNote: formData.get('requestNote') ?? undefined,
+        });
+        if (!metadata.success) return { success: false, ...toValidationActionError(metadata.error.issues) };
 
-        await logAudit({ action: 'IMPORT_FILE', userId: session.user.id, projectId, projectName: project.name, details: result });
+        const fileContent = await file.text();
+        const result = await importFile(projectId, fileContent, file.name, project.baseLanguage || 'en-US', session.user.id, metadata.data);
+
+        await logAudit({ action: 'IMPORT_FILE', userId: session.user.id, projectId, projectName: project.name, details: { ...result, ...metadata.data, fileName: file.name } });
 
         revalidatePath(`/projects/${projectId}`);
         return { success: true, ...result };
@@ -119,7 +125,7 @@ export async function importFileAction(
     }
 }
 
-export async function clearTermTranslationsAction(projectId: string, keyId: string, baseLanguage: string): Promise<ActionResult> {
+export async function clearTermTranslationsAction(projectId: string, keyId: string): Promise<ActionResult> {
     const session = await auth();
     if (!session?.user?.id) return { success: false, ...toActionError(new AppError('UNAUTHORIZED'), 'UNAUTHORIZED') };
 
@@ -127,9 +133,9 @@ export async function clearTermTranslationsAction(projectId: string, keyId: stri
         const project = await getProject(projectId);
         if (!project) throw new AppError('PROJECT_NOT_FOUND');
 
-        const term = await clearTermTranslations(keyId, baseLanguage, session.user.id);
+        const term = await clearTermTranslations(keyId, project.baseLanguage, session.user.id);
 
-        await logAudit({ action: 'UPDATE_TERM', userId: session.user.id, projectId, projectName: project.name, details: { key: term?.stringName, action: 'Cleared all non-base translations' } });
+        await logAudit({ action: 'UPDATE_TERM', userId: session.user.id, projectId, projectName: project.name, details: { key: term?.stringName, action: 'Cleared non-manual target translations' } });
 
         revalidatePath(`/projects/${projectId}`);
         return { success: true };

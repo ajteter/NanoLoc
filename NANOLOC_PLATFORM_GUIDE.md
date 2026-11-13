@@ -66,16 +66,24 @@ NanoLoc 是一个轻量级多语言翻译管理平台，为应用开发团队提
 
 #### 导入语言文件
 1. 进入项目详情页
-2. 点击 **Import XML**
-3. 上传 Android `strings.xml`、iOS `Localizable.strings` 或 H5 JSON 文件
-4. 系统自动解析并导入所有 key-value 对
-5. **智能合并**：如果 key 已存在，则保留当前项目中的源语言内容，并将导入文件中的冲突值追加到"备注 (Remarks)"列中
+2. 点击 **导入 / Import**，打开导入弹窗
+3. 选择 Android `strings.xml`、iOS `Localizable.strings` 或 H5 JSON 文件
+4. 填写必填的 **开发负责人**（自由文本），可填写 **需求/缺陷说明**（需求名、缺陷号或其他说明），点击导入
+5. 负责人及需求/缺陷说明自动追加到备注；如果 key 已存在，元数据只补缺失项，保留原备注并拼接新说明，相同说明不会重复追加
+6. **智能合并**：保留已有 key 的当前源语言内容，将导入的冲突值追加到备注
 
 #### 手动添加/编辑词条
 1. 在词条列表中找到目标词条
 2. 点击行上的 ✏️ **编辑图标**
 3. 修改翻译内容
 4. 保存更改
+
+新增词条也需要填写开发负责人，可填写需求/缺陷说明。历史词条不强制一次性补齐元数据。实际手动修改的翻译单元格显示 **人工**；AI 翻译及一键同源文不会标为人工，历史译文不自动推断来源。
+
+#### 词条截图
+1. 点击目标 key 的截图图标，打开截图弹窗
+2. 在弹窗内按 **Ctrl/Cmd+V** 粘贴截图，或点击上传按钮选择文件
+3. 每个 key 保留一张截图，已有图片时支持预览、替换或删除；沿用 PNG/JPEG/WebP 格式及 5 MB 限制
 
 #### 词条列表功能
 - **搜索**：即时搜索 key 名称
@@ -84,7 +92,8 @@ NanoLoc 是一个轻量级多语言翻译管理平台，为应用开发团队提
 - **审计信息**：每个翻译单元格显示最后修改人
 - **魔法棒图标**：所有 AI 触发动作（单条、行、列、批量）均统一为 **Emerald (祖母绿)** 色调。
 - **更多操作菜单**：将“删除词条”和“清空整行”由原来的零散按钮整合进词条末尾的 **More Actions (更多操作)** 菜单中。
-- **清空整行 (Clear Row)**：支持清理该词条除 Key、en-US (源语言) 以及 Remarks 以外的所有翻译内容，适用于需要重置翻译的场景。
+- **人工译文保护**：批量翻译及一键同源文跳过人工稿；Clear Row 只清空非人工目标译文，保留人工译文及其标识、Key、基础语言、备注和截图。
+- **缺失提示**：缺失记录、null、空串及纯空白翻译均用红色标识。
 - **双分页系统**：在词条列表的顶部和底部均提供了分页控制，极大减少了长列表滚动后的操作负担。
 
 ### 五、AI 翻译
@@ -224,12 +233,19 @@ Navigate to project → **Settings** → modify and save.
 
 #### Import Localization File
 1. Go to the project detail page
-2. Click **Import XML**
-3. Upload your Android `strings.xml`, iOS `Localizable.strings`, or H5 JSON file
-4. Keys are parsed and merged automatically. When the same key already exists, the current base-language value is kept and the imported value is appended to "Remarks".
+2. Click **Import** to open the import dialog
+3. Select an Android `strings.xml`, iOS `Localizable.strings`, or H5 JSON file
+4. Enter the required free-text **Developer owner**, optionally add a **Request / issue note**, and submit
+5. Metadata is appended to remarks. Reimport fills only missing metadata, preserves existing remarks, and avoids duplicate notes
+6. Existing base-language values are preserved; conflicting imported values are appended to remarks
 
 #### Manual Editing
 Click the ✏️ edit icon on any row to modify translations.
+
+New terms also require a developer owner. Historical terms do not need to be backfilled immediately. Edited translation cells show a **Manual** badge; AI output and copied base text do not. Historical translations are not automatically classified as manual.
+
+#### Term Screenshots
+Click a term's screenshot icon, then press **Ctrl/Cmd+V** inside the dialog or select a file. Each key supports one image with preview, replacement, and deletion. PNG/JPEG/WebP and the existing 5 MB limit apply.
 
 #### List Features
 - **Search**: Instant key name search
@@ -238,7 +254,8 @@ Click the ✏️ edit icon on any row to modify translations.
 - **Audit**: Each cell shows the last modifier
 - **Wand Palette**: All AI-triggered actions (Cell, Row, Column, Batch) are unified with **Emerald** success tones
 - **More Actions Menu**: Grouped "Delete Term" and "Clear Row" into a single dropdown for a cleaner grid
-- **Clear Row**: Quickly wipe all target translations for a term while keeping the Key, Source content, and Remarks intact
+- **Manual Protection**: Batch translation and copying base text skip manual cells. Clear Row removes only non-manual target translations, preserving manual cells, the key, base language, remarks, and screenshot
+- **Missing Translations**: Missing, null, empty, and whitespace-only cells are highlighted in red
 - **Smart Navigation**: Dual-pagination controls at both Top and Bottom of the term grids
 
 ### 5. AI Translation

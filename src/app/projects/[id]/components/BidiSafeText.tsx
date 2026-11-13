@@ -21,7 +21,7 @@ export function BidiSafeText({ text, languageCode, searchQuery, className }: Bid
     return (
         <span
             dir={isRtl ? 'rtl' : 'ltr'}
-            className={cn('block whitespace-pre-wrap', isRtl ? 'text-right' : 'text-left', className)}
+            className={cn('block whitespace-pre-wrap [overflow-wrap:anywhere]', isRtl ? 'text-right' : 'text-left', className)}
         >
             {segments.map((segment, index) => {
                 const content = searchQuery ? (

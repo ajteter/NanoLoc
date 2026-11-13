@@ -5,6 +5,8 @@ import { H5JsonParser } from '@/lib/parsers/h5-json';
 import { IOSStringsParser } from '@/lib/parsers/ios-strings';
 import { getProjectLanguageCodes } from '@/lib/language-utils';
 import { AppError } from '@/lib/api/errors';
+import { importMetadataSchema, type ImportMetadataInput } from '@/lib/validators/term.schema';
+import { appendRemarks, metadataRemarks } from '@/lib/term-metadata';
 import { buildTermSearchWhere, normalizeTermSearch } from '@/lib/services/translation-key-search';
 import {
     buildCsvHeader,
@@ -299,8 +301,13 @@ async function importParsedStrings(
     projectId: string,
     parsedStrings: { name: string; value: string }[],
     baseLanguage: string,
-    userId: string
+    userId: string,
+    metadata: ImportMetadataInput
 ): Promise<{ added: number; updated: number; skipped: number }> {
+    const validated = importMetadataSchema.safeParse(metadata);
+    if (!validated.success) throw new AppError('VALIDATION_ERROR', { details: validated.error.issues });
+    metadata = validated.data;
+
     // Verify the user exists to prevent FK constraint violations
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -340,6 +347,7 @@ async function importParsedStrings(
     const operations: Prisma.PrismaPromise<unknown>[] = [];
     const pendingNewKeys = new Map<string, { remarks: string[] }>();
     const pendingExistingRemarks = new Map<string, string[]>();
+    const unchangedNames = new Set<string>();
 
     for (let idx = 0; idx < parsedStrings.length; idx++) {
         const item = parsedStrings[idx];
@@ -371,6 +379,7 @@ async function importParsedStrings(
                     updated++;
                 } else {
                     skipped++;
+                    unchangedNames.add(stringName);
                 }
             } else {
                 operations.push(
@@ -419,35 +428,33 @@ async function importParsedStrings(
         }
     }
 
-    if (pendingExistingRemarks.size > 0) {
-        for (const existingKey of existingKeys) {
-            const appendedRemarks = pendingExistingRemarks.get(existingKey.id);
-            if (!appendedRemarks || appendedRemarks.length === 0) continue;
-
-            await prisma.translationKey.update({
-                where: { id: existingKey.id },
-                data: {
-                    remarks: existingKey.remarks
-                        ? existingKey.remarks + '\n' + appendedRemarks.join('\n')
-                        : appendedRemarks.join('\n'),
-                    lastModifiedById: userId,
-                },
-            });
-        }
-    }
-
-    if (pendingNewKeys.size > 0) {
-        for (const [stringName, pending] of pendingNewKeys.entries()) {
-            if (pending.remarks.length === 0) continue;
-
-            await prisma.translationKey.update({
-                where: { projectId_stringName: { projectId, stringName } },
-                data: {
-                    remarks: pending.remarks.join('\n'),
-                    lastModifiedById: userId,
-                },
-            });
-        }
+    // Merge against current remarks inside each transaction so metadata never replaces
+    // existing notes or populated owner/request fields, including repeated uploads.
+    for (let index = 0; index < stringNames.length; index += 100) {
+        const chunk = stringNames.slice(index, index + 100);
+        await prisma.$transaction(async (tx) => {
+            for (const stringName of chunk) {
+                const current = await tx.translationKey.findUniqueOrThrow({
+                    where: { projectId_stringName: { projectId, stringName } },
+                });
+                const developerOwner = current.developerOwner?.trim() ? current.developerOwner : metadata.developerOwner;
+                const requestNote = current.requestNote?.trim() ? current.requestNote : metadata.requestNote || null;
+                const remarks = appendRemarks(current.remarks, [
+                    ...(pendingExistingRemarks.get(current.id) ?? []),
+                    ...(pendingNewKeys.get(stringName)?.remarks ?? []),
+                    ...metadataRemarks(metadata),
+                ]);
+                if (developerOwner === current.developerOwner && requestNote === current.requestNote && remarks === current.remarks) continue;
+                await tx.translationKey.update({
+                    where: { id: current.id },
+                    data: { developerOwner, requestNote, remarks, lastModifiedById: userId },
+                });
+                if (unchangedNames.delete(stringName)) {
+                    skipped--;
+                    updated++;
+                }
+            }
+        });
     }
 
     return { added, updated, skipped };
@@ -460,11 +467,12 @@ export async function importXml(
     projectId: string,
     xmlContent: string,
     baseLanguage: string,
-    userId: string
+    userId: string,
+    metadata: ImportMetadataInput
 ): Promise<{ added: number; updated: number; skipped: number }> {
     const parser = new AndroidXmlParser();
     const parsedStrings = parser.parse(xmlContent);
-    return importParsedStrings(projectId, parsedStrings, baseLanguage, userId);
+    return importParsedStrings(projectId, parsedStrings, baseLanguage, userId, metadata);
 }
 
 /**
@@ -474,11 +482,12 @@ export async function importJson(
     projectId: string,
     jsonContent: string,
     baseLanguage: string,
-    userId: string
+    userId: string,
+    metadata: ImportMetadataInput
 ): Promise<{ added: number; updated: number; skipped: number }> {
     const parser = new H5JsonParser();
     const parsedStrings = parser.parse(jsonContent);
-    return importParsedStrings(projectId, parsedStrings, baseLanguage, userId);
+    return importParsedStrings(projectId, parsedStrings, baseLanguage, userId, metadata);
 }
 
 /**
@@ -488,11 +497,12 @@ export async function importIOSStrings(
     projectId: string,
     stringsContent: string,
     baseLanguage: string,
-    userId: string
+    userId: string,
+    metadata: ImportMetadataInput
 ): Promise<{ added: number; updated: number; skipped: number }> {
     const parser = new IOSStringsParser();
     const parsedStrings = parser.parse(stringsContent);
-    return importParsedStrings(projectId, parsedStrings, baseLanguage, userId);
+    return importParsedStrings(projectId, parsedStrings, baseLanguage, userId, metadata);
 }
 
 /**
@@ -504,22 +514,23 @@ export async function importFile(
     fileContent: string,
     fileName: string,
     baseLanguage: string,
-    userId: string
+    userId: string,
+    metadata: ImportMetadataInput
 ): Promise<{ added: number; updated: number; skipped: number; format: string }> {
     const ext = fileName.split('.').pop()?.toLowerCase();
 
     if (ext === 'xml') {
-        const result = await importXml(projectId, fileContent, baseLanguage, userId);
+        const result = await importXml(projectId, fileContent, baseLanguage, userId, metadata);
         return { ...result, format: 'xml' };
     }
 
     if (ext === 'json') {
-        const result = await importJson(projectId, fileContent, baseLanguage, userId);
+        const result = await importJson(projectId, fileContent, baseLanguage, userId, metadata);
         return { ...result, format: 'json' };
     }
 
     if (ext === 'strings') {
-        const result = await importIOSStrings(projectId, fileContent, baseLanguage, userId);
+        const result = await importIOSStrings(projectId, fileContent, baseLanguage, userId, metadata);
         return { ...result, format: 'strings' };
     }
 
